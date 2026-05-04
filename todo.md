@@ -5571,3 +5571,7 @@
 ### Tests
 - [x] Vitest: 23/23 passing — submit schema validation (9 tests), list schema (5), updateStatus schema (5), output track enum (1), router module export (1), schema table columns (2)
 - [x] Save checkpoint (version 63ec5e50)
+
+## Navigation Update
+
+- [x] Add "Founders' Studio" link to TopNav main navigation (Crown icon, between LoRA Market and Pricing)

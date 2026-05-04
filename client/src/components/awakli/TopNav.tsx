@@ -24,6 +24,7 @@ const CREATOR_NAV = [
 /* ─── Audience / Commerce Loop — right cluster ───────────────────────── */
 const AUDIENCE_NAV = [
   { href: "/marketplace", label: "LoRA Market", icon: Store },
+  { href: "/founders", label: "Founders", icon: Crown },
   { href: "/pricing", label: "Pricing", icon: Tag },
 ];
 /* Combined for mobile tab bar */
