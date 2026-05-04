@@ -5528,7 +5528,7 @@
 ### Frontend — Page Structure
 - [x] Create /founders route in App.tsx
 - [x] Build Founders.tsx page using MarketingLayout
-- [ ] SEOHead with page-specific title/description/OG tags (deferred — needs SEOHead integration)
+- [x] SEOHead with page-specific title/description/OG tags
 
 ### Frontend — Hero Section
 - [x] Cinematic hero: "Founders' Studio" title with Orbitron + gradient typography
@@ -5570,4 +5570,4 @@
 
 ### Tests
 - [x] Vitest: 23/23 passing — submit schema validation (9 tests), list schema (5), updateStatus schema (5), output track enum (1), router module export (1), schema table columns (2)
-- [ ] Save checkpoint
+- [x] Save checkpoint (version 63ec5e50)

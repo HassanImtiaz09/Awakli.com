@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { MarketingLayout } from "@/components/awakli/Layouts";
+import { SEOHead } from "@/components/awakli/SEOHead";
 import { AwakliButton } from "@/components/awakli/AwakliButton";
 import { AwakliInput, AwakliTextarea } from "@/components/awakli/AwakliInput";
 import { toast } from "sonner";
@@ -132,6 +133,11 @@ export default function Founders() {
 
   return (
     <MarketingLayout>
+      <SEOHead
+        title="Founders' Studio — Cohort 1"
+        description="Join a hand-selected cohort of ~20 working creators shaping the future of anime production tooling. 6 months free Studio-tier access, 70% revenue share, full IP retention."
+        type="website"
+      />
       {/* ── HERO ──────────────────────────────────────────────────────── */}
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
         {/* Gradient background */}
