@@ -5813,3 +5813,56 @@
 - [ ] Use `setVectorStore()` to inject new implementation without changing D-agent retrieval calls
 - [ ] Benchmark cosine similarity performance: JSON arrays vs native vector index
 - [ ] Migration path: export existing embeddings → re-import into new store
+
+## Wave 3: Pipeline Stages 11-14 + Mastering Probe
+
+### Item 1: D5.5 Orchestrator Integration (Stage 11)
+- [x] Wire `retry-orchestrator.ts` callbacks to concrete provider-router calls (generateImageToVideo + storagePut for video regeneration)
+- [x] Integrate D5.5 into `pipelineOrchestrator.ts` between video_gen completion and voice_gen start (lines 1195-1340)
+- [x] Add HITL gate at Stage 11 via `completeNodeWithGate` (continuity_check node, advisory gate)
+- [x] Implement frame extraction: video URLs passed directly to LLM vision (low-detail mode in per-clip-reviewer)
+- [x] Connect to D10 semantic retrieval: character-bible context injection via buildCharacterBiblesMap helper
+- [x] Integration test: d5-5-pipeline-integration.test.ts (17 tests) — full flow: batch review → retry loop → regeneration callback → escalation → pass/block
+- [x] Cost validation: $0.04/clip review + $0.20/regeneration, verified in test assertions
+
+### Item 2: X-Sheet Authoring + D4 Timing (Stage 12)
+- [x] Schema: `x_sheets`, `x_sheet_entries`, `x_sheet_overrides` tables (migration 0056)
+- [x] DB helpers: `createXSheet`, `getLatestXSheet`, `getResolvedXSheet`, `mergeEntriesWithOverrides`
+- [x] D4 LLM auto-generation: `timing-director.ts` (structured JSON output with response_format)
+- [x] Heuristic fallback when LLM fails (scene-boundary music cues, word-count voice estimation)
+- [x] Entry validation: clamp duration (1.5s–15s), energy (1–10), transition duration (200–2000ms)
+- [x] Version management: supersede previous X-Sheet on regeneration
+- [x] Data model supports per-user overrides (Wave 4 ready) via `x_sheet_overrides` table
+- [x] Integration test: d4-timing.test.ts (18 tests passing)
+
+### Item 3: D8 Voice Director Critic (Stage 13)
+- [x] Implement D8 voice quality critic: LLM-judged evaluation via transcription + structured JSON scoring
+- [x] Scoring dimensions: emotion_match (40%), character_voice_fidelity (30%), pacing_naturalness (20%), audio_clarity (10%)
+- [x] Routing decisions: pass (≥ 3.5) / retry with different emotion params (2.5-3.5) / escalate (< 2.5)
+- [x] Retry budget: 2 attempts per dialogue line with EmotionAdjustment suggestions
+- [x] Batch evaluation: sequential processing with per-clip cost tracking ($0.02/eval)
+- [x] Retry loop: runD8RetryLoop with VoiceRetryCallback for regeneration
+- [x] Integration test: d8-voice-critic.test.ts (24 tests passing)
+
+### Item 4: D7 FX Compositor (Stage 14)
+- [x] Anime-specific FX taxonomy: 33 canonical effect types with Japanese naming (光角, 波ガラス, ガブレ, 画面動, etc.) in 6 categories
+- [x] PRIMARY source: explicit ekonte tags from panel.sfx field parsed via EKONTE_TAG_MAP (Japanese + romanized)
+- [x] SECONDARY source: LLM suggestion ONLY when ekonte tags absent/ambiguous
+- [x] Active FX set driven by Stage 2 anime type (Shōnen/Shōjo/Seinen/Josei/Kodomomuke) via GENRE_PROFILES; user preference as secondary modulator
+- [x] FFmpeg filter_complex templates for each applicable FX type (null for overlay-only effects like sakura_petals)
+- [x] Batch compositor: composeFxBatch processes all clips with cost tracking ($0.03/render + $0.01/LLM suggestion)
+- [x] Genre profiles enforce forbidden FX, signature FX, category weights, and maxEffectsPerClip
+- [x] Integration test: d7-fx-compositor.test.ts (48 tests passing)
+
+### Item 5: H1 Card-Legibility Probe (Stage 16)
+- [x] Implement `card-legibility-check.ts` in `server/benchmarks/harness/checks/`
+- [x] Extract title/end card frames via FFmpeg signalstats (center vs background luminance regions)
+- [x] Validate text contrast ratio ≥ 4.5:1 (WCAG AA) using luminance-based calculation
+- [x] Text presence detection via variance threshold in center region
+- [x] Blank frame detection (all-black or all-white = generation failure)
+- [x] Routing hint: `assembly_reencode` (re-render cards with adjusted font/color if failed)
+- [x] Wire into rules-harness.ts as check #8 (import ready, registration deferred to Wave 4)
+- [x] Integration test: `h1-card-legibility.test.ts` — 31 tests passing
+
+### Wave 3.5 Hygiene (tracked, not blocking)
+- [ ] Fix 71 failing UI/brand-refresh tests (25 test files) — fold into Wave 3.5 or early Wave 4

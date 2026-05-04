@@ -53,6 +53,7 @@ import {
 } from "./hitl";
 import type { GenerateResult, ScoreContext } from "./hitl";
 import { pipelineLog } from "./observability/logger";
+import { runD5_5QualityGate, deriveStyleLock, buildCharacterBiblesMap, type D5_5PipelineContext, type ClipAssetInfo, type PanelInfo as D5_5PanelInfo } from "./benchmarks/d5-5/pipeline-integration";
 
 type NodeName = "video_gen" | "voice_gen" | "lip_sync" | "music_gen" | "foley_gen" | "ambient_gen" | "assembly";
 
@@ -1190,6 +1191,154 @@ export async function runPipeline(runId: number) {
       throw new Error(`Pipeline blocked by Video Quality harness: ${videoSummary.flaggedItems.map(f => f.checkName).join(", ")}`);
     }
     await updateNodeProgress(runId, "video_gen", "complete", nodeStatuses, 25, totalCost, nodeCosts);
+
+    // ── D5.5: Per-Clip Quality Gate (Stage 11: post_video_review) ──
+    pipelineLog.info(`[Pipeline] Running D5.5 per-clip quality gate...`);
+    try {
+      const allAssetsForD5_5 = await getPipelineAssetsByRun(runId);
+      const clipAssetsForReview: ClipAssetInfo[] = allAssetsForD5_5
+        .filter(a => a.assetType === "video_clip" || a.assetType === "synced_clip")
+        .map(a => {
+          const meta = (a.metadata || {}) as any;
+          return {
+            assetId: a.id,
+            panelId: a.panelId || 0,
+            panelNumber: meta.panelNumber ?? a.panelId ?? 0,
+            url: a.url,
+            duration: meta.duration || 5,
+            assetType: a.assetType as "video_clip" | "synced_clip",
+            metadata: meta,
+          };
+        });
+
+      // Deduplicate: prefer synced_clip over video_clip per panel
+      const panelClipDedup = new Map<number, ClipAssetInfo>();
+      for (const clip of clipAssetsForReview) {
+        const existing = panelClipDedup.get(clip.panelId);
+        if (!existing || (clip.assetType === "synced_clip" && existing.assetType === "video_clip")) {
+          panelClipDedup.set(clip.panelId, clip);
+        }
+      }
+      const dedupedClips = Array.from(panelClipDedup.values());
+
+      const episodePanels = await getPanelsByEpisode(run.episodeId);
+      const d5_5Panels: D5_5PanelInfo[] = episodePanels.map(p => {
+        const dlg = p.dialogue as any;
+        let dialogueArr: Array<{ character?: string; text: string; emotion?: string }> | null = null;
+        if (Array.isArray(dlg)) {
+          dialogueArr = dlg.map((d: any) => ({
+            character: d?.character || d?.speaker,
+            text: d?.text || d?.line || d?.dialogue || (typeof d === "string" ? d : ""),
+            emotion: d?.emotion,
+          }));
+        } else if (typeof dlg === "string" && dlg) {
+          dialogueArr = [{ text: dlg }];
+        }
+        return {
+          id: p.id,
+          panelNumber: p.panelNumber ?? 0,
+          sceneNumber: p.sceneNumber ?? 1,
+          visualDescription: p.visualDescription ? String(p.visualDescription) : null,
+          cameraAngle: p.cameraAngle || null,
+          dialogue: dialogueArr,
+          sfx: p.sfx ? String(p.sfx) : null,
+        };
+      });
+
+      // Build character bibles from project characters
+      const projectChars = await getCharactersByProject(run.projectId);
+      const charBibles = buildCharacterBiblesMap(
+        projectChars.map(c => ({
+          name: c.name,
+          visualTraits: (c as any).visualTraits || {},
+          referenceImages: (c as any).referenceImageUrls || [],
+        }))
+      );
+
+      // Derive style lock from project anime style
+      const projectForStyle = await (async () => {
+        const dbMod = await import("./db");
+        const db = await dbMod.getDb();
+        if (!db) return null;
+        const { projects } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const [proj] = await db.select().from(projects).where(eq(projects.id, run.projectId)).limit(1);
+        return proj || null;
+      })();
+      const styleLock = deriveStyleLock(
+        projectForStyle?.animeStyle || "default",
+        bible ? { artStyle: (bible as any).artDirection?.style || bible.artStyle, genre: (bible as any).metadata?.genres || bible.genre } : undefined
+      );
+
+      const d5_5Context: D5_5PipelineContext = {
+        pipelineRunId: runId,
+        episodeId: run.episodeId,
+        projectId: run.projectId,
+        userId: run.userId,
+        clipAssets: dedupedClips,
+        panels: d5_5Panels,
+        characterBibles: charBibles,
+        styleLock,
+        regenerateClip: async (panelId: number, attempt: number) => {
+          pipelineLog.info(`[D5.5 Regen] Regenerating clip for panel ${panelId} (attempt ${attempt})`);
+          const panel = episodePanels.find(p => p.id === panelId);
+          if (!panel || !panel.imageUrl) {
+            throw new Error(`Cannot regenerate: panel ${panelId} not found or has no image`);
+          }
+          const vidResult = await generateImageToVideo({
+            imageUrl: panel.imageUrl,
+            prompt: `Cinematic anime scene, ${String(panel.visualDescription || "dramatic scene")}. Anime style, high quality animation, fluid movement.`,
+            duration: "10",
+            mode: "pro",
+          });
+          const regenKey = `pipeline/${runId}/regen/${panelId}_attempt${attempt}_${nanoid(6)}.mp4`;
+          const { url: storedUrl } = await storagePut(regenKey, Buffer.from(await (await fetch(vidResult.videoUrl)).arrayBuffer()), "video/mp4");
+          return {
+            clipUrl: storedUrl,
+            keyframeUrls: [storedUrl],
+            costUsd: 0.20,
+          };
+        },
+        userTier,
+      };
+
+      const d5_5Result = await runD5_5QualityGate(d5_5Context);
+      totalCost += d5_5Result.totalCostUsd;
+
+      // HITL Gate: D5.5 Quality Gate (v1.9 Stage 11: post_video_review)
+      if (hitlEnabled) {
+        const d5_5GateResult = await completeNodeWithGate({
+          pipelineRunId: runId,
+          node: "continuity_check" as OrchestratorNode,
+          userId: run.userId,
+          tierName: userTier,
+          generationResult: {
+            requestType: "video",
+            outputUrl: "",
+            outputFileSize: 0,
+          },
+          scoreContext: { stageNumber: 11 },
+          creditsActual: d5_5Result.totalCostUsd,
+        });
+        if (d5_5GateResult.blocked) {
+          pipelineLog.info(`[Pipeline] HITL gate blocked after D5.5 quality gate (stage ${d5_5GateResult.primaryStage})`);
+          await pausePipelineForGate(runId, d5_5GateResult.gateResult.gateId, d5_5GateResult.primaryStage);
+          return;
+        }
+      }
+
+      if (!d5_5Result.canProceed) {
+        pipelineLog.warn(`[Pipeline] D5.5 quality gate BLOCKED: ${d5_5Result.escalated} escalated, pass rate below threshold`);
+        throw new Error(`Pipeline blocked by D5.5 quality gate: ${d5_5Result.escalated} clips escalated, avg score ${d5_5Result.avgQualityScore}`);
+      }
+
+      pipelineLog.info(`[Pipeline] D5.5 quality gate passed: ${d5_5Result.passedFirstAttempt + d5_5Result.passedAfterRetry}/${d5_5Result.totalClips} clips, avg=${d5_5Result.avgQualityScore}, cost=$${d5_5Result.totalCostUsd.toFixed(3)}`);
+    } catch (d5_5Err: any) {
+      if (d5_5Err.message?.includes("Pipeline blocked") || d5_5Err.message?.includes("HITL gate blocked")) {
+        throw d5_5Err;
+      }
+      pipelineLog.warn(`[Pipeline] D5.5 quality gate failed (non-blocking), continuing: ${d5_5Err.message}`);
+    }
 
     // Node 2: Voice Generation (supplementary high-quality TTS via ElevenLabs)
     await updateNodeProgress(runId, "voice_gen", "running", nodeStatuses, 30, totalCost, nodeCosts);
