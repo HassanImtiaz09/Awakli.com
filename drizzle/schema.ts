@@ -2186,3 +2186,64 @@ export const founderInterest = mysqlTable("founder_interest", {
 });
 export type FounderInterest = typeof founderInterest.$inferSelect;
 export type InsertFounderInterest = typeof founderInterest.$inferInsert;
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// D5.5: Per-Clip Quality Gate (Pre-Assembly Review)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Stores per-clip quality review results from the D5.5 gate.
+ * Unlike D5 (post-assembly, whole-episode), D5.5 runs per-clip BEFORE assembly,
+ * catching issues early when re-rolls are cheap (~$0.20/clip).
+ *
+ * Retry budget: up to 3 attempts per clip before escalation.
+ */
+export const clipQualityReviews = mysqlTable("clip_quality_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  episodeId: int("episode_id").notNull().references(() => episodes.id, { onDelete: "cascade" }),
+  projectId: int("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  sliceId: int("slice_id").notNull(),  // References video_slices.sliceNumber
+  pipelineRunId: int("pipeline_run_id"),  // References pipeline_runs.id if available
+
+  // Attempt tracking
+  attempt: int("attempt").notNull().default(1),  // 1-based attempt number (max 3 before escalation)
+  
+  // Scores (1-5 scale, matching D5 schema for consistency)
+  characterConsistency: int("character_consistency").notNull(),
+  styleScore: int("style_score").notNull(),
+  promptAlignment: int("prompt_alignment").notNull(),
+  motionQuality: int("motion_quality").notNull(),  // NEW: D5.5-specific — motion fluidity, no morphing
+  overallScore: int("overall_score").notNull(),  // Weighted average of above 4 dimensions
+
+  // Verdict
+  passed: int("passed").notNull(),  // 1=pass, 0=fail (MySQL boolean)
+  passThreshold: int("pass_threshold").notNull().default(3),  // Minimum overall_score to pass (configurable)
+
+  // Issues (structured JSON matching D5SliceIssue[])
+  issues: json("issues"),  // D5SliceIssue[] — category, severity, description, recommended_action
+
+  // Context used for review
+  keyframeUrls: json("keyframe_urls"),  // string[] — 3 keyframe URLs (start, mid, end)
+  clipUrl: text("clip_url"),  // URL of the clip being reviewed
+  characterBibleHash: varchar("character_bible_hash", { length: 64 }),  // SHA-256 of bible used
+  styleLockHash: varchar("style_lock_hash", { length: 64 }),  // SHA-256 of style_lock used
+
+  // Routing decision
+  routingDecision: mysqlEnum("routing_decision", [
+    "pass",              // Clip passed, proceed to assembly
+    "retry_video",       // Re-generate video clip
+    "retry_prompt",      // Re-generate D2 prompt + video
+    "retry_reference",   // Re-generate character reference + video
+    "escalate",          // Exhausted retries, send to admin queue
+  ]).notNull().default("pass"),
+
+  // Cost & timing
+  costUsd: decimal("cost_usd", { precision: 8, scale: 4 }).notNull().default("0"),
+  durationMs: int("duration_ms").notNull().default(0),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ClipQualityReview = typeof clipQualityReviews.$inferSelect;
+export type InsertClipQualityReview = typeof clipQualityReviews.$inferInsert;

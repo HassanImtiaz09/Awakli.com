@@ -90,6 +90,7 @@ import { costOptimizerRouter } from "./routers-cost-optimizer";
 import { marketplaceRouter as loraMarketplaceRouter } from "./routers-marketplace";
 import { parallelSliceRouter } from "./routers-parallel-slice";
 import { foundersRouter } from "./routers-founders";
+import { clipQualityRouter } from "./routers-quality";
 import { tierSamplerRouter } from "./routers-tier-sampler";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
@@ -2385,6 +2386,9 @@ export const appRouter = router({
 
   // Founders' Studio (Pipeline Blueprint v1.9 §7C)
   founders: foundersRouter,
+
+  // D5.5 Per-Clip Quality Gate (Wave 1)
+  clipQuality: clipQualityRouter,
 });
 
 export type AppRouter = typeof appRouter;

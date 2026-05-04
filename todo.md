@@ -5575,3 +5575,45 @@
 ## Navigation Update
 
 - [x] Add "Founders' Studio" link to TopNav main navigation (Crown icon, between LoRA Market and Pricing)
+
+## Wave 1: D5.5 Per-Clip Quality Gate Foundation
+
+### Schema & Migration
+- [x] Add `clip_quality_reviews` table (episodeId, projectId, sliceId, pipelineRunId, attempt, 4 score columns, overallScore, passed, passThreshold, issues JSON, keyframeUrls, clipUrl, characterBibleHash, styleLockHash, routingDecision, costUsd, durationMs, createdAt)
+- [x] Generate and apply migration SQL (0049_clip_quality_reviews.sql)
+
+### Server — D5.5 Per-Clip Reviewer
+- [x] Create `server/benchmarks/d5-5/per-clip-reviewer.ts` — single-clip review function
+- [x] Extract 3 keyframes (start/mid/end) from individual clip via invokeLLM multimodal
+- [x] Score against character bible + style_lock (character_consistency, style, prompt_alignment, motion_quality)
+- [x] Weighted overall score: char 35%, style 25%, prompt 25%, motion 15%
+- [x] Structured JSON response via invokeLLM with json_schema response_format
+- [x] Batch review function for full episode (runBatchD5_5Review)
+- [x] Fail-safe: on LLM error, pass clip through with score 3 (same pattern as existing D5)
+
+### Server — H2 Feedback Router Wiring
+- [x] Create `server/benchmarks/d5-5/retry-orchestrator.ts` with runRetryLoop + runEpisodeRetryLoop
+- [x] Wire D5.5 verdict into retry logic with tier-based budgets (free:1, creator:2, creator_pro:3, studio:5)
+- [x] Route failures to regeneration callback (pluggable per-slice regen)
+- [x] Escalation: after max retries, escalate to admin quality queue
+- [x] Cost tracking per retry cycle
+
+### Server — tRPC Procedures
+- [x] Create `server/routers-quality.ts` with clipQualityRouter
+- [x] Add `clipQuality.getEpisodeSummary` protected procedure (summary + per-slice latest reviews)
+- [x] Add `clipQuality.getSliceHistory` protected procedure (retry history for a specific slice)
+- [x] Add `clipQuality.getProjectStats` protected procedure (project-level quality analytics)
+- [x] Register in appRouter as `clipQuality`
+
+### Frontend — Quality Review Dashboard
+- [x] Create `QualityDashboard.tsx` component (embeddable in episode production view)
+- [x] Per-clip score cards: 4 dimensions with ScoreBar visualization
+- [x] Visual pass/fail/escalate indicators with color coding (emerald/amber/red)
+- [x] Expandable retry history per slice (lazy-loaded on expand)
+- [x] Cost tracking per slice + routing decision display
+- [x] Summary stats: passed/failed/escalated counts, pass rate progress bar, avg score
+- [x] "Ready for Assembly" / "Issues Pending" badge
+
+### Tests
+- [x] Vitest: 29/29 passing — schema columns (2), scoring logic (5), retry budget (5), cost estimation (4), routing decision matrix (5), module exports (4), routing decisions (4)
+- [ ] Save checkpoint
