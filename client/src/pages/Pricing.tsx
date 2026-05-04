@@ -7,19 +7,44 @@ import {
   Check, X, Crown, Zap, Sparkles, ArrowRight, ChevronDown,
   Film, Palette, Mic, Download, Shield, Users, Star, Wand2,
   PenTool, Upload, Lock, BookOpen, Clapperboard, LayoutGrid, Table2,
+  Building2, Layers, Timer, Cpu, CreditCard,
 } from "lucide-react";
 import { MarketingLayout } from "@/components/awakli/Layouts";
 import PageBackground from "@/components/awakli/PageBackground";
 import { toast } from "sonner";
-import { TIER_DISPLAY_NAMES, tierPriceLabel, TIER_MONTHLY_PRICE_CENTS, TIER_ANNUAL_MONTHLY_PRICE_CENTS } from "../../../shared/pricingCatalog";
+import {
+  TIER_DISPLAY_NAMES,
+  TIER_MONTHLY_PRICE_CENTS,
+  TIER_ANNUAL_MONTHLY_PRICE_CENTS,
+  TIER_MONTHLY_CREDITS,
+  TIER_TAGLINES,
+  type TierKey,
+} from "../../../shared/pricingCatalog";
 
 type BillingInterval = "monthly" | "annual";
 type PricingView = "cards" | "table";
 
-/* ─── Tier Data ───────────────────────────────────────────────────────── */
-const TIERS = [
+/* ─── Tier Data (all 5 tiers from pricingCatalog) ────────────────────── */
+interface TierDef {
+  key: TierKey;
+  name: string;
+  monthlyPrice: number;
+  annualMonthlyPrice: number;
+  narrative: string;
+  icon: typeof BookOpen;
+  accentColor: string;
+  gradientFrom: string;
+  gradientTo: string;
+  popular?: boolean;
+  ctaText: string;
+  highlights: { icon: typeof BookOpen; text: string }[];
+  limits: string[];
+  isEnterprise?: boolean;
+}
+
+const TIERS: TierDef[] = [
   {
-    key: "free",
+    key: "free_trial",
     name: TIER_DISPLAY_NAMES.free_trial,
     monthlyPrice: 0,
     annualMonthlyPrice: 0,
@@ -34,13 +59,14 @@ const TIERS = [
       { icon: Wand2, text: "AI script generation (Sonnet)" },
       { icon: Palette, text: "20 panels per chapter" },
       { icon: Users, text: "Publish & earn community votes" },
-      { icon: Film, text: "1 free anime preview" },
+      { icon: Film, text: "1 anime episode (5 min, 720p)" },
+      { icon: CreditCard, text: "15 credits to explore" },
     ],
     limits: [
       "3 chapters per project",
-      "Watermarked panels",
-      "No anime episodes",
-      "No export",
+      "Watermarked output",
+      "Budget model tier only",
+      "14-day credit expiry",
     ],
   },
   {
@@ -59,100 +85,178 @@ const TIERS = [
       { icon: PenTool, text: "10 manga projects" },
       { icon: Wand2, text: "AI script generation (Opus)" },
       { icon: Palette, text: "30 panels per chapter" },
-      { icon: Film, text: "5 anime episodes/month" },
+      { icon: Film, text: "5 anime episodes/month (15 min, 1080p)" },
       { icon: Mic, text: "2 voice clones" },
-      { icon: Download, text: "Export manga (PDF, PNG)" },
+      { icon: Download, text: "Export manga (PDF, PNG) + anime (MP4)" },
       { icon: Star, text: "80% revenue share" },
+      { icon: CreditCard, text: `${TIER_MONTHLY_CREDITS.creator} credits/month` },
+      { icon: Layers, text: "Appearance LoRA (3 characters)" },
+    ],
+    limits: [],
+  },
+  {
+    key: "creator_pro",
+    name: TIER_DISPLAY_NAMES.creator_pro,
+    monthlyPrice: TIER_MONTHLY_PRICE_CENTS.creator_pro / 100,
+    annualMonthlyPrice: TIER_ANNUAL_MONTHLY_PRICE_CENTS.creator_pro / 100,
+    narrative: "The full pipeline. Every tool. No compromises.",
+    icon: Crown,
+    accentColor: "#E040FB",
+    gradientFrom: "#E040FB",
+    gradientTo: "#AA00FF",
+    ctaText: `Go ${TIER_DISPLAY_NAMES.creator_pro}`,
+    highlights: [
+      { icon: PenTool, text: "50 manga projects" },
+      { icon: Palette, text: "50 panels per chapter" },
+      { icon: Film, text: "15 anime episodes/month (30 min, 1080p)" },
+      { icon: Mic, text: "10 voice clones + custom narrator" },
+      { icon: Upload, text: "Upload your own manga" },
+      { icon: Download, text: "Export all formats (PDF, PNG, ZIP, MP4)" },
+      { icon: Star, text: "85% revenue share" },
+      { icon: CreditCard, text: `${TIER_MONTHLY_CREDITS.creator_pro} credits/month + 20% rollover` },
+      { icon: Zap, text: "Motion LoRA (5 trainings/mo)" },
+      { icon: Users, text: "3 team seats" },
+      { icon: Shield, text: "Priority generation queue" },
     ],
     limits: [],
   },
   {
     key: "studio",
-    name: TIER_DISPLAY_NAMES.creator_pro,
-    monthlyPrice: TIER_MONTHLY_PRICE_CENTS.creator_pro / 100,
-    annualMonthlyPrice: TIER_ANNUAL_MONTHLY_PRICE_CENTS.creator_pro / 100,
+    name: TIER_DISPLAY_NAMES.studio,
+    monthlyPrice: TIER_MONTHLY_PRICE_CENTS.studio / 100,
+    annualMonthlyPrice: TIER_ANNUAL_MONTHLY_PRICE_CENTS.studio / 100,
     narrative: "Run the studio. Ship the universe.",
-    icon: Crown,
-    accentColor: "#E040FB",
-    gradientFrom: "#E040FB",
-    gradientTo: "#00FFB2",
-    ctaText: `Go ${TIER_DISPLAY_NAMES.creator_pro}`,
+    icon: Clapperboard,
+    accentColor: "#00FFB2",
+    gradientFrom: "#00FFB2",
+    gradientTo: "#00BFA5",
+    ctaText: `Go ${TIER_DISPLAY_NAMES.studio}`,
     highlights: [
       { icon: PenTool, text: "Unlimited projects" },
-      { icon: Wand2, text: "AI script generation (Opus)" },
       { icon: Palette, text: "Unlimited panels" },
-      { icon: Film, text: "20 anime episodes/month" },
-      { icon: Mic, text: "Unlimited voice clones" },
+      { icon: Film, text: "Unlimited anime episodes (60 min, 4K)" },
+      { icon: Mic, text: "Unlimited voice clones + custom narrator" },
       { icon: Upload, text: "Upload your own manga" },
-      { icon: Download, text: "Export all formats (4K, ProRes)" },
-      { icon: Star, text: "85% revenue share" },
-      { icon: Shield, text: "Priority queue & support" },
-      { icon: Zap, text: "Motion LoRA (20 trainings/mo)" },
+      { icon: Download, text: "All exports (4K, ProRes, stems, SRT)" },
+      { icon: Star, text: "90% revenue share" },
+      { icon: CreditCard, text: `${TIER_MONTHLY_CREDITS.studio} credits/month + 50% rollover` },
+      { icon: Zap, text: "Motion LoRA (20 trainings/mo) — Flagship stack" },
+      { icon: Users, text: "10 team seats" },
+      { icon: Shield, text: "Priority queue + priority support" },
+      { icon: Cpu, text: "API access + analytics" },
+    ],
+    limits: [],
+  },
+  {
+    key: "enterprise",
+    name: TIER_DISPLAY_NAMES.enterprise,
+    monthlyPrice: 0,
+    annualMonthlyPrice: 0,
+    narrative: "Custom solutions at scale. White-label. Dedicated infrastructure.",
+    icon: Building2,
+    accentColor: "#FFD700",
+    gradientFrom: "#FFD700",
+    gradientTo: "#FFA000",
+    ctaText: "Contact Sales",
+    isEnterprise: true,
+    highlights: [
+      { icon: PenTool, text: "Unlimited everything" },
+      { icon: Film, text: "All model tiers including Ultra" },
+      { icon: Cpu, text: "10 concurrent generations" },
+      { icon: CreditCard, text: "Custom credit allocation + 100% rollover" },
+      { icon: Users, text: "Unlimited team seats" },
+      { icon: Shield, text: "Dedicated support + SLA" },
+      { icon: Download, text: "30% credit pack discount" },
+      { icon: Lock, text: "White-label + API access" },
     ],
     limits: [],
   },
 ];
 
-const COMPARISON_SECTIONS = [
+/* ─── Comparison Table Data (all 5 tiers) ────────────────────────────── */
+interface ComparisonRow {
+  label: string;
+  free_trial: string | boolean;
+  creator: string | boolean;
+  creator_pro: string | boolean;
+  studio: string | boolean;
+  enterprise: string | boolean;
+}
+
+const COMPARISON_SECTIONS: { title: string; rows: ComparisonRow[] }[] = [
   {
     title: "Manga Creation",
     rows: [
-      { label: "Projects", free: "3", creator: "10", studio: "Unlimited" },
-      { label: "Chapters per project", free: "3", creator: "12", studio: "Unlimited" },
-      { label: "Panels per chapter", free: "20", creator: "30", studio: "Unlimited" },
-      { label: "Script AI model", free: "Claude Sonnet", creator: "Claude Opus", studio: "Claude Opus" },
-      { label: "Image generation", free: "FLUX 1.1 Pro", creator: "FLUX 1.1 Pro", studio: "FLUX 1.1 Pro" },
-      { label: "Upload your own manga", free: false, creator: false, studio: true },
+      { label: "Projects", free_trial: "3", creator: "10", creator_pro: "50", studio: "Unlimited", enterprise: "Unlimited" },
+      { label: "Chapters per project", free_trial: "3", creator: "12", creator_pro: "50", studio: "Unlimited", enterprise: "Unlimited" },
+      { label: "Panels per chapter", free_trial: "20", creator: "30", creator_pro: "50", studio: "Unlimited", enterprise: "Unlimited" },
+      { label: "Script AI model", free_trial: "Claude Sonnet", creator: "Claude Opus", creator_pro: "Claude Opus", studio: "Claude Opus", enterprise: "Claude Opus" },
+      { label: "Image generation", free_trial: "FLUX 1.1 Pro", creator: "FLUX 1.1 Pro", creator_pro: "FLUX 1.1 Pro", studio: "FLUX 1.1 Pro", enterprise: "FLUX 1.1 Pro" },
+      { label: "Upload your own manga", free_trial: false, creator: false, creator_pro: true, studio: true, enterprise: true },
     ],
   },
   {
     title: "Anime Production",
     rows: [
-      { label: "Anime episodes/month", free: "0", creator: "5", studio: "20" },
-      { label: "Free anime preview", free: "1 (one-time)", creator: "Full access", studio: "Full access" },
-      { label: "Video resolution", free: "\u2014", creator: "1080p", studio: "4K" },
-      { label: "LoRA character models", free: "0", creator: "3", studio: "Unlimited" },
-      { label: "Voice clones", free: "0", creator: "2", studio: "Unlimited" },
-      { label: "Custom narrator voice", free: false, creator: false, studio: true },
-      { label: "Motion LoRA", free: false, creator: false, studio: true },
-      { label: "LoRA stack layers", free: "None", creator: "Appearance", studio: "All 4 (Flagship)" },
+      { label: "Anime episodes/month", free_trial: "1", creator: "5", creator_pro: "15", studio: "Unlimited", enterprise: "Unlimited" },
+      { label: "Episode length cap", free_trial: "5 min", creator: "15 min", creator_pro: "30 min", studio: "60 min", enterprise: "120 min" },
+      { label: "Video resolution", free_trial: "720p", creator: "1080p", creator_pro: "1080p", studio: "4K", enterprise: "4K" },
+      { label: "Model tiers", free_trial: "Budget", creator: "Budget + Standard", creator_pro: "Budget–Premium", studio: "All (incl. Ultra)", enterprise: "All (incl. Ultra)" },
+      { label: "Concurrent generations", free_trial: "1", creator: "2", creator_pro: "3", studio: "5", enterprise: "10" },
+      { label: "LoRA character models", free_trial: "0", creator: "3", creator_pro: "10", studio: "Unlimited", enterprise: "Unlimited" },
+      { label: "LoRA stack layers", free_trial: "None", creator: "Appearance", creator_pro: "Appearance + Motion", studio: "All 4 (Flagship)", enterprise: "All 4 (Flagship)" },
+      { label: "Motion LoRA trainings/mo", free_trial: "\u2014", creator: "\u2014", creator_pro: "5", studio: "20", enterprise: "Unlimited" },
+      { label: "Voice clones", free_trial: "0", creator: "2", creator_pro: "10", studio: "Unlimited", enterprise: "Unlimited" },
+      { label: "Custom narrator voice", free_trial: false, creator: false, creator_pro: true, studio: true, enterprise: true },
+    ],
+  },
+  {
+    title: "Credits & Economy",
+    rows: [
+      { label: "Monthly credits", free_trial: "15", creator: "200", creator_pro: "600", studio: "2,000", enterprise: "Custom" },
+      { label: "Credit rollover", free_trial: "\u2014", creator: "\u2014", creator_pro: "20% (cap 240)", studio: "50% (cap 1,800)", enterprise: "100% (no cap)" },
+      { label: "Credit pack discount", free_trial: "\u2014", creator: "\u2014", creator_pro: "10%", studio: "20%", enterprise: "30%" },
+      { label: "Credit expiry", free_trial: "14 days", creator: "End of period", creator_pro: "End of period", studio: "End of period", enterprise: "Never" },
     ],
   },
   {
     title: "Export & Monetization",
     rows: [
-      { label: "Manga export (PDF/PNG)", free: false, creator: true, studio: true },
-      { label: "Anime export (MP4)", free: false, creator: true, studio: true },
-      { label: "ProRes / stems export", free: false, creator: false, studio: true },
-      { label: "Subtitle export (SRT)", free: false, creator: true, studio: true },
-      { label: "Watermark-free", free: false, creator: true, studio: true },
-      { label: "Revenue share", free: "\u2014", creator: "80%", studio: "85%" },
+      { label: "Manga export (PDF/PNG)", free_trial: false, creator: true, creator_pro: true, studio: true, enterprise: true },
+      { label: "Anime export (MP4)", free_trial: false, creator: true, creator_pro: true, studio: true, enterprise: true },
+      { label: "ProRes / stems export", free_trial: false, creator: false, creator_pro: false, studio: true, enterprise: true },
+      { label: "Subtitle export (SRT)", free_trial: false, creator: true, creator_pro: true, studio: true, enterprise: true },
+      { label: "Watermark-free", free_trial: false, creator: true, creator_pro: true, studio: true, enterprise: true },
+      { label: "Revenue share", free_trial: "\u2014", creator: "80%", creator_pro: "85%", studio: "90%", enterprise: "90%" },
     ],
   },
   {
-    title: "Platform",
+    title: "Platform & Support",
     rows: [
-      { label: "Community voting", free: true, creator: true, studio: true },
-      { label: "Publish to Discover", free: true, creator: true, studio: true },
-      { label: "Priority generation queue", free: false, creator: false, studio: true },
-      { label: "Priority support", free: false, creator: false, studio: true },
-      { label: "Motion LoRA training jobs/mo", free: "\u2014", creator: "\u2014", studio: "20" },
+      { label: "Team seats", free_trial: "1", creator: "1", creator_pro: "3", studio: "10", enterprise: "Unlimited" },
+      { label: "Publish to Discover", free_trial: true, creator: true, creator_pro: true, studio: true, enterprise: true },
+      { label: "Priority generation queue", free_trial: false, creator: false, creator_pro: true, studio: true, enterprise: true },
+      { label: "Priority support", free_trial: false, creator: false, creator_pro: false, studio: true, enterprise: true },
+      { label: "API access", free_trial: false, creator: false, creator_pro: false, studio: true, enterprise: true },
+      { label: "Dedicated SLA", free_trial: false, creator: false, creator_pro: false, studio: false, enterprise: true },
     ],
   },
 ];
 
+const TIER_COLUMN_KEYS: TierKey[] = ["free_trial", "creator", "creator_pro", "studio", "enterprise"];
+
 const FAQS = [
   {
-    q: "What\u2019s the difference between Free and Creator?",
-    a: "Free lets you create manga from text and publish to the community. Creator unlocks anime production (5 episodes/month), voice clones, manga export, and monetization with 80% revenue share. Think of Free as your playground and Creator as your studio.",
+    q: "What\u2019s the difference between Apprentice and Mangaka?",
+    a: `Apprentice lets you create manga from text and publish to the community with 15 credits. ${TIER_DISPLAY_NAMES.creator} unlocks anime production (5 episodes/month), voice clones, manga export, and monetization with 80% revenue share. Think of Apprentice as your playground and ${TIER_DISPLAY_NAMES.creator} as your studio.`,
   },
   {
-    q: "What is the free anime preview?",
-    a: "Every free user gets one complimentary anime preview \u2014 a 15-second clip generated from your best manga panels. It\u2019s a taste of what your story looks like animated. After that, upgrade to Creator for full anime production.",
+    q: `What does ${TIER_DISPLAY_NAMES.creator_pro} add over ${TIER_DISPLAY_NAMES.creator}?`,
+    a: `${TIER_DISPLAY_NAMES.creator_pro} unlocks the full pipeline: 15 anime episodes/month (30 min each), custom narrator voice, Motion LoRA (5 trainings/mo), upload your own manga, 3 team seats, priority queue, 20% credit rollover, and 85% revenue share. It\u2019s the tier for serious creators who want every tool at their disposal.`,
   },
   {
-    q: "How does the voting-to-anime system work?",
-    a: "When you publish manga, the community votes on it. When your manga reaches the vote threshold, it becomes eligible for anime production. Creator and Studio users can then produce anime episodes from their eligible manga.",
+    q: `Why would I need ${TIER_DISPLAY_NAMES.studio}?`,
+    a: `${TIER_DISPLAY_NAMES.studio} is for production teams: unlimited episodes at 4K, all model tiers including Ultra, the Flagship LoRA stack (all 4 layers), 20 Motion LoRA trainings/month, ProRes/stems export, 10 team seats, API access, and 90% revenue share. If you\u2019re running a studio or producing at scale, this is your tier.`,
   },
   {
     q: "Can I upgrade or downgrade anytime?",
@@ -163,8 +267,8 @@ const FAQS = [
     a: "Your content is never deleted. You keep everything you\u2019ve created. You just won\u2019t be able to create new content beyond the lower tier\u2019s limits until you upgrade again.",
   },
   {
-    q: "Do I need Studio to upload my own manga?",
-    a: "Yes, manga upload (bringing your own artwork for anime conversion) is a Studio-exclusive feature. Free and Creator users create manga through AI generation from text prompts.",
+    q: "What are credits and how do they work?",
+    a: "Credits are Awakli\u2019s universal currency for AI generation. Each action (script generation, panel creation, video rendering, voice synthesis) costs a set number of credits. Your tier includes a monthly allocation, and you can buy top-up packs anytime. Higher tiers get pack discounts and credit rollover.",
   },
   {
     q: "What payment methods do you accept?",
@@ -194,8 +298,8 @@ function ScrollReveal({ children, className = "", delay = 0 }: { children: React
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   NARRATIVE TIER SCENE — §3.7
-   Each tier is a 70vh tall cinematic scene, not a box
+   NARRATIVE TIER SCENE
+   Each tier is a cinematic scene, not a box
    ═══════════════════════════════════════════════════════════════════════ */
 function TierScene({
   tier,
@@ -204,9 +308,9 @@ function TierScene({
   isPending,
   index,
 }: {
-  tier: typeof TIERS[0];
+  tier: TierDef;
   interval: BillingInterval;
-  onSubscribe: (key: string) => void;
+  onSubscribe: (key: TierKey) => void;
   isPending: boolean;
   index: number;
 }) {
@@ -214,9 +318,9 @@ function TierScene({
   const price = interval === "annual" ? tier.annualMonthlyPrice : tier.monthlyPrice;
 
   return (
-    <ScrollReveal delay={index * 0.1}>
+    <ScrollReveal delay={index * 0.08}>
       <motion.section
-        className="relative min-h-[70vh] flex items-center overflow-hidden rounded-3xl border border-white/5 mb-8 transition-all"
+        className="relative min-h-[60vh] flex items-center overflow-hidden rounded-3xl border border-white/5 mb-8 transition-all"
         style={{
           background: `linear-gradient(135deg, ${tier.gradientFrom}08, ${tier.gradientTo}04, #0D0D1A)`,
         }}
@@ -228,7 +332,7 @@ function TierScene({
           style={{ backgroundColor: tier.accentColor }}
         />
 
-        <div className="relative z-10 w-full px-8 md:px-16 py-16">
+        <div className="relative z-10 w-full px-8 md:px-16 py-12">
           <div className={`flex flex-col ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"} items-center gap-12 md:gap-20`}>
             {/* Text side */}
             <div className="flex-1 max-w-lg">
@@ -255,7 +359,7 @@ function TierScene({
                 </h2>
               </div>
 
-              {/* Narrative copy — §10 */}
+              {/* Narrative copy */}
               <p
                 className="text-xl md:text-2xl font-heading leading-relaxed mb-6"
                 style={{ color: tier.accentColor }}
@@ -265,16 +369,25 @@ function TierScene({
 
               {/* Price */}
               <div className="mb-8">
-                <span className="text-5xl font-display font-bold text-white">
-                  ${price === 0 ? "0" : price}
-                </span>
-                <span className="text-[#5C5C7A] ml-2 text-lg">
-                  {price === 0 ? "/forever" : "/mo"}
-                </span>
-                {interval === "annual" && price > 0 && (
-                  <p className="text-xs text-[#E040FB] mt-1 font-mono">
-                    Billed ${price * 12}/year (save ${(tier.monthlyPrice - tier.annualMonthlyPrice) * 12}/yr)
-                  </p>
+                {tier.isEnterprise ? (
+                  <>
+                    <span className="text-4xl font-display font-bold text-white">Custom</span>
+                    <span className="text-[#5C5C7A] ml-2 text-lg">pricing</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-5xl font-display font-bold text-white">
+                      ${price === 0 ? "0" : price}
+                    </span>
+                    <span className="text-[#5C5C7A] ml-2 text-lg">
+                      {price === 0 ? "/forever" : "/mo"}
+                    </span>
+                    {interval === "annual" && price > 0 && (
+                      <p className="text-xs text-[#E040FB] mt-1 font-mono">
+                        Billed ${price * 12}/year (save ${(tier.monthlyPrice - tier.annualMonthlyPrice) * 12}/yr)
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -331,7 +444,7 @@ function TierScene({
                 })}
               </div>
 
-              {/* Refund policy card — §3.7 */}
+              {/* Refund policy card */}
               <div className="mt-6 p-4 rounded-xl border border-white/5 bg-white/[0.02]">
                 <p className="text-xs text-[#5C5C7A] leading-relaxed">
                   <Shield className="w-3.5 h-3.5 inline mr-1.5 text-[#00FFB2]" />
@@ -346,6 +459,32 @@ function TierScene({
         </div>
       </motion.section>
     </ScrollReveal>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPARISON TABLE CELL
+   ═══════════════════════════════════════════════════════════════════════ */
+function ComparisonCell({ value }: { value: string | boolean }) {
+  if (typeof value === "boolean") {
+    return (
+      <div className="flex justify-center">
+        {value ? (
+          <Check className="w-5 h-5 text-[#00FFB2]" />
+        ) : (
+          <X className="w-5 h-5 text-[#2A2A40]" />
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="text-sm text-white text-center font-medium">
+      {value === "0" || value === "\u2014" ? (
+        <span className="text-[#5C5C7A]">{value}</span>
+      ) : (
+        value
+      )}
+    </div>
   );
 }
 
@@ -371,16 +510,21 @@ export default function Pricing() {
     },
   });
 
-  const handleSubscribe = (tierKey: string) => {
+  const handleSubscribe = (tierKey: TierKey) => {
+    if (tierKey === "enterprise") {
+      toast.info("Enterprise inquiries — contact us at hello@awakli.com");
+      return;
+    }
     if (!isAuthenticated) {
       navigate("/signup");
       return;
     }
-    if (tierKey === "free") {
+    if (tierKey === "free_trial") {
       navigate("/create");
       return;
     }
-    checkout.mutate({ tier: tierKey as "creator" | "studio", interval });
+    // tierKey is "creator" | "creator_pro" | "studio" — matches server enum
+    checkout.mutate({ tier: tierKey as "creator" | "creator_pro" | "studio", interval });
   };
 
   return (
@@ -461,7 +605,7 @@ export default function Pricing() {
             </div>
           </motion.div>
 
-          {/* Three narrative scenes OR comparison table */}
+          {/* Five narrative scenes OR comparison table */}
           {view === "cards" ? (
             <>
               {TIERS.map((tier, i) => (
@@ -476,21 +620,23 @@ export default function Pricing() {
               ))}
             </>
           ) : (
-            /* Inline comparison table when "Compare" view is active */
+            /* Comparison table — all 5 tiers */
             <ScrollReveal>
-              <div className="max-w-5xl mx-auto mb-8">
-                <div className="rounded-2xl border border-white/5 overflow-hidden bg-[#0D0D1A]">
+              <div className="max-w-7xl mx-auto mb-8 overflow-x-auto">
+                <div className="min-w-[800px] rounded-2xl border border-white/5 overflow-hidden bg-[#0D0D1A]">
                   {/* Header */}
-                  <div className="grid grid-cols-4 gap-4 p-4 border-b border-white/10 bg-[#151528] sticky top-16 z-10">
+                  <div className="grid grid-cols-6 gap-2 p-4 border-b border-white/10 bg-[#151528] sticky top-16 z-10">
                     <div className="text-sm font-semibold text-[#9494B8]">Feature</div>
                     {TIERS.map((t) => (
                       <div key={t.key} className="text-sm font-semibold text-white text-center">
-                        {t.name}
-                        {t.monthlyPrice > 0 && (
-                          <span className="block text-xs text-[#5C5C7A] font-normal mt-0.5">
-                            ${interval === "annual" ? t.annualMonthlyPrice : t.monthlyPrice}/mo
-                          </span>
-                        )}
+                        <span style={{ color: t.accentColor }}>{t.name}</span>
+                        <span className="block text-xs text-[#5C5C7A] font-normal mt-0.5">
+                          {t.isEnterprise
+                            ? "Custom"
+                            : t.monthlyPrice === 0
+                            ? "Free"
+                            : `$${interval === "annual" ? t.annualMonthlyPrice : t.monthlyPrice}/mo`}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -506,48 +652,28 @@ export default function Pricing() {
                       {section.rows.map((row, i) => (
                         <div
                           key={row.label}
-                          className={`grid grid-cols-4 gap-4 px-4 py-3 ${
+                          className={`grid grid-cols-6 gap-2 px-4 py-3 ${
                             i < section.rows.length - 1 ? "border-b border-white/5" : ""
                           } hover:bg-white/[0.02] transition-colors`}
                         >
                           <div className="text-sm text-[#9494B8]">{row.label}</div>
-                          {(["free", "creator", "studio"] as const).map((tierKey) => {
-                            const val = row[tierKey];
-                            if (typeof val === "boolean") {
-                              return (
-                                <div key={tierKey} className="flex justify-center">
-                                  {val ? (
-                                    <Check className="w-5 h-5 text-[#00FFB2]" />
-                                  ) : (
-                                    <X className="w-5 h-5 text-[#2A2A40]" />
-                                  )}
-                                </div>
-                              );
-                            }
-                            return (
-                              <div key={tierKey} className="text-sm text-white text-center font-medium">
-                                {val === "0" || val === "\u2014" ? (
-                                  <span className="text-[#5C5C7A]">{val}</span>
-                                ) : (
-                                  val
-                                )}
-                              </div>
-                            );
-                          })}
+                          {TIER_COLUMN_KEYS.map((tierKey) => (
+                            <ComparisonCell key={tierKey} value={row[tierKey]} />
+                          ))}
                         </div>
                       ))}
                     </div>
                   ))}
 
                   {/* CTA row at bottom of table */}
-                  <div className="grid grid-cols-4 gap-4 p-4 border-t border-white/10 bg-[#151528]">
+                  <div className="grid grid-cols-6 gap-2 p-4 border-t border-white/10 bg-[#151528]">
                     <div />
                     {TIERS.map((t) => (
                       <div key={t.key} className="flex justify-center">
                         <button
                           onClick={() => handleSubscribe(t.key)}
                           disabled={checkout.isPending}
-                          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                          className="px-3 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90 whitespace-nowrap"
                           style={{
                             background: `linear-gradient(135deg, ${t.gradientFrom}, ${t.gradientTo})`,
                           }}
@@ -585,9 +711,9 @@ export default function Pricing() {
             </div>
           </ScrollReveal>
 
-          {/* Full comparison table */}
+          {/* Full comparison table (always visible, below cards) */}
           <ScrollReveal>
-            <div className="max-w-5xl mx-auto mb-24">
+            <div className="max-w-7xl mx-auto mb-24 overflow-x-auto">
               <h2 className="text-h1 text-white text-center mb-4">
                 Full Feature Comparison
               </h2>
@@ -595,18 +721,20 @@ export default function Pricing() {
                 Every detail, side by side
               </p>
 
-              <div className="rounded-2xl border border-white/5 overflow-hidden bg-[#0D0D1A]">
+              <div className="min-w-[800px] rounded-2xl border border-white/5 overflow-hidden bg-[#0D0D1A]">
                 {/* Header */}
-                <div className="grid grid-cols-4 gap-4 p-4 border-b border-white/10 bg-[#151528] sticky top-0 z-10">
+                <div className="grid grid-cols-6 gap-2 p-4 border-b border-white/10 bg-[#151528] sticky top-0 z-10">
                   <div className="text-sm font-semibold text-[#9494B8]">Feature</div>
                   {TIERS.map((t) => (
                     <div key={t.key} className="text-sm font-semibold text-white text-center">
-                      {t.name}
-                      {t.monthlyPrice > 0 && (
-                        <span className="block text-xs text-[#5C5C7A] font-normal mt-0.5">
-                          ${interval === "annual" ? t.annualMonthlyPrice : t.monthlyPrice}/mo
-                        </span>
-                      )}
+                      <span style={{ color: t.accentColor }}>{t.name}</span>
+                      <span className="block text-xs text-[#5C5C7A] font-normal mt-0.5">
+                        {t.isEnterprise
+                          ? "Custom"
+                          : t.monthlyPrice === 0
+                          ? "Free"
+                          : `$${interval === "annual" ? t.annualMonthlyPrice : t.monthlyPrice}/mo`}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -622,34 +750,14 @@ export default function Pricing() {
                     {section.rows.map((row, i) => (
                       <div
                         key={row.label}
-                        className={`grid grid-cols-4 gap-4 px-4 py-3 ${
+                        className={`grid grid-cols-6 gap-2 px-4 py-3 ${
                           i < section.rows.length - 1 ? "border-b border-white/5" : ""
                         } hover:bg-white/[0.02] transition-colors`}
                       >
                         <div className="text-sm text-[#9494B8]">{row.label}</div>
-                        {(["free", "creator", "studio"] as const).map((tierKey) => {
-                          const val = row[tierKey];
-                          if (typeof val === "boolean") {
-                            return (
-                              <div key={tierKey} className="flex justify-center">
-                                {val ? (
-                                  <Check className="w-5 h-5 text-[#00FFB2]" />
-                                ) : (
-                                  <X className="w-5 h-5 text-[#2A2A40]" />
-                                )}
-                              </div>
-                            );
-                          }
-                          return (
-                            <div key={tierKey} className="text-sm text-white text-center font-medium">
-                              {val === "0" || val === "\u2014" ? (
-                                <span className="text-[#5C5C7A]">{val}</span>
-                              ) : (
-                                val
-                              )}
-                            </div>
-                          );
-                        })}
+                        {TIER_COLUMN_KEYS.map((tierKey) => (
+                          <ComparisonCell key={tierKey} value={row[tierKey]} />
+                        ))}
                       </div>
                     ))}
                   </div>

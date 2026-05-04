@@ -5454,3 +5454,14 @@
 - [x] Verify duration check passes with actual clip durations — PASS (177.6s within tolerance)
 - [x] Verify clip padding — 18/18 clips padded from 8.0s → 10.0s via speed-ramp. Final duration 177.6s (was 149.9s)
 - [x] Save checkpoint and report
+
+## Pre-Wave 1 Hotfixes
+
+### Pricing.tsx — Render All 5 Tiers
+- [x] Review current Pricing.tsx to identify hardcoded 3-tier structure
+- [x] Review pricingCatalog.ts (or products.ts) to identify all 5 tier definitions
+- [x] Refactor Pricing.tsx to dynamically render all tiers from the catalog
+- [x] Update comparison table to show all 5 tiers (not just 3 columns)
+- [x] Ensure responsive layout works with 5 tiers (horizontal scroll or stacked on mobile)
+- [x] Write vitest for pricing page rendering all tiers (15/15 passing)
+- [x] Save checkpoint
