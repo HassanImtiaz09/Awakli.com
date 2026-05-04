@@ -91,6 +91,7 @@ import { marketplaceRouter as loraMarketplaceRouter } from "./routers-marketplac
 import { parallelSliceRouter } from "./routers-parallel-slice";
 import { foundersRouter } from "./routers-founders";
 import { clipQualityRouter } from "./routers-quality";
+import { craftLibraryRouter } from "./routers-craft-library";
 import { tierSamplerRouter } from "./routers-tier-sampler";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
@@ -2389,6 +2390,7 @@ export const appRouter = router({
 
   // D5.5 Per-Clip Quality Gate (Wave 1)
   clipQuality: clipQualityRouter,
+  craftLibrary: craftLibraryRouter,
 });
 
 export type AppRouter = typeof appRouter;

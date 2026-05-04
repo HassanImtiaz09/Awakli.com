@@ -2247,3 +2247,80 @@ export const clipQualityReviews = mysqlTable("clip_quality_reviews", {
 
 export type ClipQualityReview = typeof clipQualityReviews.$inferSelect;
 export type InsertClipQualityReview = typeof clipQualityReviews.$inferInsert;
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// D10: Craft Library — Curated Knowledge Base for Anime/Manga/Genga Production
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Registered knowledge sources for the Craft Library.
+ * Each source belongs to a primary sub-sensei (D10.A, D10.M, or D10.G)
+ * and may cross-tag into others.
+ *
+ * Sources go through: pending → ingested (chunks created) → archived.
+ */
+export const craftLibrarySources = mysqlTable("craft_library_sources", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Primary sub-sensei this source belongs to */
+  subSensei: mysqlEnum("sub_sensei", ["anime", "manga", "genga"]).notNull(),
+  /** Content type classification */
+  sourceType: mysqlEnum("source_type", [
+    "web_article",
+    "book_chapter",
+    "video_transcript",
+    "tutorial",
+    "interview",
+    "podcast_transcript",
+    "reference_image_set",
+  ]).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  url: text("url"),  // nullable for books/offline sources
+  author: varchar("author", { length: 255 }),
+  description: text("description"),
+  /** Cross-tags into other sub-senseis (e.g., sakuga blog post tagged anime + genga) */
+  crossTags: json("cross_tags").$type<string[]>(),  // ["manga", "genga"]
+  /** Ingestion status */
+  status: mysqlEnum("source_status", ["pending", "ingesting", "ingested", "failed", "archived"]).notNull().default("pending"),
+  /** Error message if ingestion failed */
+  errorMessage: text("error_message"),
+  /** Number of chunks created from this source */
+  chunkCount: int("chunk_count").default(0).notNull(),
+  /** Total token count across all chunks */
+  totalTokens: int("total_tokens").default(0).notNull(),
+  /** When this source was last fetched/refreshed */
+  lastFetchedAt: timestamp("last_fetched_at"),
+  /** Source-specific metadata (page count, duration, ISBN, etc.) */
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type CraftLibrarySource = typeof craftLibrarySources.$inferSelect;
+export type InsertCraftLibrarySource = typeof craftLibrarySources.$inferInsert;
+
+/**
+ * Chunked text segments from ingested sources.
+ * Each chunk is a semantically coherent passage suitable for RAG retrieval.
+ *
+ * Embedding vectors are stored externally (Chroma collections);
+ * this table stores the text + metadata for reconstruction and attribution.
+ */
+export const craftLibraryChunks = mysqlTable("craft_library_chunks", {
+  id: int("id").autoincrement().primaryKey(),
+  sourceId: int("source_id").notNull().references(() => craftLibrarySources.id, { onDelete: "cascade" }),
+  /** Sub-sensei inherited from source (denormalized for fast filtering) */
+  subSensei: mysqlEnum("chunk_sub_sensei", ["anime", "manga", "genga"]).notNull(),
+  /** The actual text content of this chunk */
+  chunkText: text("chunk_text").notNull(),
+  /** Sequential index within the source (0-based) */
+  chunkIndex: int("chunk_index").notNull(),
+  /** Approximate token count for budget estimation */
+  tokenCount: int("token_count").notNull().default(0),
+  /** External embedding reference (Chroma document ID) */
+  embeddingRef: varchar("embedding_ref", { length: 128 }),
+  /** Chunk-level metadata: page number, chapter, timestamp, heading, etc. */
+  metadata: json("chunk_metadata"),
+  createdAt: timestamp("chunk_created_at").defaultNow().notNull(),
+});
+export type CraftLibraryChunk = typeof craftLibraryChunks.$inferSelect;
+export type InsertCraftLibraryChunk = typeof craftLibraryChunks.$inferInsert;

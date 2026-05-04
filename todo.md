@@ -5616,4 +5616,45 @@
 
 ### Tests
 - [x] Vitest: 29/29 passing — schema columns (2), scoring logic (5), retry budget (5), cost estimation (4), routing decision matrix (5), module exports (4), routing decisions (4)
+- [x] Save checkpoint (version 877f9ef0)
+
+## Backlog / Deferred
+
+- [ ] D5.5 weighted scoring refinement — review weight distribution, threshold, dimension definitions (deferred to end of Wave 1)
+
+## Wave 1: D10 Craft Library Foundation
+
+### Schema & Migration
+- [x] Add `craft_library_sources` table (id, subSensei, sourceType, title, url, author, description, crossTags JSON, status, lastFetchedAt, chunkCount, createdAt, updatedAt)
+- [x] Add `craft_library_chunks` table (id, sourceId FK, subSensei, chunkText, chunkIndex, tokenCount, embeddingRef, metadata JSON, createdAt)
+- [x] Generate and apply migration SQL (0050_craft_library.sql)
+
+### Server — D10 Core Module
+- [x] Create `server/benchmarks/d10/types.ts` — SubSensei, EngagementMode, CraftQuery, CraftResult, SUB_SENSEIS, ENGAGEMENT_MODES, ACTIVATION_STAGES, CROSS_TAG_RULES, VerbatimGuardConfig
+- [x] Create `server/benchmarks/d10/retrieval.ts` — keyword-based retrieval with cross-tag broadening (Wave 2: Chroma vectors)
+- [x] Create `server/benchmarks/d10/source-manager.ts` — CRUD: addSource, updateSource, listSources, getSourceById, archiveSource, getLibraryStats
+- [x] Create `server/benchmarks/d10/verbatim-guard.ts` — sliding-window 15-gram overlap detection (max 25% ratio)
+- [x] Create `server/benchmarks/d10/sensei.ts` — queryCraftLibrary with Direct/Consult/Validate engagement modes
+- [x] Wire D10 retrieval to use invokeLLM for synthesis with paraphrase-only system prompt
+
+### Server — tRPC Procedures
+- [x] Add `craftLibrary.listSources` protected procedure (filter by subSensei, sourceType, status)
+- [x] Add `craftLibrary.addSource` admin procedure (register a new source for ingestion)
+- [x] Add `craftLibrary.updateSource` admin procedure (update status, metadata)
+- [x] Add `craftLibrary.archiveSource` admin procedure
+- [x] Add `craftLibrary.getStats` protected procedure (chunk counts, source counts per sub-sensei)
+- [x] Add `craftLibrary.query` protected procedure (semantic query with subSensei filter, returns paraphrased guidance)
+- [x] Register in appRouter as `craftLibrary`
+
+### Frontend — Craft Library Admin UI
+- [x] Create `CraftLibrary.tsx` page at `/craft-library`
+- [x] Source management table: list all sources with sub-sensei badge, status, chunk count, last fetched
+- [x] Add Source dialog: title, URL, sub-sensei, source type, cross-tags, author, description
+- [x] Library stats dashboard: per-sub-sensei chunk counts, total sources, ingestion status
+- [x] Query test panel: input a craft query, select sub-sensei + mode, see retrieved guidance
+- [x] Add route to App.tsx
+
+### Tests
+- [x] Vitest: 28/28 passing — schema validation (4), types exports (5), verbatim guard (5), retrieval (3), source manager (1), router exports (2), activation stages (4), cross-tag rules (3), inverse mapping (1)
 - [ ] Save checkpoint
+
