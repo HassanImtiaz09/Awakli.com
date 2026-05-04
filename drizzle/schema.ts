@@ -2158,3 +2158,31 @@ export const loraMarketplaceReviews = mysqlTable("lora_marketplace_reviews", {
 
 export type LoraReview = typeof loraMarketplaceReviews.$inferSelect;
 export type InsertLoraReview = typeof loraMarketplaceReviews.$inferInsert;
+
+
+// ─── Founders' Studio Interest Submissions ──────────────────────────────
+// Pipeline Blueprint v1.9 §7C — Express Interest form for the Founders' Studio program.
+// Captures minimal data for outbound triage; no promise of acceptance.
+
+export const founderInterest = mysqlTable("founder_interest", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Authenticated user who submitted (null if submitted before login) */
+  userId: int("user_id"),
+  name: varchar("name", { length: 200 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  /** Primary output track: manga-only, genga (key animation collector), or full anime */
+  outputTrack: mysqlEnum("output_track", ["manga", "genga", "full_anime"]).notNull(),
+  /** Required portfolio link (ArtStation, Pixiv, personal site, etc.) */
+  portfolioUrl: text("portfolio_url").notNull(),
+  /** Optional genre focus */
+  genreFocus: varchar("genre_focus", { length: 200 }),
+  /** Short paragraph: what they'd want to make during the program */
+  pitch: text("pitch").notNull(),
+  /** Admin triage status */
+  status: mysqlEnum("status", ["new", "reviewing", "shortlisted", "contacted", "declined"]).notNull().default("new"),
+  /** Internal admin notes */
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type FounderInterest = typeof founderInterest.$inferSelect;
+export type InsertFounderInterest = typeof founderInterest.$inferInsert;

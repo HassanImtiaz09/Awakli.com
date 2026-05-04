@@ -89,6 +89,7 @@ import { voiceCacheRouter } from "./routers-voice-cache";
 import { costOptimizerRouter } from "./routers-cost-optimizer";
 import { marketplaceRouter as loraMarketplaceRouter } from "./routers-marketplace";
 import { parallelSliceRouter } from "./routers-parallel-slice";
+import { foundersRouter } from "./routers-founders";
 import { tierSamplerRouter } from "./routers-tier-sampler";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
@@ -2381,6 +2382,9 @@ export const appRouter = router({
 
   // Parallel Slice Scheduler
   parallelSlice: parallelSliceRouter,
+
+  // Founders' Studio (Pipeline Blueprint v1.9 §7C)
+  founders: foundersRouter,
 });
 
 export type AppRouter = typeof appRouter;

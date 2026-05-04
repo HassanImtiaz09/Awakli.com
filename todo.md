@@ -5513,4 +5513,61 @@
 - [x] Credit-ledger test fixed: 89/89 passing
 - [x] Pricing-page test: 15/15 passing
 - [x] Dev server runs without errors
+- [x] Save checkpoint (version 69a9a964)
+
+## Wave 1: Founders' Studio Recruitment Page (/founders)
+
+### Database & Backend
+- [x] Add `founder_interest` table to schema (userId, name, email, outputTrack, portfolioUrl, genreFocus, pitch, status, adminNotes, createdAt)
+- [x] Generate and apply migration SQL (0048_founder_interest.sql)
+- [x] Add tRPC `founders.submit` public procedure (auth optional, userId attached if logged in)
+- [x] Notify owner on each new submission via notifyOwner()
+- [x] Add tRPC `founders.list` admin procedure for triage
+- [x] Add tRPC `founders.updateStatus` admin procedure for status/notes updates
+
+### Frontend — Page Structure
+- [x] Create /founders route in App.tsx
+- [x] Build Founders.tsx page using MarketingLayout
+- [ ] SEOHead with page-specific title/description/OG tags (deferred — needs SEOHead integration)
+
+### Frontend — Hero Section
+- [x] Cinematic hero: "Founders' Studio" title with Orbitron + gradient typography
+- [x] Tagline: selective cohort framing ("COHORT 1 — 20 SEATS" badge)
+- [x] Subtitle: "We're inviting a small cohort of working creators..."
+- [x] Radial gradient background with subtle grid (consistent with site aesthetic)
+
+### Frontend — Value Proposition Section
+- [x] Free Studio-tier access for 6 months (worth ~$3,000)
+- [x] 1,800 credits/month + on-demand compute (~200 episodes)
+- [x] 70% revenue share from day one (vs 50% for standard Pro+)
+- [x] Full IP retention — no lock-in, no licensing traps
+- [x] HITL decisions train per-character LoRAs + Sakufuu signature LoRA
+- [x] Founder-tier badge + permanent attribution
+- [x] No rugpull — auto-converts to Free tier, all work preserved
+
+### Frontend — What We're Looking For Section
+- [x] Three profile cards: working creators, independent not hobbyist, mission-aligned
+- [x] Output track framing: manga, genga, full anime (in form selector)
+- [x] Emphasis on taste and follow-through over credentials
+
+### Frontend — Express Interest Form
+- [x] Name field (required)
+- [x] Output track selector: manga / genga / full anime (required, 3-button selector)
+- [x] Portfolio link (required, URL validation)
+- [x] Genre focus (optional text)
+- [x] "What would you make?" textarea (required, min 20 chars, max 2000)
+- [x] Email field (required)
+- [x] Submit with loading state, success toast, no promise of acceptance
+- [x] "We'll be in touch if there's a fit" messaging + success confirmation state
+
+### Frontend — Design & Polish
+- [x] Premium, selective tone throughout (YC application / A24 directors program)
+- [x] Dark theme consistent with site (bg-[#05050C] with purple/pink radial gradients)
+- [x] Framer Motion scroll reveals (Reveal component with useInView)
+- [x] Mobile responsive (grid-cols-1 → grid-cols-2, stacked form)
+- [x] No "Craft Engineer" terminology anywhere — all creators, all output tracks
+- [x] FAQ section with 6 questions covering program details
+
+### Tests
+- [x] Vitest: 23/23 passing — submit schema validation (9 tests), list schema (5), updateStatus schema (5), output track enum (1), router module export (1), schema table columns (2)
 - [ ] Save checkpoint

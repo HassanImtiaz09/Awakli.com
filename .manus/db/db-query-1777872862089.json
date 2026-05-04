@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `founder_interest` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `user_id` int,\n  `name` varchar(200) NOT NULL,\n  `email` varchar(320) NOT NULL,\n  `output_track` enum('manga','genga','full_anime') NOT NULL,\n  `portfolio_url` text NOT NULL,\n  `genre_focus` varchar(200),\n  `pitch` text NOT NULL,\n  `status` enum('new','reviewing','shortlisted','contacted','declined') NOT NULL DEFAULT 'new',\n  `admin_notes` text,\n  `created_at` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `founder_interest_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute CREATE TABLE IF NOT EXISTS `founder_interest` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `user_id` int,\n  `name` varchar(200) NOT NULL,\n  `email` varchar(320) NOT NULL,\n  `output_track` enum('manga','genga','full_anime') NOT NULL,\n  `portfolio_url` text NOT NULL,\n  `genre_focus` varchar(200),\n  `pitch` text NOT NULL,\n  `status` enum('new','reviewing','shortlisted','contacted','declined') NOT NULL DEFAULT 'new',\n  `admin_notes` text,\n  `created_at` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `founder_interest_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 171
+}

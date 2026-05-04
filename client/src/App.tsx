@@ -76,6 +76,7 @@ import CostDashboard from "./pages/CostDashboard";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
+import Founders from "./pages/Founders";
 import { StudioLayout } from "./components/awakli/Layouts";
 
 function Router() {
@@ -101,6 +102,7 @@ function Router() {
         <Route path="/explore" component={Explore} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/trending" component={Trending} />
+        <Route path="/founders" component={Founders} />
         <Route path="/marketplace" component={LoraMarketplace} />
         <Route path="/marketplace/:id" component={LoraMarketplaceDetail} />
         <Route path="/onboarding" component={Onboarding} />
