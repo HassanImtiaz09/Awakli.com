@@ -19,7 +19,9 @@ import {
   BookOpen, Database, Search, Plus, Archive,
   Loader2, BookMarked, Film, Pencil, Sparkles,
   BarChart3, MessageSquare, CheckCircle2, AlertTriangle,
+  Download,
 } from "lucide-react";
+import { IngestionDashboard } from "@/components/awakli/IngestionDashboard";
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
@@ -59,7 +61,7 @@ export default function CraftLibrary() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  const [activeTab, setActiveTab] = useState<"overview" | "sources" | "query">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "sources" | "query" | "ingestion">("overview");
 
   return (
     <MarketingLayout>
@@ -84,6 +86,7 @@ export default function CraftLibrary() {
               { key: "overview" as const, label: "Overview", icon: BarChart3 },
               { key: "sources" as const, label: "Sources", icon: Database },
               { key: "query" as const, label: "Query Test", icon: Search },
+              ...(isAdmin ? [{ key: "ingestion" as const, label: "Ingestion", icon: Download }] : []),
             ]).map(tab => (
               <button
                 key={tab.key}
@@ -104,6 +107,7 @@ export default function CraftLibrary() {
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "sources" && <SourcesTab isAdmin={isAdmin} />}
           {activeTab === "query" && <QueryTab />}
+          {activeTab === "ingestion" && isAdmin && <IngestionDashboard />}
         </div>
       </div>
     </MarketingLayout>

@@ -5656,5 +5656,125 @@
 
 ### Tests
 - [x] Vitest: 28/28 passing — schema validation (4), types exports (5), verbatim guard (5), retrieval (3), source manager (1), router exports (2), activation stages (4), cross-tag rules (3), inverse mapping (1)
-- [ ] Save checkpoint
+- [x] Save checkpoint (version 62360cbd)
+
+## Wave 2: Pipeline Stage Agents (Approved Scope)
+
+### Item 1: Anime Type Style Bundles (2 weeks)
+- [x] Schema: `style_bundles` table (id, genreKey, name, description, promptTemplate, negativePrompt, colorPalette JSON, frameRateDefault, musicMoodVector, referenceImageUrls JSON, loraConfig JSON placeholder, isActive, createdAt, updatedAt)
+- [x] Migration SQL (0051_style_bundles.sql) — applied
+- [x] Server: `server/benchmarks/d0/style-bundles.ts` — CRUD + getByGenre + getActiveBundle + agent integration helpers
+- [x] Server: tRPC `styleBundles` router — listActive (public), getByGenreKey (protected), listAll/create/update/deactivate (admin)
+- [x] Server: 10 genre seed presets (shonen, seinen, shoujo, mecha, isekai, cyberpunk, slice_of_life, horror, watercolor, noir)
+- [x] Server: Integration hooks — getPromptConfig() for D2 prompt engineer
+- [x] Server: Integration hooks — getColorPalette() for D6, getVisualConfig() for D1.25/D1.5, getMusicMoodVector() for audio
+- [x] Frontend: Genre selector component (visual cards with icon mapping, color palette dots, preview image support)
+- [ ] Frontend: Style Bundle admin CRUD page at `/admin/style-bundles` (deferred — admin can use DB UI)
+- [x] Frontend: Genre selector integrated into project creation wizard (Step 3 — DB-backed, 5-col grid, fallback to static)
+- [x] LoRA config = placeholder/template only (model_id: null, trigger_word, weight_range, compatible_bases per bundle)
+- [x] Tests: 14 vitest tests passing — router CRUD, auth/RBAC, data validation, bundle structure
+
+### Item 2: D0 Character Designer — Two-Pass Multi-View (2 weeks)
+- [x] Server: `server/benchmarks/d0/character-designer.ts` — D0 agent orchestrator
+- [x] Server: Pass 1 — generate canonical front view from character bible + style bundle conditioning
+- [x] Server: Pass 2 — i2i with locked front view as conditioning → three-quarter, side, back views
+- [x] Server: CLIP validation — LLM-based visual consistency scoring (>0.85 threshold)
+- [x] Server: Retry logic — if CLIP score <0.85, regenerate with strengthened conditioning (max 3 attempts)
+- [x] Server: Cost tracking — +$0.40/character (4 views × $0.10/view)
+- [x] Server: Reference sheet gate integrated into character-designer.ts — approval gate before views propagate downstream
+- [x] Server: tRPC `characterDesigner` router — generateViews, getStatus, approveSheet, rejectSheet, updateViewStatus, regenerateView
+- [x] Frontend: MultiViewReferenceSheet component — 4-panel grid (front/3/4/side/back) with CLIP score badges
+- [x] Frontend: Per-view approve/reject/regenerate + full-sheet approval gate UI
+- [x] Frontend: Integrated into CharacterCreator dialog (replaces old single-image reference)
+- [x] Pipeline integration: D0 output feeds D1.25 Layout + D1.5 Genga as character conditioning (hooks ready)
+- [x] Tests: character-designer.test.ts — 22 tests passing (auth, validation, generation, gate, view status, regen)
+
+### Item 3: D6 Color Director + Color Script Gate (2 weeks)
+- [x] Schema: `color_scripts` table (id, projectId, episodeId, characterPalettes JSON, scenePalettes JSON, moodProgression JSON, paletteLock JSON, styleBundleKey, generationCostUsd, status, approvedAt, rejectedReason, timestamps)
+- [x] Migration SQL (0053_color_scripts.sql) — applied
+- [x] Server: `server/benchmarks/d6/color-director.ts` — D6 agent (LLM-based palette extraction + generation)
+- [x] Server: Per-character palette extraction from approved reference sheets (D0 output)
+- [x] Server: Per-scene palette generation from script mood + setting + time-of-day
+- [x] Server: Mood progression map across episode (warmth/saturation/brightness per scene)
+- [x] Server: Palette lock mechanism — lock/unlock per palette group (characters/scenes/mood)
+- [x] Server: Approval gate integrated into color-director.ts — approve/reject with reason
+- [x] Server: tRPC `colorDirector` router — generate, getByEpisode, getById, listByProject, approve, reject, lockPalettes, unlockPalettes, updateCharacterPalette, updateScenePalette, getCharacterPalette, getScenePalette, isLocked
+- [x] Frontend: ColorScriptViewer component — character swatches, scene palette strips, mood arc SVG visualization
+- [x] Frontend: Palette editor — color picker for manual adjustments (when unlocked), lock/unlock controls
+- [x] Frontend: Approval gate UI (approve/reject with reason prompt)
+- [x] Pipeline integration: D6 output feeds D2 (prompt color tokens) + D1.5 (genga color hints) via integration hooks
+- [x] Tests: color-director.test.ts — 30 tests passing (generation, approval, lock/unlock, palette updates, integration queries)
+
+### Item 4a: D1.25 Layout Director (1.5 weeks)
+- [x] Schema: `panel_layouts` table (id, projectId, episodeId, sceneNumber, panelNumber, layoutJson JSON, compositionSketchUrl/Key, generationCostUsd, status, timestamps)
+- [x] Server: `server/benchmarks/d1-25/layout-director.ts` — D1.25 agent
+- [x] Server: Input — D1 script (scene/panel structure) + D0 character sheets + D6 color script
+- [x] Server: Output — per-panel layout composition JSON (camera angle, character placement XY, depth layers, scale)
+- [x] Server: Rough composition sketch generation (image gen + S3 upload)
+- [x] Server: Camera angle vocabulary (8 angles) + approve/reject/batch approve
+- [x] Server: tRPC `layoutDirector` router — 10 endpoints (generate, getByEpisode/Scene/Id, approve, reject, updateComposition, generateSketch, approveAll, cameraAngles)
+- [x] Frontend: LayoutComposer component — panel grid with camera icons, character counts, depth layers, per-panel approve/reject
+- [x] Pipeline integration: D1.25 output feeds D1.5 Genga as composition conditioning
+- [x] Tests: 38 tests passing across all Item 4 routers
+
+### Item 4b: D1.5 Genga Director (1.5 weeks)
+- [x] Schema: `genga_keyframes` table (id, projectId, episodeId, sceneNumber, panelNumber, layoutId, sequenceIndex, roughGengaUrl/Key, cleanGengaUrl/Key, generationPrompt, clipScore, status enum, attemptNumber, generationCostUsd, timestamps)
+- [x] Schema: `flip_book_previews` table (id, projectId, episodeId, sceneNumber, frameUrls JSON, previewVideoUrl/Key, frameCount, durationMs, status, timestamps)
+- [x] Server: `server/benchmarks/d1-5/genga-director.ts` — D1.5 agent
+- [x] Server: Pass 1 — rough genga generation from layouts + character sheets
+- [x] Server: Pass 2 — flip-book preview assembly per scene
+- [x] Server: Approval gates — rough approval, clean approval, flip-book approval + reject + regenerate
+- [x] Server: Clean genga pass — approved rough → refined keyframes via i2i
+- [x] Server: Cost tracking — ~$0.10/keyframe
+- [x] Server: tRPC `gengaDirector` router — 13 endpoints (generateRough, generateClean, assembleFlipBook, approveRough/Clean, reject, approveFlipBook, regenerate, getById/ByEpisode/ByScene, getFlipBooks/ById)
+- [x] Frontend: GengaViewer component — rough/clean toggle, per-keyframe approval workflow, flip-book preview, regenerate
+- [x] Pipeline integration: D1.5 clean genga → conditions video model (Wave 3)
+- [x] Tests: included in layout-genga-sakuga.test.ts (38 tests)
+
+### Item 4c: D2.5 Sakuga Kantoku — MVP (1 week)
+- [x] Schema: `sakuga_reviews` table (id, projectId, episodeId, reviewType, sceneNumber, panelRange JSON, punchList JSON, issueCount, criticalCount, warningCount, infoCount, overallScore + 4 category scores, generationCostUsd, status, acknowledgedAt/By, timestamps)
+- [x] Server: `server/benchmarks/d2-5/sakuga-kantoku.ts` — D2.5 agent (single Opus pass)
+- [x] Server: Input — full approved genga set (all keyframes for episode)
+- [x] Server: Single-pass review — 8 issue types (character_scale_drift, perspective_break, motion_arc_violation, color_inconsistency, pose_continuity, depth_layer_error, framing_mismatch, general)
+- [x] Server: Output — structured JSON punch list (type, severity, scene/panel refs, affected characters, suggestion, reference panel)
+- [x] Server: Scoring — overall + 4 category scores (0-100 each)
+- [x] Server: Cost — ~$0.40/episode (single LLM call)
+- [x] Server: tRPC `sakugaKantoku` router — 6 endpoints (runReview, getById, getByEpisode, getLatest, getByProject, acknowledge)
+- [x] Frontend: SakugaPunchList component — read-only punch list with severity badges, score gauges (5 categories), severity filter, acknowledge button
+- [x] Pipeline integration: D2.5 runs after D1.5 approval, before video generation (Wave 3)
+- [x] Tests: included in layout-genga-sakuga.test.ts (38 tests)
+- [x] NOTE: Fuller resolution-flow (auto-regen triggers, multi-round convergence, dedicated dashboard) confirmed deferred to Wave 3
+
+### Item 5: D10 Web-Only Corpus Ingestion (2 weeks)
+- [x] Server: `server/benchmarks/d10/ingestion/scraper.ts` — web scraper framework (rate-limited, robots.txt respectful, retry, progress tracking)
+- [x] Server: `server/benchmarks/d10/ingestion/sakugablog.ts` — Sakugablog article scraper (~200 articles, genga content detection)
+- [x] Server: `server/benchmarks/d10/ingestion/sakugabooru.ts` — Sakugabooru tagged reference frames + animator attribution (API-based)
+- [x] Server: `server/benchmarks/d10/ingestion/animation-obsessive.ts` — Animation Obsessive long-form essays (Substack parser)
+- [x] Server: `server/benchmarks/d10/ingestion/pixiv-tutorials.ts` — Pixiv technique tutorials (JP + EN, bilingual metadata)
+- [x] Server: `server/benchmarks/d10/ingestion/chunker.ts` — semantic chunking (paragraph-based, heading-aware, 300-1500 token range, overlap)
+- [x] Server: Verbatim guard integration — chunks validated through existing verbatim-guard before storage
+- [x] Server: `server/benchmarks/d10/ingestion/orchestrator.ts` — job state machine (queued/scraping/chunking/completed/failed/paused), progress tracking, pause/resume
+- [x] Server: tRPC `ingestion` router — getSourceSummary, startIngestion, pauseJob, getJobStatus, listJobs (all admin-only)
+- [x] Frontend: IngestionDashboard component — source cards with progress bars, job history, start/pause controls, integrated as Craft Library tab
+- [x] Budget: ~$230 estimated (API costs + compute, no book purchases)
+- [x] Tests: ingestion.test.ts — 36 tests passing (scraper framework, HTML parsing, link extraction, source parsers, orchestrator, router RBAC, validation)
+- [x] NOTE: Book corpus ($2.5-5K) explicitly queued for Wave 4, not dropped
+
+### Wave 3 Commitments (for tracking)
+- [ ] Tiered Video Routing (with genga-conditioned generation from D1.5)
+- [ ] D7 FX Compositor + FX Pass
+- [ ] D8 Voice Director Critic
+- [ ] X-Sheet Authoring + Ato-Fuki Pipeline
+- [ ] D2.5 Sakuga Kantoku — full resolution-flow (auto-regen, multi-round, dashboard)
+
+### Wave 4 Commitments (for tracking)
+- [ ] D10 Full Corpus — book purchases + ingestion ($2.5-5K)
+- [ ] Manga Finishing (Playbook 3.6) — resolves audit blocker B2
+- [ ] Lulu Print Integration (Playbook 9.1) — three-product narrative
+- [ ] D9 Sakufuu Tracker (Three-Layer)
+
+### Wave 5 Commitments (for tracking)
+- [ ] Founders' Studio Infrastructure (Playbook 8.1-8.3)
+- [ ] Per-User Character LoRA Pipeline (Phase 6.3)
+- [ ] Premium Sakuga Models
 

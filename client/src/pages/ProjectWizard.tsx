@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -8,7 +8,7 @@ import {
   Sparkles, ChevronRight, ChevronLeft, Check, Loader2,
   Swords, Heart, Rocket, Ghost, Laugh, Wand2, Crown,
   Skull, Palette, Eye, Zap, BookOpen, Baby, GraduationCap, User,
-  ArrowLeft,
+  ArrowLeft, Shield, Cpu, Coffee, Moon, Flower, Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,16 +37,30 @@ const AUDIENCES = [
   { id: "adult" as const, label: "Adult", icon: User,          desc: "Ages 18+, mature themes" },
 ];
 
-const STYLES = [
-  { id: "shonen" as const,     label: "Shonen",     desc: "Bold action, vibrant energy" },
-  { id: "seinen" as const,     label: "Seinen",     desc: "Mature, cinematic detail" },
-  { id: "shoujo" as const,     label: "Shoujo",     desc: "Soft, expressive beauty" },
-  { id: "chibi" as const,      label: "Chibi",      desc: "Cute, super-deformed" },
-  { id: "cyberpunk" as const,  label: "Cyberpunk",  desc: "Neon-lit, futuristic" },
-  { id: "watercolor" as const, label: "Watercolor", desc: "Dreamy, painterly" },
-  { id: "noir" as const,       label: "Noir",       desc: "High contrast, shadows" },
-  { id: "realistic" as const,  label: "Realistic",  desc: "Photo-real, cinematic" },
-] as const;
+// Icon mapping for style bundle iconIdentifier → Lucide component
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  sword: Swords,
+  shield: Shield,
+  flower: Flower,
+  robot: Bot,
+  sparkles: Sparkles,
+  cpu: Cpu,
+  coffee: Coffee,
+  skull: Skull,
+  palette: Palette,
+  moon: Moon,
+  eye: Eye,
+};
+
+// Fallback static styles (used only if DB query fails)
+const FALLBACK_STYLES = [
+  { id: "shonen",     label: "Shonen",     desc: "Bold action, vibrant energy" },
+  { id: "seinen",     label: "Seinen",     desc: "Mature, cinematic detail" },
+  { id: "shoujo",     label: "Shoujo",     desc: "Soft, expressive beauty" },
+  { id: "cyberpunk",  label: "Cyberpunk",  desc: "Neon-lit, futuristic" },
+  { id: "watercolor", label: "Watercolor", desc: "Dreamy, painterly" },
+  { id: "noir",       label: "Noir",       desc: "High contrast, shadows" },
+];
 
 // ─── Step Indicator ───────────────────────────────────────────────────────
 
@@ -269,91 +283,116 @@ function StepDescribe({
         <h1 className="text-display text-[var(--text-primary)]">
           {headingText}
           <motion.span
-            className="inline-block w-0.5 h-[0.8em] bg-[var(--token-cyan)] ml-1 align-middle"
-            animate={{ opacity: [1, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse" }}
+            className="inline-block w-0.5 h-8 bg-[var(--token-cyan)] ml-1 align-middle"
+            animate={{ opacity: [1, 0, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
           />
         </h1>
-        <p className="text-[var(--text-secondary)] text-lg">Describe your world, characters, and plot</p>
+        <p className="text-[var(--text-secondary)] text-lg">
+          Describe the world, characters, and story you envision
+        </p>
       </div>
 
       <div className="relative">
         <textarea
-          value={showEnhanced && enhanced ? enhanced : description}
-          onChange={(e) => {
-            if (showEnhanced) {
-              setShowEnhanced(false);
-              setEnhanced(null);
-            }
-            setDescription(e.target.value);
-          }}
-          placeholder="A young warrior discovers an ancient power hidden within manga pages that can bring illustrations to life..."
-          className={cn(
-            "w-full min-h-[200px] p-5 rounded-xl border text-[var(--text-primary)] placeholder:text-[var(--text-muted)] resize-none transition-all",
-            "bg-[var(--bg-elevated)] focus:outline-none",
-            showEnhanced
-              ? "border-[var(--token-cyan)]/40"
-              : "border-white/10 focus:border-[var(--token-cyan)]/40"
-          )}
-          maxLength={5000}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="In a world where..."
+          rows={8}
+          className="w-full bg-[var(--bg-elevated)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] rounded-xl border border-white/10 focus:border-[var(--token-cyan)] outline-none p-5 text-base leading-relaxed resize-none transition-colors"
         />
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-xs text-[var(--text-muted)]">
-            {(showEnhanced && enhanced ? enhanced : description).length} / 5000
-          </span>
-          <div className="flex items-center gap-2">
-            {showEnhanced && enhanced && (
-              <>
-                <motion.button
-                  onClick={() => { setShowEnhanced(false); }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  View Original
-                </motion.button>
-                <motion.button
-                  onClick={acceptEnhanced}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--token-cyan)]/15 text-[var(--token-cyan)] hover:bg-[var(--token-cyan)]/25 transition-colors"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <Check size={12} className="inline mr-1" /> Accept Enhanced
-                </motion.button>
-              </>
-            )}
-            <motion.button
-              onClick={handleEnhance}
-              disabled={enhanceMutation.isPending || !description.trim()}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                "bg-[var(--token-cyan)]/15 text-[var(--token-cyan)] hover:bg-[var(--token-cyan)]/25",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+
+        {/* Enhanced version */}
+        <AnimatePresence>
+          {showEnhanced && enhanced && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="mt-4 p-5 rounded-xl border border-[var(--token-cyan)]/30 bg-[var(--token-cyan)]/5"
             >
-              {enhanceMutation.isPending ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Sparkles size={14} />
-              )}
-              {enhanceMutation.isPending ? "Enhancing..." : "AI Enhance"}
-            </motion.button>
-          </div>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={16} className="text-[var(--token-cyan)]" />
+                <span className="text-sm font-medium text-[var(--token-cyan)]">AI Enhanced</span>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">{enhanced}</p>
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={acceptEnhanced}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-[var(--token-cyan)] text-white hover:bg-[var(--token-violet-hover)] transition-colors"
+                >
+                  Use Enhanced
+                </button>
+                <button
+                  onClick={() => { setEnhanced(null); setShowEnhanced(false); }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-white/10 text-[var(--text-secondary)] hover:border-white/20 transition-colors"
+                >
+                  Keep Original
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex justify-end mt-3">
+          <motion.button
+            onClick={handleEnhance}
+            disabled={enhanceMutation.isPending || !description.trim()}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+              "bg-[var(--bg-elevated)] border border-white/10 text-[var(--text-secondary)]",
+              "hover:border-[var(--token-cyan)]/40 hover:text-[var(--token-cyan)]",
+              "disabled:opacity-40 disabled:cursor-not-allowed"
+            )}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {enhanceMutation.isPending ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Sparkles size={14} />
+            )}
+            {enhanceMutation.isPending ? "Enhancing..." : "AI Enhance"}
+          </motion.button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Step 3: Choose Your Style ────────────────────────────────────────────
+// ─── Step 3: Choose Your Style (DB-backed Style Bundles) ─────────────────
 
 function StepStyle({
   style, setStyle,
 }: {
   style: string; setStyle: (v: string) => void;
 }) {
+  // Fetch active style bundles from DB
+  const { data: bundles, isLoading, isError } = trpc.styleBundles.listActive.useQuery();
+
+  // Derive display items: DB bundles or fallback
+  const styleItems = useMemo(() => {
+    if (bundles && bundles.length > 0) {
+      return bundles.map((b: any) => ({
+        id: b.genreKey,
+        label: b.name,
+        desc: b.description || "",
+        iconId: b.iconIdentifier,
+        colorPalette: b.colorPalette as any,
+        previewImageUrl: b.previewImageUrl,
+      }));
+    }
+    // Fallback to static list if DB query fails or returns empty
+    return FALLBACK_STYLES.map(s => ({
+      id: s.id,
+      label: s.label,
+      desc: s.desc,
+      iconId: null as string | null,
+      colorPalette: null as any,
+      previewImageUrl: null as string | null,
+    }));
+  }, [bundles]);
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center space-y-3">
@@ -361,56 +400,98 @@ function StepStyle({
         <p className="text-[var(--text-secondary)] text-lg">Choose the visual direction for your anime</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {STYLES.map((s) => {
-          const selected = style === s.id;
-          return (
-            <motion.button
-              key={s.id}
-              onClick={() => setStyle(s.id)}
-              className={cn(
-                "relative overflow-hidden rounded-xl border transition-all",
-                "aspect-[3/4] flex flex-col justify-end p-4",
-                selected
-                  ? "border-[var(--token-cyan)] ring-2 ring-[var(--token-cyan)]/30"
-                  : "border-white/10 hover:border-white/20"
-              )}
-              style={{
-                background: `linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-overlay) 100%)`,
-                boxShadow: selected ? "var(--shadow-glow-pink)" : "none",
-              }}
-              whileHover={{ scale: 1.03, y: -4 }}
-              whileTap={{ scale: 0.98 }}
-              animate={{ scale: selected ? 1.03 : 1 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Style icon/preview area */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                <Eye size={64} className="text-[var(--text-muted)]" />
-              </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 size={32} className="animate-spin text-[var(--token-cyan)]" />
+          <span className="ml-3 text-[var(--text-secondary)]">Loading style bundles...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {styleItems.map((s) => {
+            const selected = style === s.id;
+            const IconComp = s.iconId ? ICON_MAP[s.iconId] || Eye : Eye;
+            const accentColor = s.colorPalette?.accent || "var(--token-cyan)";
 
-              {/* Bottom gradient overlay */}
-              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[var(--bg-void)]/90 to-transparent" />
+            return (
+              <motion.button
+                key={s.id}
+                onClick={() => setStyle(s.id)}
+                className={cn(
+                  "relative overflow-hidden rounded-xl border transition-all",
+                  "aspect-[3/4] flex flex-col justify-end p-4",
+                  selected
+                    ? "border-[var(--token-cyan)] ring-2 ring-[var(--token-cyan)]/30"
+                    : "border-white/10 hover:border-white/20"
+                )}
+                style={{
+                  background: s.colorPalette
+                    ? `linear-gradient(180deg, ${s.colorPalette.background || "var(--bg-elevated)"} 0%, ${s.colorPalette.shadow || "var(--bg-overlay)"} 100%)`
+                    : `linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-overlay) 100%)`,
+                  boxShadow: selected ? `0 0 24px ${accentColor}40` : "none",
+                }}
+                whileHover={{ scale: 1.03, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                animate={{ scale: selected ? 1.03 : 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                {/* Style icon/preview area */}
+                {s.previewImageUrl ? (
+                  <img
+                    src={s.previewImageUrl}
+                    alt={s.label}
+                    className="absolute inset-0 w-full h-full object-cover opacity-40"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-25">
+                    <IconComp
+                      size={56}
+                      style={{ color: s.colorPalette?.accent || "var(--text-muted)" }}
+                    />
+                  </div>
+                )}
 
-              <div className="relative z-10">
-                <h3 className="text-lg font-heading font-semibold text-[var(--text-primary)]">{s.label}</h3>
-                <p className="text-xs text-[var(--text-secondary)] mt-1">{s.desc}</p>
-              </div>
+                {/* Bottom gradient overlay */}
+                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[var(--bg-void)]/95 via-[var(--bg-void)]/60 to-transparent" />
 
-              {selected && (
-                <motion.div
-                  className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[var(--token-cyan)] flex items-center justify-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                >
-                  <Check size={14} className="text-white" />
-                </motion.div>
-              )}
-            </motion.button>
-          );
-        })}
-      </div>
+                <div className="relative z-10">
+                  <h3 className="text-base font-heading font-semibold text-[var(--text-primary)]">{s.label}</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{s.desc}</p>
+                </div>
+
+                {selected && (
+                  <motion.div
+                    className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[var(--token-cyan)] flex items-center justify-center"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  >
+                    <Check size={14} className="text-white" />
+                  </motion.div>
+                )}
+
+                {/* Color palette preview dots */}
+                {s.colorPalette && (
+                  <div className="absolute top-3 left-3 flex gap-1">
+                    {[s.colorPalette.primary, s.colorPalette.accent, s.colorPalette.highlight].filter(Boolean).map((c: string, i: number) => (
+                      <div
+                        key={i}
+                        className="w-2.5 h-2.5 rounded-full border border-white/20"
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
+
+      {isError && (
+        <p className="text-center text-sm text-[var(--text-muted)]">
+          Using default styles. Custom style bundles will be available soon.
+        </p>
+      )}
     </div>
   );
 }
@@ -423,6 +504,11 @@ function StepReview({
   title: string; genres: string[]; tone: string; audience: string;
   description: string; style: string; isCreating: boolean; onCreate: () => void;
 }) {
+  // Fetch the selected style bundle for display
+  const { data: bundles } = trpc.styleBundles.listActive.useQuery();
+  const selectedBundle = bundles?.find((b: any) => b.genreKey === style);
+  const styleName = selectedBundle?.name || style;
+
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div className="text-center space-y-3">
@@ -484,7 +570,24 @@ function StepReview({
 
           <div>
             <span className="text-label text-[var(--text-muted)]">Art Style</span>
-            <p className="text-[var(--text-secondary)] mt-1 capitalize">{STYLES.find(s => s.id === style)?.label || style}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-[var(--text-secondary)] capitalize">{styleName}</p>
+              {selectedBundle?.colorPalette != null && (
+                <div className="flex gap-1 ml-2">
+                  {((): React.ReactNode => {
+                    const p = selectedBundle.colorPalette as Record<string, string> | null;
+                    if (!p) return null;
+                    return [p.primary, p.accent].filter(Boolean).map((c, i) => (
+                      <div
+                        key={i}
+                        className="w-3 h-3 rounded-full border border-white/20"
+                        style={{ backgroundColor: c }}
+                      />
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>

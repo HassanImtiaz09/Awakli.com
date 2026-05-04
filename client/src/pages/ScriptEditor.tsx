@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import TransitionTimeline from "@/components/awakli/TransitionTimeline";
+import ColorScriptViewer from "@/components/awakli/ColorScriptViewer";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -295,6 +296,7 @@ export default function ScriptEditor() {
   const projectId = Number(params.projectId);
   const [activeEpisodeId, setActiveEpisodeId] = useState<number | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showColorPanel, setShowColorPanel] = useState(false);
 
   const { data: episode, isLoading: episodeLoading, refetch: refetchEpisode } = trpc.episodes.get.useQuery(
     { id: activeEpisodeId! },
@@ -502,6 +504,19 @@ export default function ScriptEditor() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                <motion.button
+                  onClick={() => setShowColorPanel(!showColorPanel)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    showColorPanel
+                      ? "bg-[var(--token-cyan)]/20 text-[var(--token-cyan)] border border-[var(--token-cyan)]/30"
+                      : "bg-[var(--bg-elevated)] border border-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  )}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Color Script
+                </motion.button>
                 {episode?.status !== "locked" && (
                   <motion.button
                     onClick={() => setShowApproveModal(true)}
@@ -518,6 +533,27 @@ export default function ScriptEditor() {
           </>
         )}
       </div>
+
+      {/* Color Script Side Panel */}
+      <AnimatePresence>
+        {showColorPanel && activeEpisodeId && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 320, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="border-l border-white/5 bg-[var(--bg-base)] overflow-y-auto overflow-x-hidden shrink-0"
+          >
+            <div className="p-4 w-[320px]">
+              <ColorScriptViewer
+                projectId={projectId}
+                episodeId={activeEpisodeId}
+                onApproved={() => toast.success("Color script approved for pipeline!")}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Approve confirmation modal */}
       <Dialog open={showApproveModal} onOpenChange={setShowApproveModal}>

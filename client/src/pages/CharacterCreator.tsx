@@ -8,6 +8,7 @@ import {
   Plus, User, Sparkles, Loader2, Trash2, Edit3,
   Palette, Eye, X, Check, RefreshCw, Image as ImageIcon,
 } from "lucide-react";
+import MultiViewReferenceSheet from "@/components/awakli/MultiViewReferenceSheet";
 import {
   Dialog,
   DialogContent,
@@ -456,71 +457,25 @@ function CharacterFormModal({
               </div>
             </div>
 
-            {/* Reference sheet */}
+            {/* Multi-View Reference Sheet (Wave 2 D0 Character Designer) */}
             <div className="rounded-xl border border-white/10 bg-[var(--bg-overlay)] p-4">
-              <h4 className="text-xs font-medium text-[var(--text-muted)] mb-3 flex items-center gap-1.5">
-                <ImageIcon size={12} />
-                Reference Sheet
-              </h4>
-              {refSheetUrl ? (
-                <div className="space-y-3">
-                  <img
-                    src={refSheetUrl}
-                    alt={`${name} reference sheet`}
-                    className="w-full rounded-lg border border-white/5"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleGenerateRef}
-                      disabled={generatingRef}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-[var(--bg-elevated)] border border-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-50"
-                    >
-                      <RefreshCw size={12} className={generatingRef ? "animate-spin" : ""} />
-                      Regenerate
-                    </button>
-                  </div>
-                </div>
-              ) : generatingRef ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="aspect-square rounded-lg skeleton-shimmer" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-center text-[var(--text-muted)]">Generating reference sheet...</p>
-                </div>
+              {editCharacter?.id ? (
+                <MultiViewReferenceSheet
+                  characterId={editCharacter.id}
+                  projectId={projectId}
+                  characterName={name || editCharacter.name}
+                  onApproved={() => {
+                    toast.success("Character reference sheet locked for pipeline!");
+                    onSaved();
+                  }}
+                />
               ) : (
                 <div className="text-center py-6">
                   <Palette size={32} className="mx-auto text-[var(--text-muted)] mb-2" />
-                  <p className="text-xs text-[var(--text-muted)]">No reference sheet yet</p>
+                  <p className="text-xs text-[var(--text-muted)]">Save the character first to generate multi-view reference sheet</p>
                 </div>
               )}
             </div>
-
-            {/* Generate Reference Button */}
-            <motion.button
-              onClick={handleGenerateRef}
-              disabled={generatingRef || !name.trim()}
-              className={cn(
-                "w-full py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2",
-                "bg-gradient-to-r from-[var(--token-cyan)] to-[#7C4DFF] text-white",
-                "hover:shadow-[var(--shadow-glow-pink)] disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-            >
-              {generatingRef ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={14} />
-                  Generate Reference Sheet
-                </>
-              )}
-            </motion.button>
           </div>
         </div>
 

@@ -2324,3 +2324,292 @@ export const craftLibraryChunks = mysqlTable("craft_library_chunks", {
 });
 export type CraftLibraryChunk = typeof craftLibraryChunks.$inferSelect;
 export type InsertCraftLibraryChunk = typeof craftLibraryChunks.$inferInsert;
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Wave 2 Item 1: Anime Type Style Bundles
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Style Bundles define the visual DNA for a genre/aesthetic.
+ * Each bundle contains prompt templates, negative prompts, color palettes,
+ * frame-rate defaults, music mood vectors, reference images, and a placeholder
+ * LoRA configuration slot (populated when Phase 6.3 RLHF training lands).
+ *
+ * Downstream consumers:
+ * - D2 (Prompt Engineer): reads promptTemplate + negativePrompt
+ * - D6 (Color Director): reads colorPalette
+ * - D1.5 (Genga Director): reads frameRateDefault + referenceImageUrls
+ * - Project Creation Wizard: genre selector backed by active bundles
+ */
+export const styleBundles = mysqlTable("style_bundles", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Unique machine key for lookups: 'shonen', 'seinen', 'isekai', etc. */
+  genreKey: varchar("genre_key", { length: 64 }).notNull().unique(),
+  /** Human-readable display name */
+  name: varchar("name", { length: 128 }).notNull(),
+  /** Short description for the genre selector UI */
+  description: text("description"),
+  /** Long-form notes on the aesthetic (for admin reference) */
+  aestheticNotes: text("aesthetic_notes"),
+
+  // ─── Prompt Engineering ─────────────────────────────────────────────
+  /** Base prompt template injected into D2 prompt construction */
+  promptTemplate: text("prompt_template").notNull(),
+  /** Negative prompt additions specific to this genre */
+  negativePrompt: text("negative_prompt").notNull(),
+
+  // ─── Visual Configuration ───────────────────────────────────────────
+  /** Color palette as JSON: {primary, secondary, accent, background, highlight, shadow} in hex */
+  colorPalette: json("color_palette").notNull(),
+  /** Default frame rate for this genre (e.g., 12 for traditional anime, 24 for fluid action) */
+  frameRateDefault: int("frame_rate_default").notNull().default(12),
+  /** Reference image URLs for style conditioning (CDN URLs) */
+  referenceImageUrls: json("reference_image_urls").$type<string[]>(),
+
+  // ─── Audio Configuration ────────────────────────────────────────────
+  /** Music mood vector for BGM generation: {energy, valence, tempo_bpm, instrumentation_tags[]} */
+  musicMoodVector: json("music_mood_vector"),
+
+  // ─── LoRA Configuration (Placeholder — Phase 6.3) ──────────────────
+  /**
+   * Placeholder LoRA config: {model_id: null, trigger_word, weight_range: [min, max], compatible_bases: string[]}
+   * model_id remains null until Phase 6.3 RLHF training produces actual LoRA weights.
+   */
+  loraConfig: json("lora_config"),
+
+  // ─── Preview / UI ──────────────────────────────────────────────────
+  /** Preview thumbnail URL for the genre selector card */
+  previewImageUrl: text("preview_image_url"),
+  /** Icon identifier or emoji for compact displays */
+  iconIdentifier: varchar("icon_identifier", { length: 32 }),
+
+  // ─── Status ─────────────────────────────────────────────────────────
+  /** Whether this bundle is available for selection */
+  isActive: int("is_active").default(1).notNull(),
+  /** Display order in the genre selector (lower = first) */
+  sortOrder: int("sort_order").default(0).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StyleBundle = typeof styleBundles.$inferSelect;
+export type InsertStyleBundle = typeof styleBundles.$inferInsert;
+
+// ─── Wave 2 Item 2: D0 Character Designer — Multi-View Reference Sheets ──
+
+export const characterViews = mysqlTable("character_views", {
+  id: int("id").autoincrement().primaryKey(),
+  characterId: int("character_id").notNull().references(() => characters.id, { onDelete: "cascade" }),
+  projectId: int("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  viewAngle: mysqlEnum("view_angle", ["front", "three_quarter", "side", "back"]).notNull(),
+  generationPass: int("generation_pass").notNull().default(1),
+  imageUrl: text("image_url"),
+  clipScore: decimal("clip_score", { precision: 5, scale: 4 }),
+  status: mysqlEnum("status", ["pending", "generating", "generated", "approved", "rejected", "failed"]).notNull().default("pending"),
+  promptUsed: text("prompt_used"),
+  conditioningImageUrl: text("conditioning_image_url"),
+  styleBundleKey: varchar("style_bundle_key", { length: 64 }),
+  attemptNumber: int("attempt_number").notNull().default(1),
+  generationCostUsd: decimal("generation_cost_usd", { precision: 8, scale: 4 }).default("0"),
+  errorMessage: text("error_message"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CharacterView = typeof characterViews.$inferSelect;
+export type InsertCharacterView = typeof characterViews.$inferInsert;
+
+export const referenceSheetGates = mysqlTable("reference_sheet_gates", {
+  id: int("id").autoincrement().primaryKey(),
+  characterId: int("character_id").notNull().unique().references(() => characters.id, { onDelete: "cascade" }),
+  projectId: int("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: mysqlEnum("status", ["pending", "all_views_generated", "approved", "rejected", "expired"]).notNull().default("pending"),
+  frontViewId: int("front_view_id"),
+  threeQuarterViewId: int("three_quarter_view_id"),
+  sideViewId: int("side_view_id"),
+  backViewId: int("back_view_id"),
+  overallClipScore: decimal("overall_clip_score", { precision: 5, scale: 4 }),
+  styleBundleKey: varchar("style_bundle_key", { length: 64 }),
+  totalCostUsd: decimal("total_cost_usd", { precision: 8, scale: 4 }).default("0"),
+  totalAttempts: int("total_attempts").notNull().default(0),
+  approvedAt: timestamp("approved_at"),
+  rejectedReason: text("rejected_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReferenceSheetGate = typeof referenceSheetGates.$inferSelect;
+export type InsertReferenceSheetGate = typeof referenceSheetGates.$inferInsert;
+
+// ─── Color Scripts (Wave 2 Item 3: D6 Color Director) ────────────────────
+
+export const colorScripts = mysqlTable("color_scripts", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  episodeId: int("episode_id").references(() => episodes.id, { onDelete: "cascade" }),
+  // Per-character palettes: { [characterId]: { primary, secondary, accent, skin, hair, eyes, outline } }
+  characterPalettes: json("character_palettes"),
+  // Per-scene palettes: { [sceneNumber]: { background, midground, foreground, ambient, lighting, accent } }
+  scenePalettes: json("scene_palettes"),
+  // Mood progression: [{ sceneNumber, warmth (0-1), saturation (0-1), brightness (0-1), dominantHue, mood }]
+  moodProgression: json("mood_progression"),
+  // Palette lock: { locked: boolean, lockedBy: userId, lockedAt: timestamp, lockedPalettes: string[] }
+  paletteLock: json("palette_lock"),
+  // Generation metadata
+  styleBundleKey: varchar("style_bundle_key", { length: 50 }),
+  generationPrompt: text("generation_prompt"),
+  generationCostUsd: decimal("generation_cost_usd", { precision: 8, scale: 4 }).default("0"),
+  status: mysqlEnum("status", [
+    "pending",
+    "generating",
+    "generated",
+    "approved",
+    "rejected",
+    "locked",
+  ]).default("pending").notNull(),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by"),
+  rejectedReason: text("rejected_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ColorScript = typeof colorScripts.$inferSelect;
+export type InsertColorScript = typeof colorScripts.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WAVE 2 ITEM 4: D1.25 Layout Director + D1.5 Genga Director + D2.5 Sakuga Kantoku
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── D1.25 Panel Layouts ────────────────────────────────────────────────
+export const panelLayouts = mysqlTable("panel_layouts", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("project_id").notNull(),
+  episodeId: int("episode_id").notNull(),
+  sceneNumber: int("scene_number").notNull(),
+  panelNumber: int("panel_number").notNull(),
+  // Camera & composition
+  cameraAngle: varchar("camera_angle", { length: 50 }).notNull(), // wide, medium, close-up, extreme_close_up, birds_eye, worms_eye, dutch_angle, over_shoulder
+  cameraMovement: varchar("camera_movement", { length: 50 }), // static, pan_left, pan_right, tilt_up, tilt_down, zoom_in, zoom_out, dolly
+  depthLayers: json("depth_layers"), // { foreground: [...], midground: [...], background: [...] }
+  // Character placement
+  characterPlacements: json("character_placements"), // [{ characterId, x, y, scale, facing, pose, zIndex }]
+  // Composition reference
+  compositionSketchUrl: text("composition_sketch_url"), // Low-res layout reference image
+  compositionSketchKey: varchar("composition_sketch_key", { length: 255 }),
+  layoutJson: json("layout_json"), // Full structured layout data
+  // Generation metadata
+  generationPrompt: text("generation_prompt"),
+  generationCostUsd: decimal("generation_cost_usd", { precision: 8, scale: 4 }).default("0"),
+  status: mysqlEnum("status", [
+    "pending", "generating", "generated", "approved", "rejected",
+  ]).default("pending").notNull(),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by"),
+  rejectedReason: text("rejected_reason"),
+  metadata: json("metadata"), // Additional layout metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type PanelLayout = typeof panelLayouts.$inferSelect;
+export type InsertPanelLayout = typeof panelLayouts.$inferInsert;
+
+// ─── D1.5 Genga Keyframes ──────────────────────────────────────────────
+export const gengaKeyframes = mysqlTable("genga_keyframes", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("project_id").notNull(),
+  episodeId: int("episode_id").notNull(),
+  sceneNumber: int("scene_number").notNull(),
+  panelNumber: int("panel_number").notNull(),
+  layoutId: int("layout_id"), // FK to panelLayouts
+  sequenceIndex: int("sequence_index").notNull().default(0), // Order within panel for multi-frame sequences
+  // Genga passes
+  roughGengaUrl: text("rough_genga_url"),
+  roughGengaKey: varchar("rough_genga_key", { length: 255 }),
+  cleanGengaUrl: text("clean_genga_url"),
+  cleanGengaKey: varchar("clean_genga_key", { length: 255 }),
+  // Generation metadata
+  generationPrompt: text("generation_prompt"),
+  conditioningInputs: json("conditioning_inputs"), // { layoutId, characterSheetUrls, colorPalette }
+  generationCostUsd: decimal("generation_cost_usd", { precision: 8, scale: 4 }).default("0"),
+  attemptNumber: int("attempt_number").default(1).notNull(),
+  // Status
+  status: mysqlEnum("status", [
+    "pending", "generating_rough", "rough_ready", "approved_rough",
+    "generating_clean", "clean_ready", "approved", "rejected",
+  ]).default("pending").notNull(),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by"),
+  rejectedReason: text("rejected_reason"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type GengaKeyframe = typeof gengaKeyframes.$inferSelect;
+export type InsertGengaKeyframe = typeof gengaKeyframes.$inferInsert;
+
+// ─── D1.5 Flip-Book Previews ───────────────────────────────────────────
+export const flipBookPreviews = mysqlTable("flip_book_previews", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("project_id").notNull(),
+  episodeId: int("episode_id").notNull(),
+  sceneNumber: int("scene_number").notNull(),
+  // Preview assembly
+  frameUrls: json("frame_urls"), // Ordered array of genga frame URLs
+  previewVideoUrl: text("preview_video_url"), // Assembled flip-book as short video/GIF
+  previewVideoKey: varchar("preview_video_key", { length: 255 }),
+  frameCount: int("frame_count").default(0).notNull(),
+  fps: int("fps").default(8).notNull(),
+  // Approval
+  status: mysqlEnum("status", [
+    "pending", "assembling", "ready", "approved", "rejected",
+  ]).default("pending").notNull(),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: int("approved_by"),
+  rejectedReason: text("rejected_reason"),
+  generationCostUsd: decimal("generation_cost_usd", { precision: 8, scale: 4 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type FlipBookPreview = typeof flipBookPreviews.$inferSelect;
+export type InsertFlipBookPreview = typeof flipBookPreviews.$inferInsert;
+
+// ─── D2.5 Sakuga Kantoku Reviews ───────────────────────────────────────
+export const sakugaReviews = mysqlTable("sakuga_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("project_id").notNull(),
+  episodeId: int("episode_id").notNull(),
+  // Review scope
+  reviewType: mysqlEnum("review_type", ["full_episode", "scene", "panel_range"]).default("full_episode").notNull(),
+  sceneNumber: int("scene_number"), // null for full_episode
+  panelRange: json("panel_range"), // { start, end } for panel_range type
+  // Punch list output
+  punchList: json("punch_list"), // [{ type, severity, sceneNumber, panelNumber, description, affectedCharacters, suggestion }]
+  issueCount: int("issue_count").default(0).notNull(),
+  criticalCount: int("critical_count").default(0).notNull(),
+  warningCount: int("warning_count").default(0).notNull(),
+  infoCount: int("info_count").default(0).notNull(),
+  // Consistency scores
+  overallScore: decimal("overall_score", { precision: 5, scale: 2 }), // 0-100
+  characterConsistencyScore: decimal("character_consistency_score", { precision: 5, scale: 2 }),
+  perspectiveScore: decimal("perspective_score", { precision: 5, scale: 2 }),
+  motionArcScore: decimal("motion_arc_score", { precision: 5, scale: 2 }),
+  colorConsistencyScore: decimal("color_consistency_score", { precision: 5, scale: 2 }),
+  // Generation metadata
+  generationCostUsd: decimal("generation_cost_usd", { precision: 8, scale: 4 }).default("0"),
+  status: mysqlEnum("status", [
+    "pending", "reviewing", "completed", "acknowledged",
+  ]).default("pending").notNull(),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  acknowledgedBy: int("acknowledged_by"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SakugaReview = typeof sakugaReviews.$inferSelect;
+export type InsertSakugaReview = typeof sakugaReviews.$inferInsert;

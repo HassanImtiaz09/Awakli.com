@@ -92,7 +92,12 @@ import { parallelSliceRouter } from "./routers-parallel-slice";
 import { foundersRouter } from "./routers-founders";
 import { clipQualityRouter } from "./routers-quality";
 import { craftLibraryRouter } from "./routers-craft-library";
+import { styleBundlesRouter } from "./routers-style-bundles";
+import { characterDesignerRouter } from "./routers-character-designer";
+import { colorDirectorRouter } from "./routers-color-director";
+import { layoutDirectorRouter, gengaDirectorRouter, sakugaKantokuRouter } from "./routers-layout-genga-sakuga";
 import { tierSamplerRouter } from "./routers-tier-sampler";
+import { ingestionRouter } from "./routers-ingestion";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
   gateConfigRouter, qualityAnalyticsRouter, cascadeRewindRouter,
@@ -2391,6 +2396,27 @@ export const appRouter = router({
   // D5.5 Per-Clip Quality Gate (Wave 1)
   clipQuality: clipQualityRouter,
   craftLibrary: craftLibraryRouter,
+
+  // Wave 2 Item 1: Anime Type Style Bundles
+  styleBundles: styleBundlesRouter,
+
+  // Wave 2 Item 2: D0 Character Designer — Multi-View Reference Sheets
+  characterDesigner: characterDesignerRouter,
+
+  // Wave 2 Item 3: D6 Color Director — Color Scripts & Palette Management
+  colorDirector: colorDirectorRouter,
+
+  // Wave 2 Item 4a: D1.25 Layout Director — Panel Compositions
+  layoutDirector: layoutDirectorRouter,
+
+  // Wave 2 Item 4b: D1.5 Genga Director — Keyframe Generation
+  gengaDirector: gengaDirectorRouter,
+
+  // Wave 2 Item 4c: D2.5 Sakuga Kantoku — Consistency Review
+  sakugaKantoku: sakugaKantokuRouter,
+
+  // Wave 2 Item 5: D10 Web-Only Corpus Ingestion
+  ingestion: ingestionRouter,
 });
 
 export type AppRouter = typeof appRouter;
