@@ -1,31 +1,44 @@
 /**
- * HITL Orchestrator Bridge (Prompt 17 Integration)
+ * HITL Orchestrator Bridge (v1.9 Pipeline Blueprint)
  *
- * Connects the existing 4-node pipeline orchestrator to the 12-stage HITL
- * gate system. Maps orchestrator nodes to HITL stages, triggers gates after
- * generation completes, and resumes the pipeline after creator decisions.
+ * Connects the pipeline orchestrator to the 17-stage HITL gate system.
+ * Maps orchestrator nodes to HITL stages, triggers gates after generation
+ * completes, and resumes the pipeline after creator decisions.
  *
- * Node-to-Stage Mapping:
- * ┌─────────────────┬──────────────────────────────────────────────┐
- * │ Orchestrator     │ HITL Stages                                  │
- * │ Node             │                                              │
- * ├─────────────────┼──────────────────────────────────────────────┤
- * │ (pre-flight)     │ 1: manga_analysis, 2: scene_planning         │
- * │ video_gen        │ 3: character_sheet_gen, 4: keyframe_gen,     │
- * │                  │ 5: video_generation                          │
- * │ voice_gen        │ 6: voice_synthesis                           │
- * │ music_gen        │ 7: music_scoring, 8: sfx_foley               │
- * │ assembly         │ 9: audio_mix, 10: video_composite,           │
- * │                  │ 11: subtitle_render, 12: episode_publish     │
- * └─────────────────┴──────────────────────────────────────────────┘
+ * v1.9 Node-to-Stage Mapping:
+ * ┌─────────────────────┬──────────────────────────────────────────────────────┐
+ * │ Orchestrator Node    │ HITL Stages                                          │
+ * ├─────────────────────┼──────────────────────────────────────────────────────┤
+ * │ pre_production       │ 1: script, 2: anime_type, 3: character_design,      │
+ * │                      │ 4: color_script, 5: ekonte                          │
+ * │ key_animation        │ 6: layout, 7: genga, 8: sakuga_kantoku_review,      │
+ * │                      │ 9: sakuga_tagging                                   │
+ * │ video_gen            │ 10: video_generation                                │
+ * │ post_video           │ 11: per_clip_continuity                             │
+ * │ audio_timing         │ 12: x_sheet, 13: ato_fuki                           │
+ * │ fx_composite         │ 14: fx_pass, 15: satsuei                            │
+ * │ mastering            │ 16: mastering_harness                               │
+ * │ learning             │ 17: continual_learning                              │
+ * └─────────────────────┴──────────────────────────────────────────────────────┘
+ *
+ * Key Design Decisions:
+ * - All 17 stages are required traversal (except Stage 17)
+ * - Advisory gates auto-advance but MUST still execute (e.g., sakuga_tagging)
+ * - D10 is NOT a node — it's a retrieval service consulted within other nodes
+ * - Branch stages (5.5, 7.5) are user-triggered side-paths, not in main flow
+ * - D2/D3 are subsumed into per-agent helpers, not pipeline stages
+ * - D9 at Stage 2 provides sakufuu-profile-aware default-bias for episodes 2+
+ *   (no-op for first episode)
  *
  * Flow:
- * 1. Pipeline starts → initializeHitlForRun() creates 12 stage rows
- * 2. Before each node → auto-advance pre-flight stages (1, 2)
- * 3. After each node → completeNodeWithGate() runs confidence scoring + gate
- * 4. If gate blocks → pipeline pauses, SSE notification sent
- * 5. Creator approves → resumePipelineAfterApproval() re-enters orchestrator
- * 6. Creator regenerates → re-execute the current node
+ * 1. Pipeline starts → initializeHitlForRun() creates 17 stage rows
+ * 2. Pre-production stages (1-5) execute sequentially with individual gates
+ * 3. Key animation stages (6-9) execute sequentially
+ * 4. sakuga_tagging (Stage 9) is advisory but REQUIRED traversal before Stage 10
+ * 5. Each subsequent node executes its stages in order
+ * 6. If gate blocks → pipeline pauses, SSE notification sent
+ * 7. Creator approves → resumePipelineAfterApproval() advances to next stage
+ * 8. 'Publish to catalog' is a user action AFTER Stage 16, not a pipeline stage
  */
 
 import { getDb } from "../db";
@@ -53,72 +66,91 @@ import {
   notifyAutoAdvanced,
 } from "./notification-dispatcher";
 import type { GenerateResult, ScoreContext } from "./confidence-scorer";
-import { STAGE_NAMES, STAGE_CREDIT_ESTIMATES, TOTAL_STAGES } from "./stage-config";
+import { STAGE_NAMES, STAGE_CREDIT_ESTIMATES, TOTAL_STAGES, isRequiredTraversal } from "./stage-config";
+import { pipelineLog } from "../observability/logger";
+import { checkTimeoutWarnings, processTimedOutGates } from "./timeout-handler";
 
-// ─── Node-to-Stage Mapping ─────────────────────────────────────────────
+// ─── Node-to-Stage Mapping (v1.9) ──────────────────────────────────────
 
-export type OrchestratorNode = "video_gen" | "voice_gen" | "lip_sync" | "music_gen" | "foley_gen" | "ambient_gen" | "assembly";
+export type OrchestratorNode =
+  | "pre_production"   // Stages 1-5
+  | "key_animation"    // Stages 6-9
+  | "video_gen"        // Stage 10
+  | "post_video"       // Stage 11
+  | "audio_timing"     // Stages 12-13
+  | "fx_composite"     // Stages 14-15
+  | "mastering"        // Stage 16
+  | "learning";        // Stage 17
 
 /**
- * Maps each orchestrator node to its primary HITL stage(s).
- * The "primary" stage is the one that gets the actual generation result.
- * Pre-flight stages (1, 2) are auto-advanced before node execution.
- * Post-node stages within a node group are auto-advanced with the node result.
+ * Maps each orchestrator node to its owned pipeline stages (in execution order).
+ * Within a node, stages execute sequentially — each with its own gate check.
+ */
+export const NODE_TO_STAGES: Record<OrchestratorNode, number[]> = {
+  pre_production: [1, 2, 3, 4, 5],
+  key_animation: [6, 7, 8, 9],
+  video_gen: [10],
+  post_video: [11],
+  audio_timing: [12, 13],
+  fx_composite: [14, 15],
+  mastering: [16],
+  learning: [17],
+};
+
+/**
+ * Maps each orchestrator node to its primary HITL stage.
+ * The "primary" stage is the first stage in the node group.
  */
 export const NODE_TO_PRIMARY_STAGE: Record<OrchestratorNode, number> = {
-  video_gen: 5,     // Stage 5: video_generation (stages 3-4 are pre-flight for this node)
-  voice_gen: 6,     // Stage 6: voice_synthesis
-  lip_sync: 6,      // Stage 6: shares voice_synthesis stage (lip sync is post-processing of voice+video)
-  music_gen: 7,     // Stage 7: music_scoring
-  foley_gen: 8,     // Stage 8: sfx_foley (was secondary to music_gen, now its own node)
-  ambient_gen: 8,   // Stage 8: shares sfx_foley stage (ambient is part of SFX pipeline)
-  assembly: 10,     // Stage 10: video_composite (stages 9, 11, 12 are secondary)
+  pre_production: 1,
+  key_animation: 6,
+  video_gen: 10,
+  post_video: 11,
+  audio_timing: 12,
+  fx_composite: 14,
+  mastering: 16,
+  learning: 17,
 };
 
 /**
- * Pre-flight stages that should be auto-advanced before the first node runs.
- * These are LLM-based analysis stages with ambient gates.
+ * Pre-flight stages that execute before the main generation pipeline.
+ * In v1.9, stages 1-5 (pre_production node) are pre-flight.
  */
-export const PRE_FLIGHT_STAGES = [1, 2]; // manga_analysis, scene_planning
+export const PRE_FLIGHT_STAGES = [1, 2, 3, 4, 5];
 
 /**
- * Stages that are secondary to a node and auto-advance with the primary.
- * Key = primary stage, Value = array of secondary stages to auto-advance.
+ * Secondary stages grouped by their primary node stage.
+ * Within a node, these stages execute after the primary stage.
  */
 export const SECONDARY_STAGES: Record<number, number[]> = {
-  5: [3, 4],      // video_gen: character_sheet_gen + keyframe_gen are pre-stages
-  // Stage 8 (sfx_foley) is now handled by foley_gen + ambient_gen nodes directly
-  10: [9, 11, 12], // assembly: audio_mix, subtitle_render, episode_publish
+  6: [7, 8, 9],    // key_animation: layout → genga → sakuga_review → sakuga_tagging
+  12: [13],        // audio_timing: x_sheet → ato_fuki
+  14: [15],        // fx_composite: fx_pass → satsuei
 };
 
 /**
- * Maps a stage number back to its orchestrator node.
+ * Reverse mapping: stage number → owning orchestrator node.
  */
-export const STAGE_TO_NODE: Record<number, OrchestratorNode> = {
-  3: "video_gen",
-  4: "video_gen",
-  5: "video_gen",
-  6: "voice_gen",  // lip_sync also maps here but voice_gen is the primary for resume
-  7: "music_gen",
-  8: "foley_gen",  // Stage 8 now maps to foley_gen (ambient_gen shares this stage)
-  9: "assembly",
-  10: "assembly",
-  11: "assembly",
-  12: "assembly",
-};
+export const STAGE_TO_NODE: Record<number, OrchestratorNode> = {};
+for (const [node, stages] of Object.entries(NODE_TO_STAGES)) {
+  for (const stage of stages) {
+    (STAGE_TO_NODE as Record<number, OrchestratorNode>)[stage] = node as OrchestratorNode;
+  }
+}
 
 // ─── Pipeline Initialization ────────────────────────────────────────────
 
 /**
  * Initialize HITL stages for a pipeline run.
  * Called at the start of runPipeline() before any node executes.
+ * Creates 17 stage rows per v1.9 Blueprint.
  */
 export async function initializeHitlForRun(
   pipelineRunId: number,
   userId: number,
   tierName: string = "free_trial"
 ): Promise<void> {
-  pipelineLog.info(`[HITL Bridge] Initializing 12 HITL stages for run ${pipelineRunId}`);
+  pipelineLog.info(`[HITL Bridge] Initializing ${TOTAL_STAGES} HITL stages for run ${pipelineRunId}`);
 
   await initializePipelineStages({
     pipelineRunId,
@@ -138,15 +170,18 @@ export async function initializeHitlForRun(
     `);
   }
 
-  pipelineLog.info(`[HITL Bridge] 12 stages initialized for run ${pipelineRunId}`);
+  pipelineLog.info(`[HITL Bridge] ${TOTAL_STAGES} stages initialized for run ${pipelineRunId}`);
 }
 
 // ─── Pre-flight Stage Processing ────────────────────────────────────────
 
 /**
- * Auto-advance pre-flight stages (manga_analysis, scene_planning).
- * These are LLM-based analysis stages that run before any generation node.
- * They get ambient gates and auto-advance with a synthetic result.
+ * Process pre-flight stages (1-5: script → anime_type → character_design →
+ * color_script → ekonte).
+ *
+ * Each stage executes sequentially with its own gate check. All are blocking
+ * gates in v1.9 (user must approve script, character design, etc. before
+ * proceeding to key animation).
  */
 export async function processPreFlightStages(
   pipelineRunId: number,
@@ -161,11 +196,11 @@ export async function processPreFlightStages(
     // Start execution
     await startStageExecution(pipelineRunId, stageNum);
 
-    // Create a synthetic result for LLM analysis stages
+    // Create a synthetic result for pre-production stages
     const syntheticResult: GenerateResult = {
       requestType: "text",
       outputUrl: "",
-      outputFileSize: 1000, // Non-trivial size to avoid blank detection
+      outputFileSize: 1000,
     };
 
     const scoreContext: ScoreContext = {
@@ -181,9 +216,9 @@ export async function processPreFlightStages(
       gateConfig
     );
 
-    // If a pre-flight gate blocks (unusual but possible for safety flags)
+    // If a gate blocks (expected for blocking gates like character_design)
     if (result.nextAction === "wait_for_creator") {
-      pipelineLog.info(`[HITL Bridge] Pre-flight stage ${stageNum} blocked! Gate ${result.gateId}`);
+      pipelineLog.info(`[HITL Bridge] Pre-flight stage ${stageNum} (${STAGE_NAMES[stageNum]}) blocked! Gate ${result.gateId}`);
       const gate = await getGateById(result.gateId);
       if (gate) await notifyGateReady(gate);
       return { blocked: true, blockingGateId: result.gateId, blockingStage: stageNum };
@@ -195,7 +230,7 @@ export async function processPreFlightStages(
       if (gate) await notifyAutoAdvanced(gate);
     }
 
-    pipelineLog.info(`[HITL Bridge] Pre-flight stage ${stageNum} completed: ${result.behavior} (score: ${result.confidenceScore})`);
+    pipelineLog.info(`[HITL Bridge] Pre-flight stage ${stageNum} (${STAGE_NAMES[stageNum]}) completed: ${result.behavior} (score: ${result.confidenceScore})`);
   }
 
   return { blocked: false };
@@ -208,7 +243,7 @@ export interface NodeCompletionParams {
   node: OrchestratorNode;
   userId: number;
   tierName?: string;
-  /** The primary generation result (e.g., the video output) */
+  /** The primary generation result */
   generationResult: GenerateResult;
   /** Context for confidence scoring */
   scoreContext?: Partial<ScoreContext>;
@@ -218,14 +253,19 @@ export interface NodeCompletionParams {
   holdId?: string;
   /** Actual credits spent */
   creditsActual?: number;
+  /** Specific stage within the node to process (for sequential stage-by-stage execution) */
+  targetStage?: number;
 }
 
 /**
  * Process HITL gates after a node completes generation.
- * Auto-advances secondary stages, then creates a gate for the primary stage.
  *
- * Returns the gate result for the primary stage. If the gate blocks,
- * the caller should pause the pipeline and wait for creator input.
+ * In v1.9, each stage within a node executes sequentially with its own gate.
+ * For nodes with multiple stages (key_animation, audio_timing, fx_composite),
+ * the orchestrator calls this once per stage, advancing through the node.
+ *
+ * sakuga_tagging (Stage 9) is advisory but REQUIRED traversal — the orchestrator
+ * MUST execute it before advancing to video_gen (Stage 10).
  */
 export async function completeNodeWithGate(
   params: NodeCompletionParams
@@ -245,41 +285,17 @@ export async function completeNodeWithGate(
     generationRequestId,
     holdId,
     creditsActual,
+    targetStage,
   } = params;
 
-  const primaryStage = NODE_TO_PRIMARY_STAGE[node];
-  const secondaryStages = SECONDARY_STAGES[primaryStage] || [];
+  // Determine which stage to process
+  const nodeStages = NODE_TO_STAGES[node];
+  const primaryStage = targetStage || nodeStages[0];
   const secondaryStagesAdvanced: number[] = [];
 
-  pipelineLog.info(`[HITL Bridge] Processing node '${node}' completion → primary stage ${primaryStage}`);
+  pipelineLog.info(`[HITL Bridge] Processing node '${node}' stage ${primaryStage} (${STAGE_NAMES[primaryStage]})`);
 
-  // 1. Auto-advance secondary pre-stages (e.g., stages 3-4 before stage 5)
-  for (const secStage of secondaryStages.filter(s => s < primaryStage)) {
-    try {
-      const secConfig = await resolveGateConfig(secStage, tierName, userId);
-      await startStageExecution(pipelineRunId, secStage);
-
-      const secResult = await completeStageGeneration(
-        pipelineRunId,
-        secStage,
-        userId,
-        { ...generationResult, requestType: "image" }, // Secondary stages get image type
-        { stageNumber: secStage, ...scoreContext },
-        secConfig
-      );
-
-      if (secResult.nextAction !== "wait_for_creator") {
-        secondaryStagesAdvanced.push(secStage);
-        const gate = await getGateById(secResult.gateId);
-        if (gate) await notifyAutoAdvanced(gate);
-      }
-    } catch (err) {
-      pipelineLog.warn(`[HITL Bridge] Secondary stage ${secStage} auto-advance failed:`, { detail: String(err) });
-      // Non-critical: secondary stage failure doesn't block the primary
-    }
-  }
-
-  // 2. Execute and gate the primary stage
+  // Execute the target stage
   await startStageExecution(pipelineRunId, primaryStage);
 
   const gateConfig = await resolveGateConfig(primaryStage, tierName, userId);
@@ -300,46 +316,19 @@ export async function completeNodeWithGate(
     creditsActual
   );
 
-  // 3. Send notifications
+  // Send notifications
   const gate = await getGateById(gateResult.gateId);
   if (gate) {
     if (gateResult.nextAction === "wait_for_creator") {
       await notifyGateReady(gate);
-      pipelineLog.info(`[HITL Bridge] Gate BLOCKED at stage ${primaryStage} (score: ${gateResult.confidenceScore})`);
+      pipelineLog.info(`[HITL Bridge] Gate BLOCKED at stage ${primaryStage} (${STAGE_NAMES[primaryStage]}, score: ${gateResult.confidenceScore})`);
     } else {
       await notifyAutoAdvanced(gate);
-      pipelineLog.info(`[HITL Bridge] Gate auto-advanced at stage ${primaryStage} (score: ${gateResult.confidenceScore})`);
+      pipelineLog.info(`[HITL Bridge] Gate auto-advanced at stage ${primaryStage} (${STAGE_NAMES[primaryStage]}, score: ${gateResult.confidenceScore})`);
     }
   }
 
-  // 4. Auto-advance secondary post-stages (e.g., stage 8 after stage 7)
-  if (gateResult.nextAction !== "wait_for_creator") {
-    for (const secStage of secondaryStages.filter(s => s > primaryStage)) {
-      try {
-        const secConfig = await resolveGateConfig(secStage, tierName, userId);
-        await startStageExecution(pipelineRunId, secStage);
-
-        const secResult = await completeStageGeneration(
-          pipelineRunId,
-          secStage,
-          userId,
-          generationResult,
-          { stageNumber: secStage, ...scoreContext },
-          secConfig
-        );
-
-        if (secResult.nextAction !== "wait_for_creator") {
-          secondaryStagesAdvanced.push(secStage);
-          const secGate = await getGateById(secResult.gateId);
-          if (secGate) await notifyAutoAdvanced(secGate);
-        }
-      } catch (err) {
-        pipelineLog.warn(`[HITL Bridge] Secondary stage ${secStage} auto-advance failed:`, { detail: String(err) });
-      }
-    }
-  }
-
-  // 5. Update pipeline run current stage
+  // Update pipeline run current stage
   const db = await getDb();
   if (db) {
     await db.execute(sql`
@@ -361,16 +350,18 @@ export async function completeNodeWithGate(
 export interface ResumeResult {
   resumed: boolean;
   nextNode?: OrchestratorNode;
+  nextStage?: number;
   pipelineComplete?: boolean;
   error?: string;
 }
 
 /**
  * Resume the pipeline after a creator approves a gate.
- * Called from the submitDecision tRPC procedure after approveStage().
+ * Determines the next stage to execute and returns the owning node.
  *
- * Determines the next orchestrator node to execute and returns it.
- * The actual node execution is handled by the orchestrator.
+ * In v1.9, stages advance one-by-one within a node. If the approved stage
+ * is not the last in its node, the next stage within the same node executes.
+ * If it IS the last, the next node begins.
  */
 export async function resumePipelineAfterApproval(
   pipelineRunId: number
@@ -389,20 +380,19 @@ export async function resumePipelineAfterApproval(
 
   // Find the next pending stage
   const stages = await getAllStages(pipelineRunId);
-  const currentStageNumber = stages.find(s =>
+  const nextPending = stages.find(s =>
     s.status === "pending" || s.status === "regenerating"
-  )?.stageNumber;
+  );
 
-  if (!currentStageNumber) {
-    // All stages are either approved, skipped, or failed
+  if (!nextPending) {
     return { resumed: true, pipelineComplete: true };
   }
 
-  // Map the next stage back to an orchestrator node
-  const nextNode = STAGE_TO_NODE[currentStageNumber];
+  const nextStageNumber = nextPending.stageNumber;
+  const nextNode = STAGE_TO_NODE[nextStageNumber];
+
   if (!nextNode) {
-    // Pre-flight stages (1, 2) — re-process them
-    return { resumed: true, nextNode: "video_gen" };
+    return { resumed: false, error: `Stage ${nextStageNumber} has no mapped orchestrator node` };
   }
 
   // Update pipeline run status to active
@@ -411,14 +401,14 @@ export async function resumePipelineAfterApproval(
     currentNode: nextNode,
   } as any);
 
-  pipelineLog.info(`[HITL Bridge] Pipeline ${pipelineRunId} resuming at node '${nextNode}' (stage ${currentStageNumber})`);
+  pipelineLog.info(`[HITL Bridge] Pipeline ${pipelineRunId} resuming at node '${nextNode}' stage ${nextStageNumber} (${STAGE_NAMES[nextStageNumber]})`);
 
-  return { resumed: true, nextNode };
+  return { resumed: true, nextNode, nextStage: nextStageNumber };
 }
 
 /**
  * Resume the pipeline after a creator requests regeneration.
- * Returns the node that needs to be re-executed.
+ * Returns the node that needs to re-execute the given stage.
  */
 export async function resumePipelineAfterRegeneration(
   pipelineRunId: number,
@@ -435,9 +425,9 @@ export async function resumePipelineAfterRegeneration(
     currentNode: node,
   } as any);
 
-  pipelineLog.info(`[HITL Bridge] Pipeline ${pipelineRunId} regenerating at node '${node}' (stage ${stageNumber})`);
+  pipelineLog.info(`[HITL Bridge] Pipeline ${pipelineRunId} regenerating at node '${node}' stage ${stageNumber} (${STAGE_NAMES[stageNumber]})`);
 
-  return { resumed: true, nextNode: node };
+  return { resumed: true, nextNode: node, nextStage: stageNumber };
 }
 
 // ─── Pipeline Pause ─────────────────────────────────────────────────────
@@ -461,13 +451,10 @@ export async function pausePipelineForGate(
     WHERE id = ${pipelineRunId}
   `);
 
-  pipelineLog.info(`[HITL Bridge] Pipeline ${pipelineRunId} paused at stage ${stageNumber} (gate ${gateId})`);
+  pipelineLog.info(`[HITL Bridge] Pipeline ${pipelineRunId} paused at stage ${stageNumber} (${STAGE_NAMES[stageNumber]}, gate ${gateId})`);
 }
 
 // ─── Timeout Cron Integration ───────────────────────────────────────────
-
-import { checkTimeoutWarnings, processTimedOutGates } from "./timeout-handler";
-import { pipelineLog } from "../observability/logger";
 
 /**
  * Process all timeout-related actions. Should be called on a cron schedule
@@ -496,7 +483,6 @@ export async function processTimeouts(): Promise<{
   let pipelinesResumed = 0;
   const db = await getDb();
   if (db) {
-    // Find pipeline runs that are paused but have no pending gates
     const [rows] = await db.execute(sql`
       SELECT DISTINCT pr.id
       FROM pipeline_runs pr
@@ -541,7 +527,6 @@ export async function getUserTierForRun(pipelineRunId: number): Promise<string> 
   if (results.length === 0) return "free_trial";
 
   const planId = results[0]?.planId;
-  // Map plan IDs to tier names
   const planToTier: Record<string, string> = {
     creator_monthly: "creator",
     creator_yearly: "creator",

@@ -11,6 +11,7 @@ import {
   GateType, GateDecision, DecisionSource,
   STAGE_NAMES, STAGE_CREDIT_ESTIMATES,
   AMBIENT_ESCALATION_THRESHOLD,
+  TOTAL_STAGES,
 } from "./stage-config";
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -187,14 +188,14 @@ export async function resolveGateConfig(
 }
 
 /**
- * Resolve all 12 gate configs for a pipeline run.
+ * Resolve all gate configs for a pipeline run (v1.9: 17 stages).
  */
 export async function resolveAllGateConfigs(
   tierName: string,
   userId?: number
 ): Promise<GateConfig[]> {
   const configs: GateConfig[] = [];
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= TOTAL_STAGES; i++) {
     configs.push(await resolveGateConfig(i, tierName, userId));
   }
   return configs;

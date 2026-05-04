@@ -5778,3 +5778,38 @@
 - [ ] Per-User Character LoRA Pipeline (Phase 6.3)
 - [ ] Premium Sakuga Models
 
+## Wave 2.5: HITL Stage Migration + D10 Embedding + D0 E2E Test
+
+### HITL 12→17 Stage Migration
+- [x] Audit current 12-stage config against v1.9 Pipeline Blueprint naming
+- [x] Confirm renames: character_sheet_gen → character_design, keyframe_generation → genga, voice_synthesis → ato_fuki
+- [x] Identify deprecations and new stage insertions
+- [x] Produce final 17-stage mapping document
+- [x] Update `server/hitl/stage-config.ts` — TOTAL_STAGES=17, STAGE_NAMES, STAGE_DISPLAY_NAMES, gate configs (85 rows = 5 tiers × 17 stages)
+- [x] Update `server/hitl/orchestrator-bridge.ts` — 8-node → 17-stage mapping with NODE_TO_PRIMARY_STAGE, NODE_TO_STAGES, PRE_FLIGHT_STAGES
+- [x] Wire Wave 2 agents (D0, D6, D1.25, D1.5, D2.5) into orchestrator stage hooks via completeNodeWithGate
+- [x] Update `server/hitl-integration.test.ts` — rewritten for v1.9 17-stage mapping (47 tests)
+- [x] Verify all existing HITL tests still pass after migration (47/47 passing)
+
+### D10 VectorStore Interface
+- [x] Implement abstract `IVectorStore` interface with `add`, `search`, `delete`, `count` methods
+- [x] Implement `JsonArrayVectorStore` — JSON float arrays in MySQL, server-side cosine similarity
+- [x] Implement `setVectorStore()` singleton for Wave 4 swap to Chroma/pgvector
+- [x] Implement `semantic-retrieval.ts` — semanticSearch, searchBySubSensei (D10.A/G/M), searchByTags, embedChunks
+- [x] Decision: Chroma/pgvector swap queued for Wave 4 (when corpus > ~5K chunks)
+- [x] 21 tests passing (vector-store.test.ts)
+
+### D0 Two-Pass + CLIP Retry E2E Integration Test
+- [x] Write end-to-end integration test exercising: front view gen → 3 additional views → CLIP validation → retry on <0.85 → approval gate
+- [x] Test covers the full character-designer orchestrator flow (mocked deps, real orchestration logic)
+- [x] Verify retry logic with mocked CLIP scores below threshold (retries up to MAX_ATTEMPTS=3)
+- [x] Verify cost tracking per view (final attempt cost per view, not cumulative retry cost)
+- [x] Verify gate state transitions (pending → all_views_generated → approved / rejected)
+- [x] 13 tests passing (d0-e2e-integration.test.ts)
+
+## Wave 4: Chroma/pgvector Swap (Committed)
+
+- [ ] Swap `JsonArrayVectorStore` for Chroma or pgvector when corpus exceeds ~5K chunks
+- [ ] Use `setVectorStore()` to inject new implementation without changing D-agent retrieval calls
+- [ ] Benchmark cosine similarity performance: JSON arrays vs native vector index
+- [ ] Migration path: export existing embeddings → re-import into new store

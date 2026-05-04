@@ -13,12 +13,19 @@ export {
   STAGE_CREDIT_ESTIMATES,
   DEFAULT_GATE_ASSIGNMENTS,
   AMBIENT_ESCALATION_THRESHOLD,
+  BRANCH_STAGES,
+  D_AGENT_DESIGNATIONS,
+  D10_PLUGIN_POINTS,
+  LEGACY_STAGE_MIGRATION,
+  TIER_NAMES,
+  isRequiredTraversal,
   isStageSkippable,
   type GateType,
   type GateDecision,
   type DecisionSource,
   type StageStatus,
   type PipelineRunStatus,
+  type TierName,
 } from "./stage-config";
 
 // Gate manager
@@ -150,6 +157,7 @@ export {
   pausePipelineForGate,
   processTimeouts,
   getUserTierForRun,
+  NODE_TO_STAGES,
   NODE_TO_PRIMARY_STAGE,
   PRE_FLIGHT_STAGES,
   SECONDARY_STAGES,

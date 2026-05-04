@@ -9,7 +9,18 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { resumePipeline } from "./pipelineOrchestrator";
-import { STAGE_TO_NODE } from "./hitl/orchestrator-bridge";
+import { STAGE_TO_NODE, type OrchestratorNode } from "./hitl/orchestrator-bridge";
+
+/**
+ * v1.9 OrchestratorNode → legacy NodeName adapter for resumePipeline.
+ * This adapter will be removed when the orchestrator is fully rewritten in Wave 3.
+ */
+const V19_NODE_TO_LEGACY: Partial<Record<OrchestratorNode, "video_gen" | "voice_gen" | "lip_sync" | "music_gen" | "foley_gen" | "ambient_gen" | "assembly">> = {
+  video_gen: "video_gen",
+  audio_timing: "voice_gen",
+  fx_composite: "foley_gen",
+  mastering: "assembly",
+};
 import {
   // Gate manager
   resolveGateConfig,
@@ -162,11 +173,12 @@ export const gateReviewRouter = router({
 
       // Resume pipeline after approve or regenerate (fire-and-forget)
       if (input.decision === "approved" || input.decision === "regenerate" || input.decision === "regenerate_with_edits") {
-        const node = STAGE_TO_NODE[gate.stageNumber];
-        if (node) {
+        const v19Node = STAGE_TO_NODE[gate.stageNumber];
+        const legacyNode = v19Node ? V19_NODE_TO_LEGACY[v19Node] : undefined;
+        if (legacyNode) {
           const action = input.decision === "approved" ? "continue" : "regenerate";
           // Fire-and-forget: don't await so the response returns immediately
-          resumePipeline(gate.pipelineRunId, node, action).catch((err) => {
+          resumePipeline(gate.pipelineRunId, legacyNode, action).catch((err) => {
             console.error(`[HITL] Failed to resume pipeline ${gate.pipelineRunId} after ${input.decision}:`, err);
           });
         }
@@ -203,7 +215,7 @@ export const pipelineStageRouter = router({
   getStage: protectedProcedure
     .input(z.object({
       pipelineRunId: z.number(),
-      stageNumber: z.number().min(1).max(12),
+      stageNumber: z.number().min(1).max(17),
     }))
     .query(async ({ ctx, input }) => {
       return getStageByNumber(input.pipelineRunId, input.stageNumber);
@@ -296,7 +308,7 @@ export const batchReviewRouter = router({
 
 export const gateConfigRouter = router({
   /**
-   * Get gate configs for all 12 stages for the current user's tier.
+   * Get gate configs for all 17 stages for the current user's tier.
    */
   getAll: protectedProcedure
     .input(z.object({
@@ -311,7 +323,7 @@ export const gateConfigRouter = router({
    */
   getForStage: protectedProcedure
     .input(z.object({
-      stageNumber: z.number().min(1).max(12),
+      stageNumber: z.number().min(1).max(17),
       tierName: z.string().default("free"),
     }))
     .query(async ({ ctx, input }) => {
@@ -389,7 +401,7 @@ export const cascadeRewindRouter = router({
   rewind: protectedProcedure
     .input(z.object({
       pipelineRunId: z.number(),
-      rewindToStage: z.number().min(1).max(12),
+      rewindToStage: z.number().min(1).max(17),
     }))
     .mutation(async ({ ctx, input }) => {
       const result = await cascadeRewind(input.pipelineRunId, input.rewindToStage);

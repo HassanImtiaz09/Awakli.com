@@ -55,6 +55,21 @@ import type { GenerateResult, ScoreContext } from "./hitl";
 import { pipelineLog } from "./observability/logger";
 
 type NodeName = "video_gen" | "voice_gen" | "lip_sync" | "music_gen" | "foley_gen" | "ambient_gen" | "assembly";
+
+/**
+ * Legacy NodeName → v1.9 OrchestratorNode adapter.
+ * Maps the legacy 7-node orchestrator to the v1.9 8-node structure.
+ * This adapter will be removed when the orchestrator is fully rewritten in Wave 3.
+ */
+const LEGACY_NODE_TO_V19: Record<NodeName, OrchestratorNode> = {
+  video_gen: "video_gen",
+  voice_gen: "audio_timing",
+  lip_sync: "audio_timing",
+  music_gen: "audio_timing",
+  foley_gen: "fx_composite",
+  ambient_gen: "fx_composite",
+  assembly: "mastering",
+};
 type NodeStatus = "pending" | "running" | "complete" | "failed" | "skipped";
 
 interface NodeStatuses {
@@ -1131,15 +1146,15 @@ export async function runPipeline(runId: number) {
     nodeCosts.video_gen = NODE_COSTS.video_gen;
     await updateNodeProgress(runId, "video_gen", "complete", nodeStatuses, 22, totalCost, nodeCosts);
 
-    // ── HITL Gate: Video Generation (stages 3-5) ──
+    // ── HITL Gate: Video Generation (v1.9 Stage 10: douga) ──
     if (hitlEnabled) {
       const videoGateResult = await completeNodeWithGate({
         pipelineRunId: runId,
-        node: "video_gen",
+        node: LEGACY_NODE_TO_V19.video_gen,
         userId: run.userId,
         tierName: userTier,
         generationResult: { requestType: "video", outputUrl: "", outputFileSize: 50_000_000 },
-        scoreContext: { stageNumber: 5 },
+        scoreContext: { stageNumber: 10 },
         creditsActual: NODE_COSTS.video_gen,
       });
       if (videoGateResult.blocked) {
@@ -1183,15 +1198,15 @@ export async function runPipeline(runId: number) {
     nodeCosts.voice_gen = NODE_COSTS.voice_gen;
     await updateNodeProgress(runId, "voice_gen", "complete", nodeStatuses, 47, totalCost, nodeCosts);
 
-    // ── HITL Gate: Voice Generation (stage 6) ──
+    // ── HITL Gate: Voice Generation (v1.9 Stage 13: ato_fuki) ──
     if (hitlEnabled) {
       const voiceGateResult = await completeNodeWithGate({
         pipelineRunId: runId,
-        node: "voice_gen",
+        node: LEGACY_NODE_TO_V19.voice_gen,
         userId: run.userId,
         tierName: userTier,
         generationResult: { requestType: "voice", outputUrl: "", outputFileSize: 2_000_000 },
-        scoreContext: { stageNumber: 6 },
+        scoreContext: { stageNumber: 13 },
         creditsActual: NODE_COSTS.voice_gen,
       });
       if (voiceGateResult.blocked) {
@@ -1257,15 +1272,15 @@ export async function runPipeline(runId: number) {
     nodeCosts.music_gen = NODE_COSTS.music_gen;
     await updateNodeProgress(runId, "music_gen", "complete", nodeStatuses, 75, totalCost, nodeCosts);
 
-    // ── HITL Gate: Music Generation (stages 7-8) ──
+    // ── HITL Gate: Music Generation (v1.9 Stage 12: x_sheet) ──
     if (hitlEnabled) {
       const musicGateResult = await completeNodeWithGate({
         pipelineRunId: runId,
-        node: "music_gen",
+        node: LEGACY_NODE_TO_V19.music_gen,
         userId: run.userId,
         tierName: userTier,
         generationResult: { requestType: "music", outputUrl: "", outputFileSize: 5_000_000 },
-        scoreContext: { stageNumber: 7 },
+        scoreContext: { stageNumber: 12 },
         creditsActual: NODE_COSTS.music_gen,
       });
       if (musicGateResult.blocked) {
@@ -1325,15 +1340,15 @@ export async function runPipeline(runId: number) {
       pipelineLog.info(`[Pipeline] Ambient generation skipped (disabled in assembly settings)`);
     }
 
-    // ── HITL Gate: Foley + Ambient (stage 8) ──
+    // ── HITL Gate: Foley + Ambient (v1.9 Stage 14: fx_pass) ──
     if (hitlEnabled && (nodeStatuses.foley_gen === "complete" || nodeStatuses.ambient_gen === "complete")) {
       const sfxGateResult = await completeNodeWithGate({
         pipelineRunId: runId,
-        node: "foley_gen",
+        node: LEGACY_NODE_TO_V19.foley_gen,
         userId: run.userId,
         tierName: userTier,
         generationResult: { requestType: "music", outputUrl: "", outputFileSize: 3_000_000 },
-        scoreContext: { stageNumber: 8 },
+        scoreContext: { stageNumber: 14 },
         creditsActual: (nodeCosts.foley_gen || 0) + (nodeCosts.ambient_gen || 0),
       });
       if (sfxGateResult.blocked) {
@@ -1350,15 +1365,15 @@ export async function runPipeline(runId: number) {
     nodeCosts.assembly = NODE_COSTS.assembly;
     await updateNodeProgress(runId, "assembly", "complete", nodeStatuses, 95, totalCost, nodeCosts);
 
-    // ── HITL Gate: Assembly (stages 9-12) ──
+    // ── HITL Gate: Assembly / Mastering (v1.9 Stage 16: mastering_harness) ──
     if (hitlEnabled) {
       const assemblyGateResult = await completeNodeWithGate({
         pipelineRunId: runId,
-        node: "assembly",
+        node: LEGACY_NODE_TO_V19.assembly,
         userId: run.userId,
         tierName: userTier,
         generationResult: { requestType: "video", outputUrl: "", outputFileSize: 100_000_000 },
-        scoreContext: { stageNumber: 10 },
+        scoreContext: { stageNumber: 16 },
         creditsActual: NODE_COSTS.assembly,
       });
       if (assemblyGateResult.blocked) {
@@ -1584,11 +1599,12 @@ export async function resumePipeline(runId: number, fromNode: NodeName, action: 
         if (audioSummary.shouldBlock) throw new Error(`Pipeline blocked by Audio Quality harness`);
       }
 
-      // HITL gate check after each node
-      const stageMap: Record<NodeName, number> = { video_gen: 5, voice_gen: 6, lip_sync: 6, music_gen: 7, foley_gen: 8, ambient_gen: 8, assembly: 10 };
+      // HITL gate check after each node (legacy adapter → v1.9 OrchestratorNode)
+      const v19Node = LEGACY_NODE_TO_V19[node];
+      const v19StageMap: Record<NodeName, number> = { video_gen: 10, voice_gen: 13, lip_sync: 13, music_gen: 12, foley_gen: 14, ambient_gen: 14, assembly: 16 };
       const gateResult = await completeNodeWithGate({
         pipelineRunId: runId,
-        node,
+        node: v19Node,
         userId: run.userId,
         tierName: userTier,
         generationResult: {
@@ -1596,7 +1612,7 @@ export async function resumePipeline(runId: number, fromNode: NodeName, action: 
           outputUrl: "",
           outputFileSize: node === "assembly" ? 100_000_000 : node === "video_gen" ? 50_000_000 : 5_000_000,
         },
-        scoreContext: { stageNumber: stageMap[node] },
+        scoreContext: { stageNumber: v19StageMap[node] },
         creditsActual: NODE_COSTS[node],
       });
 
