@@ -4,13 +4,12 @@ import React from "react";
 import { Link } from "wouter";
 import { Logo } from "./Logo";
 
-const MARQUEE_TEXT = "AWAKLI \u00B7 WHERE IDEAS BECOME ANIME \u00B7 CREATE \u00B7 VOTE \u00B7 ANIMATE \u00B7 ";
+const MARQUEE_TEXT = "AWAKLI \u00B7 WHERE IDEAS BECOME ANIME \u00B7 CREATE \u00B7 ANIMATE \u00B7 ";
 
 const FOOTER_LINKS = [
   { label: "Discover", href: "/discover" },
   { label: "Create", href: "/create" },
   { label: "Characters", href: "/characters" },
-  { label: "Vote", href: "/leaderboard" },
   { label: "Pricing", href: "/pricing" },
   { label: "Studio", href: "/studio" },
 ];

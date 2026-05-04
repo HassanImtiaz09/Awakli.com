@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, Search, X, LogOut, User, LayoutDashboard, Trophy,
   PenTool, Wand2, Upload, Compass, BookOpen, Swords, Settings,
-  CreditCard, BarChart3, Crown, Play, Vote, Users, Tag, ListVideo, Store
+  CreditCard, BarChart3, Crown, Play, Users, Tag, ListVideo, Store
 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
@@ -23,7 +23,6 @@ const CREATOR_NAV = [
 ];
 /* ─── Audience / Commerce Loop — right cluster ───────────────────────── */
 const AUDIENCE_NAV = [
-  { href: "/leaderboard", label: "Vote", icon: Trophy },
   { href: "/marketplace", label: "LoRA Market", icon: Store },
   { href: "/pricing", label: "Pricing", icon: Tag },
 ];
@@ -245,7 +244,7 @@ export function TopNav() {
               );
             })}
 
-            {/* Audience loop: Vote · Pricing */}
+            {/* Audience loop: Market · Pricing */}
             {AUDIENCE_NAV.map((item) => {
               const active = location.startsWith(item.href);
               return (

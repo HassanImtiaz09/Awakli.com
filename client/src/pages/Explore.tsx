@@ -37,9 +37,9 @@ export default function Explore() {
   const sorted = [...items].sort((a, b) => {
     switch (sortBy) {
       case "newest": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      case "top_rated": return (b.voteScore ?? 0) - (a.voteScore ?? 0);
+      case "top_rated": return (b.viewCount ?? 0) - (a.viewCount ?? 0);
       case "most_viewed": return (b.viewCount ?? 0) - (a.viewCount ?? 0);
-      default: return (b.voteScore ?? 0) - (a.voteScore ?? 0);
+      default: return (b.viewCount ?? 0) - (a.viewCount ?? 0);
     }
   });
 
@@ -165,7 +165,6 @@ function ExploreCard({ item, index }: { item: any; index: number }) {
           <div className="p-3">
             <h3 className="text-sm font-medium text-white truncate group-hover:text-token-violet transition-colors">{item.title}</h3>
             <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
-              <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" /> {item.voteScore ?? 0}</span>
               <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {item.viewCount ?? 0}</span>
             </div>
           </div>

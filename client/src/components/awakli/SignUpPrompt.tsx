@@ -6,15 +6,15 @@ import { AwakliButton } from "./AwakliButton";
 import { cn } from "@/lib/utils";
 
 // ─── Soft Sign-Up Prompt (inline banner) ────────────────────────────────────
-export function SignUpBanner({ action = "vote", className }: { action?: "vote" | "comment" | "bookmark" | "create"; className?: string }) {
+export function SignUpBanner({ action = "discover", className }: { action?: "discover" | "comment" | "bookmark" | "create"; className?: string }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
 
   const messages: Record<string, { icon: React.ReactNode; title: string; subtitle: string }> = {
-    vote: {
+    discover: {
       icon: <Heart size={20} className="text-[#E040FB]" />,
       title: "Like what you see?",
-      subtitle: "Sign in to vote and help your favorite manga become anime.",
+      subtitle: "Sign in to follow your favorite manga and watch them become anime.",
     },
     comment: {
       icon: <MessageSquare size={20} className="text-[#9B59B6]" />,
@@ -33,7 +33,7 @@ export function SignUpBanner({ action = "vote", className }: { action?: "vote" |
     },
   };
 
-  const msg = messages[action] ?? messages.vote;
+  const msg = messages[action] ?? messages.discover;
 
   return (
     <motion.div
@@ -177,7 +177,7 @@ export function PublishUpgradeModal({
                   {[
                     "Publish unlimited manga & anime",
                     "Appear in Discover, Trending & Search",
-                    "Earn votes and build your audience",
+                    "Build your audience and grow your reach",
                     "Creator analytics dashboard",
                     "Priority support",
                   ].map((feature, i) => (

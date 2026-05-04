@@ -1,8 +1,7 @@
 /**
- * Engagement Service — Likes, Comments, Related Episodes
+ * Engagement Service — Comments, Related Episodes
  *
  * Provides engagement features for the anime watch page:
- *   - Like/unlike episodes (reuses existing votes table with voteType="up")
  *   - Comments with threaded replies (reuses existing comments table)
  *   - Related episodes (same-project + similar-genre discovery)
  *
@@ -10,7 +9,6 @@
  */
 
 import {
-  castVote, removeVote, getVoteCounts, getUserVote,
   createComment, getCommentsByEpisode, deleteComment,
   getEpisodeById, getEpisodesByProject, getProjectById,
 } from "./db";
@@ -59,59 +57,6 @@ export interface RelatedEpisode {
   source: "same-project" | "similar-genre";
 }
 
-// ─── Likes (using votes table with voteType="up") ─────────────────────
-
-/**
- * Toggle like on an episode. If already liked, removes the like.
- * Uses the existing votes table with voteType="up".
- */
-export async function toggleLike(userId: number, episodeId: number): Promise<LikeResult> {
-  // Check if user already liked
-  const existingVote = await getUserVote(userId, episodeId);
-
-  if (existingVote && existingVote.voteType === "up") {
-    // Unlike — remove the vote
-    await removeVote(userId, episodeId);
-  } else {
-    // Like — cast an upvote (replaces any existing downvote)
-    await castVote(userId, episodeId, "up");
-  }
-
-  // Get updated count
-  const counts = await getVoteCounts(episodeId);
-  const newVote = await getUserVote(userId, episodeId);
-
-  return {
-    liked: newVote?.voteType === "up",
-    likeCount: counts.upvotes,
-  };
-}
-
-/**
- * Get like status for a specific user and episode.
- */
-export async function getLikeStatus(userId: number | null, episodeId: number): Promise<LikeStatus> {
-  const counts = await getVoteCounts(episodeId);
-  let liked = false;
-
-  if (userId) {
-    const vote = await getUserVote(userId, episodeId);
-    liked = vote?.voteType === "up";
-  }
-
-  return {
-    liked,
-    likeCount: counts.upvotes,
-  };
-}
-
-/**
- * Get total like count for an episode.
- */
-export async function getLikeCount(episodeId: number): Promise<number> {
-  const counts = await getVoteCounts(episodeId);
-  return counts.upvotes;
-}
 
 // ─── Comments ─────────────────────────────────────────────────────────
 

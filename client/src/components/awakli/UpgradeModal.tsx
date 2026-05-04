@@ -89,7 +89,7 @@ const UPGRADE_TIERS: {
     priceNote: "/mo",
     features: [
       `${TIER_MONTHLY_CREDITS.creator} credits/month`,
-      "Anime previews & community voting",
+      "Anime previews & HD generation",
       "HD export (PDF, PNG, MP4)",
       "3 LoRA characters",
       "Creator analytics",

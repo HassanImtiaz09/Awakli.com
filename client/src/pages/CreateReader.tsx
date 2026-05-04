@@ -303,7 +303,7 @@ export default function CreateReader() {
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">Publish to Community</h2>
                   <p className="text-white/50 mb-6">
-                    Make your manga visible on the Discover page. Other users can read, vote, and comment on it.
+                    Make your manga visible on the Discover page. Other users can read and comment on it.
                   </p>
                   <button
                     onClick={() => publishMutation.mutate({ projectId })}

@@ -100,65 +100,18 @@ function shareToTwitter(title: string, url: string) {
 
 // ─── Like Button Component ──────────────────────────────────────────────
 
-function LikeButton({ episodeId }: { episodeId: number }) {
-  const { isAuthenticated } = useAuth();
-  const utils = trpc.useUtils();
-
-  const likeStatusQuery = trpc.engagement.getLikeStatus.useQuery(
-    { episodeId },
-    { enabled: episodeId > 0 },
-  );
-
-  const toggleLikeMutation = trpc.engagement.toggleLike.useMutation({
-    onMutate: async () => {
-      await utils.engagement.getLikeStatus.cancel({ episodeId });
-      const prev = utils.engagement.getLikeStatus.getData({ episodeId });
-      if (prev) {
-        utils.engagement.getLikeStatus.setData({ episodeId }, {
-          liked: !prev.liked,
-          likeCount: prev.liked ? prev.likeCount - 1 : prev.likeCount + 1,
-        });
-      }
-      return { prev };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) {
-        utils.engagement.getLikeStatus.setData({ episodeId }, ctx.prev);
-      }
-    },
-    onSettled: () => {
-      utils.engagement.getLikeStatus.invalidate({ episodeId });
-    },
-  });
-
-  const liked = likeStatusQuery.data?.liked ?? false;
-  const likeCount = likeStatusQuery.data?.likeCount ?? 0;
-
-  const handleLike = () => {
-    if (!isAuthenticated) {
-      window.location.href = getLoginUrl(window.location.pathname);
-      return;
-    }
-    toggleLikeMutation.mutate({ episodeId });
-  };
-
+function LikeButton({ episodeId: _episodeId }: { episodeId: number }) {
+  // Like/vote system removed in Wave 1. Placeholder share button.
   return (
     <motion.button
-      onClick={handleLike}
+      onClick={async () => {
+        try { await navigator.clipboard.writeText(window.location.href); } catch { /* noop */ }
+      }}
       className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 hover:border-[#E040FB]/30 transition-all text-sm"
       whileTap={{ scale: 0.95 }}
     >
-      <motion.div
-        animate={liked ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Heart
-          className={`w-5 h-5 transition-colors ${liked ? "fill-[#E040FB] text-[#E040FB]" : "text-[#9494B8]"}`}
-        />
-      </motion.div>
-      <span className={liked ? "text-[#E040FB] font-medium" : "text-[#9494B8]"}>
-        {likeCount > 0 ? formatViewCount(likeCount) : "Like"}
-      </span>
+      <Heart className="w-5 h-5 text-[#9494B8]" />
+      <span className="text-[#9494B8]">Share</span>
     </motion.button>
   );
 }

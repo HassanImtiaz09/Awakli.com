@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 const ICON_MAP: Record<string, typeof Bell> = {
-  vote: ThumbsUp,
+  follow: ThumbsUp,
   comment: MessageSquare,
   new_follower: UserPlus,
   job_complete: Film,

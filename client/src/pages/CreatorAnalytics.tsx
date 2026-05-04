@@ -77,7 +77,6 @@ export default function CreatorAnalytics() {
 
   const projectStats = [
     { label: "Total Views", value: overview?.totalViews ?? 0, icon: Eye, color: "#3498DB" },
-    { label: "Total Votes", value: overview?.totalVotes ?? 0, icon: Heart, color: "#7C4DFF" },
     { label: "Published", value: overview?.publishedProjects ?? 0, icon: TrendingUp, color: "#2ECC71" },
     { label: "Total Projects", value: overview?.totalProjects ?? 0, icon: BookOpen, color: "#9B59B6" },
   ];
@@ -212,7 +211,6 @@ export default function CreatorAnalytics() {
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-[#5C5C7A]">
                           <span className="flex items-center gap-1"><Eye size={12} />{item.viewCountFormatted ?? item.viewCount ?? 0}</span>
-                          <span className="flex items-center gap-1"><Heart size={12} />{item.voteScore ?? 0}</span>
                           {item.publishedAt && <span>Published {new Date(item.publishedAt).toLocaleDateString()}</span>}
                         </div>
                       </div>

@@ -398,7 +398,18 @@ export default function EpisodePlayer() {
               {currentEpisode.synopsis && (
                 <p className="text-gray-400 mb-4">{currentEpisode.synopsis}</p>
               )}
-              <VotingSection episodeId={currentEpisode.id} />
+              {/* Share button */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </button>
+              </div>
             </div>
 
             {/* Comments */}
@@ -440,74 +451,6 @@ export default function EpisodePlayer() {
   );
 }
 
-// ─── Voting Section ────────────────────────────────────────────────────────
-function VotingSection({ episodeId }: { episodeId: number }) {
-  const { isAuthenticated } = useAuth();
-  const voting = trpc.voting.get.useQuery({ episodeId });
-  const castVote = trpc.voting.cast.useMutation({
-    onSuccess: () => voting.refetch(),
-  });
-  const removeVote = trpc.voting.remove.useMutation({
-    onSuccess: () => voting.refetch(),
-  });
-
-  const handleVote = (type: "up" | "down") => {
-    if (!isAuthenticated) { window.location.href = getLoginUrl(); return; }
-    if (voting.data?.userVote === type) {
-      removeVote.mutate({ episodeId });
-    } else {
-      castVote.mutate({ episodeId, voteType: type });
-    }
-  };
-
-  const upvotes = (voting.data as any)?.upvotes ?? 0;
-  const downvotes = (voting.data as any)?.downvotes ?? 0;
-  const userVote = voting.data?.userVote;
-
-  return (
-    <div className="flex items-center gap-4">
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={() => handleVote("up")}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-          userVote === "up"
-            ? "border-token-violet/50 bg-token-violet/10 text-token-violet"
-            : "border-white/10 bg-white/5 text-gray-400 hover:text-white"
-        }`}
-      >
-        <ThumbsUp className={`w-4 h-4 ${userVote === "up" ? "fill-token-violet" : ""}`} />
-        <motion.span key={upvotes} initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-          {upvotes}
-        </motion.span>
-      </motion.button>
-
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={() => handleVote("down")}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-          userVote === "down"
-            ? "border-red-500/50 bg-red-500/10 text-red-400"
-            : "border-white/10 bg-white/5 text-gray-400 hover:text-white"
-        }`}
-      >
-        <ThumbsDown className={`w-4 h-4 ${userVote === "down" ? "fill-red-400" : ""}`} />
-        <motion.span key={downvotes} initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-          {downvotes}
-        </motion.span>
-      </motion.button>
-
-      <button
-        onClick={async () => {
-          try { await navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); } catch { toast.error("Failed to copy"); }
-        }}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:text-white transition-colors"
-      >
-        <Share2 className="w-4 h-4" />
-        Share
-      </button>
-    </div>
-  );
-}
 
 // ─── Simple Markdown Renderer ─────────────────────────────────────────────
 function renderMarkdown(text: string): string {

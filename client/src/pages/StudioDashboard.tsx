@@ -120,7 +120,7 @@ export default function StudioDashboard() {
                 <Upload size={24} className="text-[#E040FB]" />
               </div>
               <h3 className="font-semibold text-[#F0F0F5] mb-1">Upload Manga</h3>
-              <p className="text-xs text-[#9494B8] leading-relaxed">Already have manga art? Upload it and let the community vote it to anime.</p>
+              <p className="text-xs text-[#9494B8] leading-relaxed">Already have manga art? Upload it and let the community discover it.</p>
             </motion.div>
           </Link>
         </div>
@@ -361,7 +361,7 @@ function AnimePromotionStatus({ projects }: { projects: any[] }) {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-[#F0F0F5] truncate">{p.title}</h3>
-              <p className="text-xs text-[#9494B8] mt-0.5">Eligible for anime conversion — reached the vote threshold!</p>
+              <p className="text-xs text-[#9494B8] mt-0.5">Eligible for anime conversion!</p>
             </div>
             <Link href={`/studio/project/${p.id}`}>
               <AwakliButton variant="primary" size="sm">

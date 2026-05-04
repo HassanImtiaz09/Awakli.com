@@ -78,7 +78,7 @@ export default function Onboarding() {
                   I Want to Create
                 </h2>
                 <p className="text-gray-400 leading-relaxed mb-6">
-                  Write stories and let AI turn them into manga. Build an audience and earn votes to get your manga animated.
+                  Write stories and let AI turn them into manga. Build an audience and watch your manga become anime.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {["Write Stories", "Generate Manga", "Earn Anime"].map((tag) => (
@@ -109,10 +109,10 @@ export default function Onboarding() {
                   I Want to Discover
                 </h2>
                 <p className="text-gray-400 leading-relaxed mb-6">
-                  Read AI-generated manga from creators worldwide. Vote for the stories you want to see become anime.
+                  Read AI-generated manga from creators worldwide. Discover stories and watch them become anime.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {["Read Manga", "Vote for Anime", "Follow Creators"].map((tag) => (
+                  {["Read Manga", "Watch Anime", "Follow Creators"].map((tag) => (
                     <span key={tag} className="px-3 py-1 rounded-full bg-[#E040FB]/10 text-[#E040FB] text-xs font-medium">
                       {tag}
                     </span>
@@ -169,7 +169,7 @@ export default function Onboarding() {
                 {[
                   { icon: PenTool, label: "Write", color: "#7C4DFF" },
                   { icon: Wand2, label: "Generate", color: "#9B59B6" },
-                  { icon: Heart, label: "Vote", color: "#E040FB" },
+                  { icon: Eye, label: "Watch", color: "#E040FB" },
                   { icon: Film, label: "Animate", color: "#FFD60A" },
                 ].map((s) => (
                   <div key={s.label} className="p-3 rounded-lg border border-white/5 bg-white/[0.02] text-center">
@@ -220,7 +220,7 @@ export default function Onboarding() {
                 Discover Amazing Manga
               </h1>
               <p className="text-gray-400 text-lg mb-8 max-w-md mx-auto">
-                We'll take you to the community feed. Vote for manga you want to see become anime!
+                We'll take you to the community feed. Discover manga and watch them become anime!
               </p>
 
               {/* How voting works */}
@@ -229,8 +229,8 @@ export default function Onboarding() {
                 <div className="space-y-3">
                   {[
                     { icon: BookOpen, text: "Browse manga created by the community", color: "#E040FB" },
-                    { icon: Heart, text: "Vote for stories you love", color: "#7C4DFF" },
-                    { icon: Film, text: "Top-voted manga become anime", color: "#FFD60A" },
+                    { icon: Heart, text: "Follow stories you love", color: "#7C4DFF" },
+                    { icon: Film, text: "Popular manga become anime", color: "#FFD60A" },
                   ].map((item) => (
                     <div key={item.text} className="flex items-center gap-3">
                       <item.icon className="w-5 h-5 flex-shrink-0" style={{ color: item.color }} />

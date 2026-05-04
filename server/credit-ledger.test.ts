@@ -70,30 +70,30 @@ describe("Tier Configuration (products.ts)", () => {
     expect(ft.packDiscount).toBe(0);
   });
 
-  it("creator has 35 credits at $29/mo", () => {
+  it("creator has 35 credits at $19/mo", () => {
     const c = TIERS.creator;
     expect(c.credits).toBe(35);
-    expect(c.monthlyPrice).toBe(2900);
+    expect(c.monthlyPrice).toBe(1900);
     expect(c.episodeLengthCapSeconds).toBe(900);
     expect(c.allowedModelTiers).toContain("standard");
     expect(c.rolloverPercentage).toBe(0);
     expect(c.packDiscount).toBe(0);
   });
 
-  it("creator_pro has 120 credits at $99/mo", () => {
+  it("creator_pro has 120 credits at $49/mo", () => {
     const cp = TIERS.creator_pro;
     expect(cp.credits).toBe(120);
-    expect(cp.monthlyPrice).toBe(9900);
+    expect(cp.monthlyPrice).toBe(4900);
     expect(cp.episodeLengthCapSeconds).toBe(1800);
     expect(cp.allowedModelTiers).toContain("premium");
     expect(cp.rolloverPercentage).toBe(0.20);
     expect(cp.packDiscount).toBe(0.10);
   });
 
-  it("studio has 600 credits at $499/mo", () => {
+  it("studio has 600 credits at $149/mo", () => {
     const s = TIERS.studio;
     expect(s.credits).toBe(600);
-    expect(s.monthlyPrice).toBe(49900);
+    expect(s.monthlyPrice).toBe(14900);
     expect(s.episodeLengthCapSeconds).toBe(3600);
     expect(s.allowedModelTiers).toContain("ultra");
     expect(s.rolloverPercentage).toBe(0.50);

@@ -58,7 +58,7 @@ const TIERS: TierDef[] = [
       { icon: PenTool, text: "3 manga projects" },
       { icon: Wand2, text: "AI script generation (Sonnet)" },
       { icon: Palette, text: "20 panels per chapter" },
-      { icon: Users, text: "Publish & earn community votes" },
+      { icon: Users, text: "Publish & share with community" },
       { icon: Film, text: "1 anime episode (5 min, 720p)" },
       { icon: CreditCard, text: "15 credits to explore" },
     ],

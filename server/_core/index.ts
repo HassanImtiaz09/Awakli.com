@@ -71,7 +71,7 @@ async function startServer() {
       let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
       xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
       // Static pages
-      for (const path of ["/", "/discover", "/trending", "/leaderboard", "/pricing", "/create"]) {
+      for (const path of ["/", "/discover", "/trending", "/pricing", "/create"]) {
         xml += `  <url><loc>${origin}${path}</loc><changefreq>daily</changefreq><priority>${path === "/" ? "1.0" : "0.8"}</priority><lastmod>${now}</lastmod></url>\n`;
       }
       // Published projects

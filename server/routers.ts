@@ -13,13 +13,12 @@ import {
   getPanelById, getPanelsByProject, batchUpdatePanelStatus, getPanelsGeneratingCount,
   createCharacter, getCharactersByProject, getCharacterById, updateCharacter, deleteCharacter,
   // Phase 4
-  castVote, removeVote, getVoteCounts, getUserVote,
   createComment, getCommentsByEpisode, deleteComment,
   toggleFollow, getFollowStatus, getFollowerCount, getFollowingCount,
   addToWatchlist, removeFromWatchlist, getUserWatchlist, isInWatchlist, updateWatchlistProgress,
   createNotification, getUserNotifications, markAllNotificationsRead, getUnreadNotificationCount,
   getPublicProjects, getFeaturedProjects, searchProjects, getProjectBySlug,
-  getEpisodeCountForProject, getLeaderboard,
+  getEpisodeCountForProject,
   getUserById, getProjectsByUserIdPublic,
 } from "./db";
 import { storagePut } from "./storage";
@@ -37,10 +36,6 @@ import {
   updateCharacterVoice, getCharactersWithVoice,
 } from "./db";
 import { billingRouter, usageRouter, marketplaceRouter, adminRouter, reportRouter } from "./routers-phase6";
-import {
-  enhancedVotingRouter, voteProgressRouter, animeProductionRouter,
-  discoverVotingRouter, roadToAnimeRouter, creatorVotingRouter, adminVotingRouter,
-} from "./routers-voting";
 import { quickCreateRouter } from "./routers-create";
 import { smartCreateRouter } from "./routers-smartcreate";
 import {
@@ -1650,33 +1645,6 @@ const searchRouter = router({
     }),
 });
 
-// ─── Voting Router ───────────────────────────────────────────────────────
-
-const votingRouter = router({
-  cast: protectedProcedure
-    .input(z.object({ episodeId: z.number(), voteType: z.enum(["up", "down"]) }))
-    .mutation(async ({ ctx, input }) => {
-      await castVote(ctx.user.id, input.episodeId, input.voteType);
-      const counts = await getVoteCounts(input.episodeId);
-      return { ...counts, userVote: input.voteType };
-    }),
-
-  remove: protectedProcedure
-    .input(z.object({ episodeId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      await removeVote(ctx.user.id, input.episodeId);
-      const counts = await getVoteCounts(input.episodeId);
-      return { ...counts, userVote: null };
-    }),
-
-  get: publicProcedure
-    .input(z.object({ episodeId: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const counts = await getVoteCounts(input.episodeId);
-      const userVote = ctx.user ? await getUserVote(ctx.user.id, input.episodeId) : null;
-      return { ...counts, userVote: userVote?.voteType ?? null };
-    }),
-});
 
 // ─── Comments Router ─────────────────────────────────────────────────────
 
@@ -1822,20 +1790,7 @@ const watchlistRouter = router({
     }),
 });
 
-// ─── Leaderboard Router ──────────────────────────────────────────────────
-
-const leaderboardRouter = router({
-  get: publicProcedure
-    .input(z.object({
-      period: z.enum(["week", "month", "all"]).default("all"),
-      limit: z.number().min(1).max(100).default(20),
-    }).optional())
-    .query(async ({ input }) => {
-      return getLeaderboard(input?.period ?? "all", input?.limit ?? 20);
-    }),
-});
-
-// ─── Notifications Router ────────────────────────────────────────────────
+// ─── Notifications Router ────────────────────────────────────────────────────
 
 const notificationsRouter = router({
   list: protectedProcedure
@@ -2249,18 +2204,9 @@ export const appRouter = router({
   // Phase 4: Community & Streaming
   discover: discoverRouter,
   search: searchRouter,
-  voting: enhancedVotingRouter,
   comments: commentsRouter,
   follows: followsRouter,
   watchlist: watchlistRouter,
-  leaderboard: leaderboardRouter,
-  // Voting-to-Anime Pipeline
-  voteProgress: voteProgressRouter,
-  animeProduction: animeProductionRouter,
-  discoverVoting: discoverVotingRouter,
-  roadToAnime: roadToAnimeRouter,
-  creatorVoting: creatorVotingRouter,
-  adminVoting: adminVotingRouter,
   notifications: notificationsRouter,
   userProfile: userProfileRouter,
   watch: watchRouter,

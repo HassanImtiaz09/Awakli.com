@@ -149,10 +149,6 @@ function ContentCard({ item, rank }: { item: any; rank?: number }) {
               <Eye size={12} />
               {item.viewCountFormatted ?? item.viewCount ?? 0}
             </span>
-            <span className="flex items-center gap-1">
-              <Heart size={12} />
-              {item.voteScore ?? 0}
-            </span>
           </div>
 
           {/* Anime badge */}

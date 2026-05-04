@@ -725,7 +725,7 @@ function CommunityShot({ elapsed, assets }: ShotProps) {
         <h2 className="text-4xl font-bold text-white mb-4">Join the Community</h2>
         <div className="flex gap-8">
           <StatBadge label="Manga Created" value="12,000+" />
-          <StatBadge label="Anime Voted" value="500+" />
+          <StatBadge label="Anime Episodes" value="500+" />
           <StatBadge label="Creators" value="8,000+" />
         </div>
       </div>

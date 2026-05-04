@@ -10,7 +10,7 @@ interface SEOProps {
 }
 
 const DEFAULT_TITLE = "Awakli — Turn Your Ideas Into Anime";
-const DEFAULT_DESCRIPTION = "Create manga from your story ideas. The best get voted into anime by the community.";
+const DEFAULT_DESCRIPTION = "Create manga from your story ideas and watch them become anime with AI.";
 const DEFAULT_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/hero-anime-1-XN9AD8awyDsfJqHWbpYC62.webp";
 
 /**

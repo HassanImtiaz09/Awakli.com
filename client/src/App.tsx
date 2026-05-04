@@ -23,7 +23,6 @@ import PanelReview from "./pages/PanelReview";
 import StoryboardPreview from "./pages/StoryboardPreview";
 import WatchProject from "./pages/WatchProject";
 import EpisodePlayer from "./pages/EpisodePlayer";
-import Leaderboard from "./pages/Leaderboard";
 import UserProfile from "./pages/UserProfile";
 import PipelineDashboard from "./pages/PipelineDashboard";
 import QAReview from "./pages/QAReview";
@@ -100,7 +99,6 @@ function Router() {
         <Route path="/signup" component={SignUp} />
         <Route path="/discover" component={Discover} />
         <Route path="/explore" component={Explore} />
-        <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/trending" component={Trending} />
         <Route path="/marketplace" component={LoraMarketplace} />

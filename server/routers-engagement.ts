@@ -1,5 +1,5 @@
 /**
- * Engagement Router — Likes, Comments, Related Episodes
+ * Engagement Router — Comments, Related Episodes
  *
  * tRPC endpoints for watch page engagement features.
  */
@@ -7,9 +7,6 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
-  toggleLike,
-  getLikeStatus,
-  getLikeCount,
   addComment,
   getComments,
   removeComment,
@@ -17,36 +14,6 @@ import {
 } from "./engagement";
 
 export const engagementRouter = router({
-  /**
-   * Toggle like on an episode.
-   * If already liked, removes the like. Otherwise adds a like.
-   */
-  toggleLike: protectedProcedure
-    .input(z.object({ episodeId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      return toggleLike(ctx.user.id, input.episodeId);
-    }),
-
-  /**
-   * Get like status for the current user and an episode.
-   * Works for both authenticated and unauthenticated users.
-   */
-  getLikeStatus: publicProcedure
-    .input(z.object({ episodeId: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const userId = ctx.user?.id ?? null;
-      return getLikeStatus(userId, input.episodeId);
-    }),
-
-  /**
-   * Get total like count for an episode (public).
-   */
-  getLikeCount: publicProcedure
-    .input(z.object({ episodeId: z.number() }))
-    .query(async ({ input }) => {
-      return { count: await getLikeCount(input.episodeId) };
-    }),
-
   /**
    * Add a comment to an episode.
    * Supports threaded replies via parentId.

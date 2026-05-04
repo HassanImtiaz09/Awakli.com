@@ -51,8 +51,6 @@ export const projects = mysqlTable("projects", {
   animeEligible: int("animeEligible").default(0),
   featured: int("featured").default(0),
   viewCount: int("viewCount").default(0),
-  voteScore: int("voteScore").default(0),
-  totalVotes: int("totalVotes").default(0),
   animeStatus: mysqlEnum("animeStatus", ["not_eligible", "eligible", "in_production", "completed"]).default("not_eligible").notNull(),
   animePromotedAt: timestamp("animePromotedAt"),
   trailerVideoUrl: text("trailerVideoUrl"),
@@ -451,18 +449,6 @@ export const clipEmbeddings = mysqlTable("clip_embeddings", {
 export type ClipEmbedding = typeof clipEmbeddings.$inferSelect;
 export type InsertClipEmbedding = typeof clipEmbeddings.$inferInsert;
 
-// ─── Votes ──────────────────────────────────────────────────────────────
-
-export const votes = mysqlTable("votes", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  episodeId: int("episodeId").notNull().references(() => episodes.id, { onDelete: "cascade" }),
-  voteType: mysqlEnum("voteType", ["up", "down"]).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type Vote = typeof votes.$inferSelect;
-export type InsertVote = typeof votes.$inferInsert;
 
 // ─── Comments ───────────────────────────────────────────────────────────
 
@@ -513,7 +499,7 @@ export type InsertWatchlist = typeof watchlist.$inferInsert;
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  type: mysqlEnum("type", ["new_episode", "reply", "vote_milestone", "new_follower", "anime_eligible", "anime_started", "anime_completed"]).notNull(),
+  type: mysqlEnum("type", ["new_episode", "reply", "new_follower", "anime_eligible", "anime_started", "anime_completed"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content"),
   linkUrl: varchar("linkUrl", { length: 512 }),
@@ -616,23 +602,6 @@ export const platformConfig = mysqlTable("platform_config", {
 
 export type PlatformConfig = typeof platformConfig.$inferSelect;
 export type InsertPlatformConfig = typeof platformConfig.$inferInsert;
-
-// ─── Anime Promotions ─────────────────────────────────────────────────
-
-export const animePromotions = mysqlTable("anime_promotions", {
-  id: int("id").autoincrement().primaryKey(),
-  projectId: int("projectId").notNull().references(() => projects.id, { onDelete: "cascade" }),
-  voteCountAtPromotion: int("voteCountAtPromotion").notNull(),
-  promotedAt: timestamp("promotedAt").defaultNow().notNull(),
-  productionStartedAt: timestamp("productionStartedAt"),
-  productionCompletedAt: timestamp("productionCompletedAt"),
-  status: mysqlEnum("status", ["pending_creator", "in_production", "completed", "cancelled"]).default("pending_creator").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type AnimePromotion = typeof animePromotions.$inferSelect;
-export type InsertAnimePromotion = typeof animePromotions.$inferInsert;
 
 // ─── Scenes (for consistency tracking) ───────────────────────────────
 

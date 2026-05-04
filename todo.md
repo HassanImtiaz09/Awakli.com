@@ -5465,3 +5465,52 @@
 - [x] Ensure responsive layout works with 5 tiers (horizontal scroll or stacked on mobile)
 - [x] Write vitest for pricing page rendering all tiers (15/15 passing)
 - [x] Save checkpoint
+
+## Wave 1: Voting System Removal
+
+### Server-side removal
+- [x] Remove `votes` table and `animePromotions` table from drizzle/schema.ts
+- [x] Remove `voteScore` and `totalVotes` columns from projects table in schema
+- [x] Remove `vote_milestone` from notifications type enum in schema
+- [x] Delete server/routers-voting.ts (7 sub-routers, 214 lines)
+- [x] Delete server/db-voting.ts (vote progress queries, 366 lines)
+- [x] Delete server/voting.test.ts (131 lines)
+- [x] Delete migrate-voting.mjs (41 lines)
+- [x] Remove inline votingRouter from server/routers.ts
+- [x] Remove leaderboardRouter from server/routers.ts
+- [x] Remove all voting router imports and registrations from appRouter in routers.ts
+- [x] Remove voting-related db helper imports (castVote, removeVote, getVoteCounts, getUserVote, getLeaderboard)
+
+### Frontend removal
+- [x] Delete client/src/components/awakli/VoteProgressBar.tsx (351 lines)
+- [x] Delete client/src/pages/Leaderboard.tsx (375 lines)
+- [x] Remove /leaderboard route and Leaderboard import from App.tsx
+- [x] Remove "Vote" nav link from TopNav.tsx
+
+### Scattered reference cleanup (~25 references across 13 files)
+- [x] Clean Discover.tsx: remove VoteProgressBar imports, discoverVoting queries, vote copy
+- [x] Clean EpisodePlayer.tsx: remove VotingSection component and trpc.voting calls
+- [x] Clean WatchProject.tsx: remove VoteProgressBar/EnhancedVoteButton imports and usage
+- [x] Clean Explore.tsx: replace voteScore sorting with viewCount
+- [x] Clean Trending.tsx: replace voteScore display with viewCount
+- [x] Clean CreatorAnalytics.tsx: replace Total Votes stat with Total Projects
+- [x] Clean StudioDashboard.tsx: remove vote threshold copy
+- [x] Clean Onboarding.tsx: remove vote-related copy and tags
+- [x] Clean Pricing.tsx: replace "earn community votes" with "share with community"
+- [x] Clean DemoRecording.tsx: replace "Anime Voted" with "Anime Episodes"
+- [x] Clean MarketingFooter.tsx: remove Vote link
+- [x] Clean SignUpPrompt.tsx: replace vote action with discover action
+- [x] Clean UpgradeModal.tsx: remove "community voting" copy
+- [x] Clean SEOHead.tsx: remove "voted" from default description
+- [x] Clean NotificationCenter.tsx: replace vote icon mapping with follow
+- [x] LoraComparisonModal.tsx: blind-mode voting preserved (LoRA A/B comparison, unrelated to community voting)
+- [x] phase4.test.ts: comment upvotes/downvotes preserved (unrelated to community voting)
+- [x] lora-blind-mode.test.ts: preserved (unrelated to community voting)
+
+### Verification
+- [x] Build compiles with zero TypeScript errors (LSP + TS clean)
+- [x] Voting-removal verification test: 17/17 passing
+- [x] Credit-ledger test fixed: 89/89 passing
+- [x] Pricing-page test: 15/15 passing
+- [x] Dev server runs without errors
+- [ ] Save checkpoint

@@ -3,11 +3,11 @@ import { drizzle } from "drizzle-orm/mysql2";
 import {
   users, projects, mangaUploads, processingJobs,
   episodes, panels, characters,
-  votes, comments, follows, watchlist, notifications,
+  comments, follows, watchlist, notifications,
   characterElements,
   InsertUser, InsertProject, InsertMangaUpload, InsertProcessingJob,
   InsertEpisode, InsertPanel, InsertCharacter,
-  InsertVote, InsertComment, InsertFollow, InsertWatchlist, InsertNotification,
+  InsertComment, InsertFollow, InsertWatchlist, InsertNotification,
   InsertCharacterElement,
   uploadedAssets, InsertUploadedAsset,
 } from "../drizzle/schema";
@@ -373,42 +373,6 @@ export async function deleteCharacter(id: number) {
   await db.delete(characters).where(eq(characters.id, id));
 }
 
-// ─── Votes ──────────────────────────────────────────────────────────────
-
-export async function castVote(userId: number, episodeId: number, voteType: "up" | "down") {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  // Remove existing vote first
-  await db.delete(votes).where(and(eq(votes.userId, userId), eq(votes.episodeId, episodeId)));
-  // Insert new vote
-  await db.insert(votes).values({ userId, episodeId, voteType });
-}
-
-export async function removeVote(userId: number, episodeId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.delete(votes).where(and(eq(votes.userId, userId), eq(votes.episodeId, episodeId)));
-}
-
-export async function getVoteCounts(episodeId: number) {
-  const db = await getDb();
-  if (!db) return { upvotes: 0, downvotes: 0 };
-  const allVotes = await db.select({ voteType: votes.voteType }).from(votes)
-    .where(eq(votes.episodeId, episodeId));
-  return {
-    upvotes: allVotes.filter(v => v.voteType === "up").length,
-    downvotes: allVotes.filter(v => v.voteType === "down").length,
-  };
-}
-
-export async function getUserVote(userId: number, episodeId: number) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db.select().from(votes)
-    .where(and(eq(votes.userId, userId), eq(votes.episodeId, episodeId)))
-    .limit(1);
-  return result[0] ?? null;
-}
 
 // ─── Comments ───────────────────────────────────────────────────────────
 
@@ -588,7 +552,6 @@ export async function getPublicProjects(opts: { limit?: number; offset?: number;
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
     viewCount: projects.viewCount,
-    voteScore: projects.voteScore,
     animeStyle: projects.animeStyle,
     createdAt: projects.createdAt,
     userId: projects.userId,
@@ -604,8 +567,8 @@ export async function getPublicProjects(opts: { limit?: number; offset?: number;
     .offset(offset);
 
   if (sort === "newest") query = query.orderBy(desc(projects.createdAt)) as any;
-  else if (sort === "top_rated") query = query.orderBy(desc(projects.voteScore)) as any;
-  else query = query.orderBy(desc(projects.voteScore), desc(projects.viewCount)) as any;
+  else if (sort === "top_rated") query = query.orderBy(desc(projects.viewCount)) as any;
+  else query = query.orderBy(desc(projects.viewCount), desc(projects.createdAt)) as any;
 
   return query;
 }
@@ -621,7 +584,6 @@ export async function getFeaturedProjects() {
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
     viewCount: projects.viewCount,
-    voteScore: projects.voteScore,
     animeStyle: projects.animeStyle,
     trailerVideoUrl: projects.trailerVideoUrl,
     userId: projects.userId,
@@ -644,7 +606,7 @@ export async function searchProjects(query: string, limit = 20) {
     genre: projects.genre,
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
-    voteScore: projects.voteScore,
+    viewCount: projects.viewCount,
     userName: users.name,
   }).from(projects)
     .leftJoin(users, eq(projects.userId, users.id))
@@ -654,7 +616,7 @@ export async function searchProjects(query: string, limit = 20) {
         or(like(projects.title, term), like(projects.description, term))
       )
     )
-    .orderBy(desc(projects.voteScore))
+    .orderBy(desc(projects.viewCount))
     .limit(limit);
 }
 
@@ -669,11 +631,9 @@ export async function getProjectBySlug(slug: string) {
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
     viewCount: projects.viewCount,
-    voteScore: projects.voteScore,
     animeStyle: projects.animeStyle,
     visibility: projects.visibility,
     trailerVideoUrl: projects.trailerVideoUrl,
-    totalVotes: projects.totalVotes,
     animeStatus: projects.animeStatus,
     animePromotedAt: projects.animePromotedAt,
     userId: projects.userId,
@@ -694,29 +654,6 @@ export async function getEpisodeCountForProject(projectId: number) {
   return result[0]?.cnt ?? 0;
 }
 
-// ─── Leaderboard ────────────────────────────────────────────────────────
-
-export async function getLeaderboard(period: "week" | "month" | "all", limit = 20) {
-  const db = await getDb();
-  if (!db) return [];
-  // For simplicity, use voteScore which can be periodically recalculated
-  return db.select({
-    id: projects.id,
-    title: projects.title,
-    coverImageUrl: projects.coverImageUrl,
-    slug: projects.slug,
-    voteScore: projects.voteScore,
-    viewCount: projects.viewCount,
-    genre: projects.genre,
-    userId: projects.userId,
-    userName: users.name,
-    createdAt: projects.createdAt,
-  }).from(projects)
-    .leftJoin(users, eq(projects.userId, users.id))
-    .where(eq(projects.visibility, "public"))
-    .orderBy(desc(projects.voteScore), desc(projects.viewCount))
-    .limit(limit);
-}
 
 // ─── User Profile ───────────────────────────────────────────────────────
 
@@ -736,7 +673,7 @@ export async function getProjectsByUserIdPublic(userId: number) {
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
     genre: projects.genre,
-    voteScore: projects.voteScore,
+    viewCount: projects.viewCount,
     createdAt: projects.createdAt,
   }).from(projects)
     .where(and(eq(projects.userId, userId), eq(projects.visibility, "public")))
@@ -1121,8 +1058,6 @@ export async function getPublishedProjects(opts: {
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
     viewCount: projects.viewCount,
-    voteScore: projects.voteScore,
-    totalVotes: projects.totalVotes,
     animeStyle: projects.animeStyle,
     animeStatus: projects.animeStatus,
     createdAt: projects.createdAt,
@@ -1137,9 +1072,9 @@ export async function getPublishedProjects(opts: {
 
   if (sort === "newest") query = query.orderBy(desc(projects.publishedAt), desc(projects.createdAt)) as any;
   else if (sort === "most_viewed") query = query.orderBy(desc(projects.viewCount)) as any;
-  else if (sort === "most_liked") query = query.orderBy(desc(projects.voteScore)) as any;
-  else if (sort === "rising") query = query.orderBy(desc(projects.voteScore), desc(projects.createdAt)) as any;
-  else query = query.orderBy(desc(projects.voteScore), desc(projects.viewCount)) as any; // trending
+  else if (sort === "most_liked") query = query.orderBy(desc(projects.viewCount)) as any;
+  else if (sort === "rising") query = query.orderBy(desc(projects.viewCount), desc(projects.createdAt)) as any;
+  else query = query.orderBy(desc(projects.viewCount), desc(projects.createdAt)) as any; // trending
 
   return query;
 }
@@ -1147,7 +1082,7 @@ export async function getPublishedProjects(opts: {
 export async function getTrendingProjects(limit = 20) {
   const db = await getDb();
   if (!db) return [];
-  // Weighted trending: voteScore * 3 + viewCount * 1 + recency bonus
+  // Weighted trending: viewCount + recency bonus
   return db.select({
     id: projects.id,
     title: projects.title,
@@ -1156,15 +1091,13 @@ export async function getTrendingProjects(limit = 20) {
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
     viewCount: projects.viewCount,
-    voteScore: projects.voteScore,
-    totalVotes: projects.totalVotes,
     animeStyle: projects.animeStyle,
     animeStatus: projects.animeStatus,
     createdAt: projects.createdAt,
     publishedAt: projects.publishedAt,
     userId: projects.userId,
     userName: users.name,
-    trendingScore: sql<number>`(${projects.voteScore} * 3 + ${projects.viewCount} + DATEDIFF(NOW(), ${projects.createdAt}) * -0.5)`.as("trendingScore"),
+    trendingScore: sql<number>`(${projects.viewCount} + DATEDIFF(NOW(), ${projects.createdAt}) * -0.5)`.as("trendingScore"),
   }).from(projects)
     .leftJoin(users, eq(projects.userId, users.id))
     .where(or(
@@ -1186,8 +1119,6 @@ export async function getNewReleases(limit = 20, offset = 0) {
     coverImageUrl: projects.coverImageUrl,
     slug: projects.slug,
     viewCount: projects.viewCount,
-    voteScore: projects.voteScore,
-    totalVotes: projects.totalVotes,
     animeStyle: projects.animeStyle,
     animeStatus: projects.animeStatus,
     createdAt: projects.createdAt,
@@ -1223,11 +1154,10 @@ export async function getCategories() {
 
 export async function getCreatorAnalytics(userId: number) {
   const db = await getDb();
-  if (!db) return { totalViews: 0, totalVotes: 0, totalProjects: 0, publishedProjects: 0 };
+  if (!db) return { totalViews: 0, totalProjects: 0, publishedProjects: 0 };
   
   const projectStats = await db.select({
     totalViews: sql<number>`COALESCE(SUM(${projects.viewCount}), 0)`,
-    totalVotes: sql<number>`COALESCE(SUM(${projects.voteScore}), 0)`,
     totalProjects: count(),
     publishedProjects: sql<number>`SUM(CASE WHEN ${projects.publicationStatus} = 'published' OR ${projects.visibility} = 'public' THEN 1 ELSE 0 END)`,
   }).from(projects)
@@ -1235,7 +1165,6 @@ export async function getCreatorAnalytics(userId: number) {
   
   return {
     totalViews: Number(projectStats[0]?.totalViews ?? 0),
-    totalVotes: Number(projectStats[0]?.totalVotes ?? 0),
     totalProjects: Number(projectStats[0]?.totalProjects ?? 0),
     publishedProjects: Number(projectStats[0]?.publishedProjects ?? 0),
   };
@@ -1250,8 +1179,6 @@ export async function getCreatorContentBreakdown(userId: number) {
     slug: projects.slug,
     coverImageUrl: projects.coverImageUrl,
     viewCount: projects.viewCount,
-    voteScore: projects.voteScore,
-    totalVotes: projects.totalVotes,
     publicationStatus: projects.publicationStatus,
     publishedAt: projects.publishedAt,
     createdAt: projects.createdAt,
