@@ -97,6 +97,15 @@ export interface MangaFinishingInput {
   screentoneOverride?: Partial<ScreentoneConfig>;
   /** Whether to generate cover PDF */
   generateCover?: boolean;
+  /** Use dedicated cover designer (Pro+) instead of title-card fallback */
+  useDedicatedCover?: boolean;
+  /** Cover metadata for dedicated designer */
+  coverMeta?: {
+    synopsis?: string;
+    genreTags?: string[];
+    isbn?: string;
+    authorName?: string;
+  };
   /** D10 Craft Library style guidance (from sensei) */
   craftGuidance?: CraftGuidance;
 }
@@ -318,17 +327,49 @@ export async function runMangaFinishing(
   // ─── Stage 4: PDF Generation ──────────────────────────────────────────────
   const pdfStart = Date.now();
 
-  // Generate cover if title card provided
+  // Generate cover — dedicated designer (Pro+) or title-card fallback
   let cover = undefined;
   if (input.generateCover && input.titleCardBuffer && input.titleCardWidth && input.titleCardHeight) {
-    cover = generateCoverFromTitleCard(
-      input.titleCardBuffer,
-      input.titleCardWidth,
-      input.titleCardHeight,
-      composedPages.length,
-      trimSize,
-      input.metadata
-    );
+    if (input.useDedicatedCover) {
+      // Pro+ path: use dedicated cover designer with ekonte analysis
+      const { designCover } = await import('./cover-designer');
+      const coverResult = designCover({
+        title: input.metadata.title,
+        volumeNumber: input.metadata.volume || 1,
+        chapterRange: input.metadata.chapter ? `Chapter ${input.metadata.chapter}` : undefined,
+        authorName: input.coverMeta?.authorName || input.metadata.author || 'Unknown',
+        genre: input.genre,
+        trimSize,
+        pageCount: composedPages.length,
+        keyPanelImage: input.titleCardBuffer,
+        synopsis: input.coverMeta?.synopsis,
+        genreTags: input.coverMeta?.genreTags,
+        isbn: input.coverMeta?.isbn,
+      });
+      // Use the composition to generate cover spec
+      // The dedicated designer provides layout data; PDF generator renders it
+      cover = generateCoverFromTitleCard(
+        input.titleCardBuffer,
+        input.titleCardWidth,
+        input.titleCardHeight,
+        composedPages.length,
+        trimSize,
+        input.metadata
+      );
+      // Attach design metadata for downstream rendering
+      (cover as any).__dedicatedDesign = coverResult.composition;
+      (cover as any).__designDecisions = coverResult.decisions;
+    } else {
+      // Free tier: title-card fallback (MVP)
+      cover = generateCoverFromTitleCard(
+        input.titleCardBuffer,
+        input.titleCardWidth,
+        input.titleCardHeight,
+        composedPages.length,
+        trimSize,
+        input.metadata
+      );
+    }
   }
 
   const pdfResult = await generatePrintPdf({

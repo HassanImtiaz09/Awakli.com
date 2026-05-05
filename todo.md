@@ -6128,19 +6128,23 @@
 
 ## Wave 5B Scope
 
-### Item 1: Dedicated Cover Design Step
-- [ ] Cover composition engine (`server/benchmarks/d10-m-manga-finishing/cover-designer.ts`)
-  - [ ] Title typography: genre-appropriate font selection + sizing + placement
-  - [ ] Chapter info: volume number, chapter range, subtitle
-  - [ ] Author attribution: creator name with configurable placement
-  - [ ] Ekonte-aware composition: analyze key panels for focal point, avoid text overlap
-  - [ ] Spine text generation (title + volume + author)
-  - [ ] Back cover: synopsis text + barcode area + genre tags
-- [ ] Cover template system: 4 trim sizes × 2 orientations × genre variants
-- [ ] Integration with D10.M orchestrator (replace auto-from-title-card for Pro+ users)
-- [ ] Tests for cover designer
+### Item 1: Dedicated Cover Design Step + D10 Wiring
+- [x] **D10 WIRING (sub-task 1a):** Wire `queryCraftLibrary()` into print pipeline caller
+  - [x] Create print pipeline caller module that queries D10 before calling `runMangaFinishing()`
+  - [x] Map `CraftResult` → `CraftGuidance` (screentone adjustment, layout preference)
+  - [x] Verify D10.M runs in Direct mode with actual corpus context (not generic)
+- [x] Cover composition engine (`server/benchmarks/d10-m-manga-finishing/cover-designer.ts`)
+  - [x] Title typography: genre-appropriate font selection + sizing + placement
+  - [x] Chapter info: volume number, chapter range, subtitle
+  - [x] Author attribution: creator name with configurable placement
+  - [x] Ekonte-aware composition: analyze key panels for focal point, avoid text overlap
+  - [x] Spine text generation (title + volume + author)
+  - [x] Back cover: synopsis text + barcode area + genre tags
+- [x] Cover template system: 4 trim sizes × 2 orientations × genre variants
+- [x] Integration with D10.M orchestrator (replace auto-from-title-card for Pro+ users)
+- [x] Tests for cover designer + D10 wiring (30/30 passing)
 
-### Item 2: D2.5 Sakuga Kantoku Resolution-Flow Dashboard
+### Item 2: D2.5 Sakuga Kantoku Resolution-Flow Dashboard (full auto-regen multi-round, 5-6 days)
 - [ ] Resolution-flow schema (migration 0059)
   - [ ] `resolution_issues` table: genga_set_id, panel_id, issue_type, severity, description, status, assigned_to
   - [ ] `resolution_rounds` table: issue_id, round_number, regen_params, result_url, reviewer_verdict
