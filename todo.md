@@ -6174,25 +6174,25 @@
   - [x] Pass `bias.voiceTargets` to voice generation stage (in bias object)
   - [x] Call `recordSakufuuMemory()` after Stage 16 (post-assembly, line 1584)
   - [x] Integration test: 18/18 passing (d9-wiring.test.ts)
-- [ ] LoRA training config schema (migration 0060)
-  - [ ] `lora_training_jobs` table: creator_id, style_corpus, status, model_url, config
-  - [ ] `sakufuu_style_samples` table: curated panels for training data
-- [ ] Training pipeline module (`server/benchmarks/sakufuu/lora-training.ts`)
-  - [ ] TrainingProvider interface (Replicate MVP, Modal swap later)
-  - [ ] Style sample extraction: auto-select representative panels from creator's works
-  - [ ] Training data preparation: crop, normalize, caption generation
-  - [ ] Training job submission via Replicate API
-  - [ ] Model artifact storage (S3 + DB reference)
-  - [ ] Training progress webhook handler
-- [ ] Integration with D9 Sakufuu Tracker
-  - [ ] Per-creator style bias derived from trained LoRA weights (when available)
-  - [ ] Statistical bias fallback: episode-memory-based bias from `getSakufuuBias()` —
+- [x] LoRA training config schema (migration 0060)
+  - [x] `sakufuu_lora_jobs` table: creator_id, project_id, provider, status, model_url, config
+  - [x] `sakufuu_style_samples` table: curated panels for training data
+- [x] Training pipeline module (`server/benchmarks/sakufuu/lora-training.ts`)
+  - [x] TrainingProvider interface (Replicate MVP, Modal swap later)
+  - [x] Style sample extraction: auto-select representative panels from creator's works
+  - [x] Training data preparation: crop, normalize, caption generation
+  - [x] Training job submission via Replicate API
+  - [x] Model artifact storage (S3 + DB reference)
+  - [x] Training progress webhook handler (via checkJobStatus polling)
+- [x] Integration with D9 Sakufuu Tracker
+  - [x] Per-creator style bias derived from trained LoRA weights (when available)
+  - [x] Statistical bias fallback: episode-memory-based bias from `getSakufuuBias()` —
         uses FX frequency analysis, color temperature averaging, and camera distribution
         aggregation across prior episodes (no LoRA needed, works from episode 2+)
-- [ ] Admin training management page
-  - [ ] Queue training jobs, monitor progress, approve/reject models
-  - [ ] Cost tracking per training run
-- [ ] Tests for LoRA training pipeline + D9 wiring integration
+- [x] Admin training management page (tRPC router: adminListJobs, adminApproveModel, adminCancelJob, adminCostSummary)
+  - [x] Queue training jobs, monitor progress, approve/reject models
+  - [x] Cost tracking per training run
+- [x] Tests for LoRA training pipeline + D9 wiring integration (28/28 passing)
 
 ### Item 4: Stripe Connect Onboarding (deferred to end per user request)
 - [ ] Stripe Connect account creation for creators

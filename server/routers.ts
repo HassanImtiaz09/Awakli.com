@@ -100,6 +100,7 @@ import { tierSamplerRouter } from "./routers-tier-sampler";
 import { ingestionRouter } from "./routers-ingestion";
 import { printRouter, adminPrintRouter } from "./routers-print";
 import { resolutionRouter } from "./routers-resolution";
+import { loraRouter } from "./routers-lora";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
   gateConfigRouter, qualityAnalyticsRouter, cascadeRewindRouter,
@@ -2426,6 +2427,8 @@ export const appRouter = router({
 
   // Wave 5B: Sakuga Kantoku Resolution-Flow
   resolution: resolutionRouter,
+  // Wave 5B: Sakufuu LoRA Training
+  lora: loraRouter,
 });
 
 export type AppRouter = typeof appRouter;

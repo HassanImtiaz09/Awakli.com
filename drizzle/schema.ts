@@ -2973,3 +2973,72 @@ export const gengaConsistencyScores = mysqlTable("genga_consistency_scores", {
 });
 export type GengaConsistencyScore = typeof gengaConsistencyScores.$inferSelect;
 export type InsertGengaConsistencyScore = typeof gengaConsistencyScores.$inferInsert;
+
+// ─── LoRA Training Tables ─────────────────────────────────────────────────────
+
+export const sakufuuLoraJobs = mysqlTable("sakufuu_lora_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Creator who owns this LoRA model */
+  creatorId: int("creator_id").notNull(),
+  /** Project ID (style source) */
+  projectId: int("project_id"),
+  /** Training provider: replicate | modal */
+  provider: varchar("provider", { length: 32 }).default("replicate").notNull(),
+  /** External job ID from provider */
+  externalJobId: varchar("external_job_id", { length: 255 }),
+  /** Status of the training job */
+  status: mysqlEnum("sakufuu_lora_status", ["pending", "preparing", "training", "completed", "failed", "cancelled"]).default("pending").notNull(),
+  /** Training configuration (JSON) */
+  config: json("config"),
+  /** Number of training images used */
+  sampleCount: int("sample_count").default(0).notNull(),
+  /** Total training steps */
+  trainingSteps: int("training_steps").default(1000).notNull(),
+  /** Trained model URL (S3 or provider URL) */
+  modelUrl: text("model_url"),
+  /** S3 key for the model weights */
+  modelFileKey: varchar("model_file_key", { length: 512 }),
+  /** Training cost in USD cents */
+  costCents: int("cost_cents").default(0).notNull(),
+  /** Training duration in seconds */
+  durationSeconds: int("duration_seconds"),
+  /** Error message if failed */
+  errorMessage: text("error_message"),
+  /** Admin approval status */
+  approved: mysqlEnum("sakufuu_lora_approved", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  /** Metadata (trigger word, base model, etc.) */
+  metadata: json("metadata"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SakufuuLoraJob = typeof sakufuuLoraJobs.$inferSelect;
+export type InsertSakufuuLoraJob = typeof sakufuuLoraJobs.$inferInsert;
+
+export const sakufuuStyleSamples = mysqlTable("sakufuu_style_samples", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Training job this sample belongs to */
+  trainingJobId: int("training_job_id").notNull(),
+  /** Creator who owns the source material */
+  creatorId: int("creator_id").notNull(),
+  /** Source panel/image URL */
+  sourceUrl: text("source_url").notNull(),
+  /** S3 key for the processed training image */
+  processedFileKey: varchar("processed_file_key", { length: 512 }),
+  /** Processed image URL */
+  processedUrl: text("processed_url"),
+  /** Auto-generated caption for the image */
+  caption: text("caption"),
+  /** Source type: panel, character_sheet, cover, custom */
+  sourceType: mysqlEnum("source_type", ["panel", "character_sheet", "cover", "custom"]).default("panel").notNull(),
+  /** Quality score (0-1) from auto-curation */
+  qualityScore: float("quality_score"),
+  /** Whether this sample was manually selected or auto-curated */
+  autoSelected: int("auto_selected").default(1).notNull(),
+  /** Crop region if extracted from larger image (JSON: { x, y, w, h }) */
+  cropRegion: json("crop_region"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SakufuuStyleSample = typeof sakufuuStyleSamples.$inferSelect;
+export type InsertSakufuuStyleSample = typeof sakufuuStyleSamples.$inferInsert;
