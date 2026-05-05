@@ -5933,3 +5933,67 @@
 - Three-LoRA composition runtime (genre + character + sakufuu LoRA stacking at inference)
 - Prompt-Style Adapter (D9 injects learned phrasing into generation prompts)
 - 'Awakli learns your style' product feature ships at Wave 6
+
+---
+
+## Wave 4.5 Hotfix: D9 Pipeline Wiring
+
+- [x] Created `sakufuu-pipeline.ts` — wires D9 into orchestrator at two points
+- [x] `injectSakufuuBias()` — pre-generation Stage 2 bias injection (episodes 2+)
+- [x] `recordSakufuuMemory()` — post-assembly data collection (after Stage 16)
+- [x] Handles episode 1 no-op (empty bias), draft exclusion, confidence scaling
+- [x] Integration test: `d9-pipeline-integration.test.ts` — 12 tests passing
+- [x] Total D9 tests: 58 passing (46 tracker + 12 pipeline integration)
+
+---
+
+## Wave 5A Item 1: D10.M Manga Finishing Agent
+
+### Sub-task 1a: Screentone Engine
+- [x] `screentone-engine.ts` — programmatic halftone patterns (ami-ten, kake-ami, suna-me, gradation)
+- [x] Genre-specific defaults (shonen/shojo/seinen/josei/kodomomuke)
+- [x] Mood-driven pattern selection with density/opacity multipliers
+- [x] Deterministic pseudo-random for suna-me (reproducible output)
+- [x] Region mask support for selective application
+- [x] Batch processing API
+
+### Sub-task 1b: Bubble Renderer
+- [x] `bubble-renderer.ts` — dialogue bubble layout + rasterizer
+- [x] 5 bubble types: speech (oval), thought (cloud), narration (box), SFX (angular), whisper
+- [x] Genre font configs (Noto Sans JP, Kosugi Maru, Impact, Noto Serif JP)
+- [x] Auto-layout with overlap avoidance
+- [x] RTL/LTR reading direction support
+- [x] Emphasis modifiers (loud = 1.4x, whisper = 0.8x)
+
+### Sub-task 1c: Page Compositor
+- [x] `page-compositor.ts` — panel arrangement with trim/bleed/crop marks
+- [x] 4 trim sizes: B5 (default), A5, tankōbon, US trade — all at 300 DPI
+- [x] 7 layout templates: grid_4, grid_6, splash, double_spread, l_shape, vertical_strip, dynamic
+- [x] Auto-pagination (dynamic layout selection by panel count)
+- [x] Crop marks at trim boundaries
+- [x] RTL mirroring for Japanese reading order
+
+### Sub-task 1d: PDF Generator
+- [x] `pdf-generator.ts` — print-ready PDF skeleton builder
+- [x] Lulu package ID builder (trim × color × binding × paper)
+- [x] Spine width calculation (0.0572mm/page, 3mm minimum)
+- [x] Cover-from-title-card MVP (Wave 5B = dedicated cover design)
+- [x] Print validation (page count limits, dimension consistency, metadata)
+- [x] Fixed `require()` anti-pattern → static import of TRIM_SPECS
+
+### Sub-task 1e: Orchestrator
+- [x] `manga-finishing-agent.ts` — wires screentone → bubble → compositor → PDF
+- [x] Single entry point: `runMangaFinishing(input)`
+- [x] Craft Library Sensei integration (density adjustment, layout preference)
+- [x] Timing breakdown reporting (per-stage ms)
+- [x] B5 default trim with user override support
+- [x] Cover generation when title card provided
+
+### Tests
+- [x] Integration test: `d10-m-manga-finishing.test.ts` — **69 tests passing**
+- [x] Screentone: pattern generation, config resolution, compositing, batch (14 tests)
+- [x] Bubbles: text estimation, layout, rendering, genre configs (12 tests)
+- [x] Page compositor: trim specs, layout slots, composition, auto-compose (12 tests)
+- [x] PDF generator: spine calc, skeleton, validation, cover, Lulu ID, generation (14 tests)
+- [x] Orchestrator: full pipeline, timing, validation, craft guidance (9 tests)
+- [x] Zero TypeScript errors
