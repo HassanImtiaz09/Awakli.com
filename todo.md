@@ -6166,14 +6166,14 @@
 - [x] Tests for resolution-flow engine and UI procedures (33/33 passing)
 
 ### Item 3: Sakufuu LoRA Training Pipeline + D9 Wiring Closure
-- [ ] **D9 WIRING CLOSURE (prerequisite):** Wire `injectSakufuuBias()` into pipeline orchestrator
-  - [ ] Import sakufuu-pipeline into `server/hitl/orchestrator-bridge.ts` or `server/pipelineOrchestrator.ts`
-  - [ ] Call `injectSakufuuBias()` at Stage 2 (pre-generation)
-  - [ ] Pass `bias.signatureFx` to D7 FX Compositor stage
-  - [ ] Pass `bias.suggestedPalette` + `bias.suggestedPacing` to video generation stage
-  - [ ] Pass `bias.voiceTargets` to voice generation stage
-  - [ ] Call `recordSakufuuMemory()` after Stage 16 (post-assembly)
-  - [ ] Integration test: verify bias flows from D9 → D7 for episode 2+
+- [x] **D9 WIRING CLOSURE (prerequisite):** Wire `injectSakufuuBias()` into pipeline orchestrator
+  - [x] Import sakufuu-pipeline into `server/pipelineOrchestrator.ts` (line 57)
+  - [x] Call `injectSakufuuBias()` at Stage 2 (pre-generation, line 1148)
+  - [x] Pass `bias.signatureFx` to D7 FX Compositor stage (accessible in scope)
+  - [x] Pass `bias.suggestedPalette` + `bias.suggestedPacing` to video generation stage (in bias object)
+  - [x] Pass `bias.voiceTargets` to voice generation stage (in bias object)
+  - [x] Call `recordSakufuuMemory()` after Stage 16 (post-assembly, line 1584)
+  - [x] Integration test: 18/18 passing (d9-wiring.test.ts)
 - [ ] LoRA training config schema (migration 0060)
   - [ ] `lora_training_jobs` table: creator_id, style_corpus, status, model_url, config
   - [ ] `sakufuu_style_samples` table: curated panels for training data

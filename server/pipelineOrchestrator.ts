@@ -54,6 +54,8 @@ import {
 import type { GenerateResult, ScoreContext } from "./hitl";
 import { pipelineLog } from "./observability/logger";
 import { runD5_5QualityGate, deriveStyleLock, buildCharacterBiblesMap, type D5_5PipelineContext, type ClipAssetInfo, type PanelInfo as D5_5PanelInfo } from "./benchmarks/d5-5/pipeline-integration";
+import { injectSakufuuBias, recordSakufuuMemory } from "./benchmarks/d9-sakufuu/sakufuu-pipeline";
+import type { SakufuuBias } from "./benchmarks/d9-sakufuu/sakufuu-tracker";
 
 type NodeName = "video_gen" | "voice_gen" | "lip_sync" | "music_gen" | "foley_gen" | "ambient_gen" | "assembly";
 
@@ -1140,6 +1142,24 @@ export async function runPipeline(runId: number) {
       throw new Error(`Pipeline blocked by Script Validation harness: ${scriptSummary.flaggedItems.map(f => f.checkName).join(", ")}`);
     }
 
+    // ── D9 Sakufuu: Pre-Generation Bias Injection (Stage 2) ──
+    let sakufuuBias: SakufuuBias | null = null;
+    try {
+      const sakufuuResult = await injectSakufuuBias({
+        pipelineRunId: runId,
+        episodeId: run.episodeId,
+        projectId: run.projectId,
+      });
+      sakufuuBias = sakufuuResult.bias;
+      if (sakufuuBias.active) {
+        pipelineLog.info(`[Pipeline] D9 Sakufuu bias injected: ${sakufuuResult.priorEpisodeCount} prior episodes, confidence=${sakufuuBias.confidence.toFixed(2)}, signatureFx=[${sakufuuBias.signatureFx.join(',')}]`);
+      } else {
+        pipelineLog.info(`[Pipeline] D9 Sakufuu: Episode 1 or no prior data — no bias applied`);
+      }
+    } catch (d9Err) {
+      pipelineLog.warn(`[Pipeline] D9 Sakufuu bias injection failed, continuing without bias:`, { detail: String(d9Err) });
+    }
+
     // Node 1: Video Generation (with native lip sync via Kling V3 Omni for dialogue panels)
     await updateNodeProgress(runId, "video_gen", "running", nodeStatuses, 5, totalCost, nodeCosts);
     totalCost = await videoGenAgent(runId, run.episodeId, run.projectId, nodeStatuses, nodeCosts);
@@ -1558,6 +1578,21 @@ export async function runPipeline(runId: number) {
     pipelineLog.info(`[Pipeline] Harness complete: ${totalPassed}/${totalChecks} passed, score=${overallHarnessScore.toFixed(1)}, cost=$${harnessCost.toFixed(3)}, flagged=${totalFlagged}`);
 
     await updateNodeProgress(runId, "assembly", "complete", nodeStatuses, 100, totalCost, nodeCosts);
+
+    // ── D9 Sakufuu: Post-Assembly Memory Recording (Stage 16+) ──
+    try {
+      const d9PostResult = await recordSakufuuMemory({
+        pipelineRunId: runId,
+        episodeId: run.episodeId,
+        projectId: run.projectId,
+        fxResults: sakufuuBias?.active ? sakufuuBias.signatureFx.map(fx => ({ type: fx, intensity: 0.7 })) : undefined,
+        voiceResults: undefined, // Will be populated when voice pipeline reports back
+        panelDurations: undefined, // Will be populated from assembly timing data
+      });
+      pipelineLog.info(`[Pipeline] D9 Sakufuu memory recorded: ep${d9PostResult.episodeNumber}, confidence=${d9PostResult.confidence.toFixed(2)}, profileUpdated=${d9PostResult.profileUpdated}`);
+    } catch (d9PostErr) {
+      pipelineLog.warn(`[Pipeline] D9 Sakufuu post-assembly recording failed:`, { detail: String(d9PostErr) });
+    }
 
     // Mark as completed, move to QA review
     await updatePipelineRun(runId, {
