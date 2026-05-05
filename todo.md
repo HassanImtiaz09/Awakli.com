@@ -6194,14 +6194,14 @@
   - [x] Cost tracking per training run
 - [x] Tests for LoRA training pipeline + D9 wiring integration (28/28 passing)
 
-### Item 4: Stripe Connect Onboarding (deferred to end per user request)
-- [ ] Stripe Connect account creation for creators
-- [ ] Onboarding flow (Express accounts)
-- [ ] Automated payout distribution (replace manual workflow)
-- [ ] Creator payout dashboard with Connect status
-- [ ] Webhook handlers for Connect events (account.updated, payout.paid)
-- [ ] Migration from manual payouts to automated
-- [ ] Tests for Stripe Connect integration
+### Item 4: Stripe Connect Onboarding (COMPLETE)
+- [x] Stripe Connect account creation for creators (Express accounts)
+- [x] Onboarding flow (generateOnboardingLink, getAccountStatus)
+- [x] Automated payout distribution (executeAutomatedPayout, processPendingPayouts)
+- [x] Creator payout dashboard with Connect status (tRPC router: connect.*)
+- [x] Webhook handlers for Connect events (account.updated, payout.paid/failed, deauthorized)
+- [x] Migration from manual payouts to automated (migrateToAutomatedPayouts)
+- [x] Tests for Stripe Connect integration (19/19 passing)
 
 ### Lulu Credentials Integration
 - [x] LULU_CLIENT_KEY and LULU_CLIENT_SECRET stored in env

@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { normalizeTier, TIERS, CREDIT_PACKS, isUpgrade, isDowngrade, type TierKey } from "./products";
 import { grantSubscriptionCredits, grantPackCredits, processRollover, getBalance, refundCredits } from "../credit-ledger";
 import { stripeLog } from "../observability/logger";
+import { handleConnectWebhookEvent } from "./connect";
 
 // ─── Event Deduplication ─────────────────────────────────────────────
 
@@ -396,6 +397,15 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             stripeLog.info("Charge refunded, credits revoked", { chargeId: charge.id, revokedCredits: safeRevoke, userId: pack.userId });
           }
         }
+        break;
+      }
+
+      // ── Stripe Connect Events ──
+      case "account.updated":
+      case "payout.paid":
+      case "payout.failed":
+      case "account.application.deauthorized": {
+        await handleConnectWebhookEvent(event);
         break;
       }
 

@@ -101,6 +101,7 @@ import { ingestionRouter } from "./routers-ingestion";
 import { printRouter, adminPrintRouter } from "./routers-print";
 import { resolutionRouter } from "./routers-resolution";
 import { loraRouter } from "./routers-lora";
+import { connectRouter } from "./routers-connect";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
   gateConfigRouter, qualityAnalyticsRouter, cascadeRewindRouter,
@@ -2429,6 +2430,8 @@ export const appRouter = router({
   resolution: resolutionRouter,
   // Wave 5B: Sakufuu LoRA Training
   lora: loraRouter,
+  // Wave 5B: Stripe Connect
+  connect: connectRouter,
 });
 
 export type AppRouter = typeof appRouter;

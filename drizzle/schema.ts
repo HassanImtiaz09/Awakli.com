@@ -3042,3 +3042,31 @@ export const sakufuuStyleSamples = mysqlTable("sakufuu_style_samples", {
 });
 export type SakufuuStyleSample = typeof sakufuuStyleSamples.$inferSelect;
 export type InsertSakufuuStyleSample = typeof sakufuuStyleSamples.$inferInsert;
+
+
+// ─── Stripe Connect Accounts ──────────────────────────────────────────────
+export const stripeConnectAccounts = mysqlTable("stripe_connect_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Creator user ID */
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Stripe Connect account ID (acct_xxx) */
+  stripeAccountId: varchar("stripe_account_id", { length: 255 }).notNull(),
+  /** Account type (always express for now) */
+  accountType: mysqlEnum("account_type", ["express", "standard", "custom"]).default("express").notNull(),
+  /** Onboarding status */
+  onboardingStatus: mysqlEnum("onboarding_status", ["pending", "incomplete", "complete"]).default("pending").notNull(),
+  /** Whether charges are enabled */
+  chargesEnabled: int("charges_enabled").default(0).notNull(),
+  /** Whether payouts are enabled */
+  payoutsEnabled: int("payouts_enabled").default(0).notNull(),
+  /** Country code */
+  country: varchar("country", { length: 2 }),
+  /** Default currency */
+  defaultCurrency: varchar("default_currency", { length: 3 }),
+  /** Metadata from Stripe */
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type StripeConnectAccount = typeof stripeConnectAccounts.$inferSelect;
+export type InsertStripeConnectAccount = typeof stripeConnectAccounts.$inferInsert;
