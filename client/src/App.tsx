@@ -36,6 +36,7 @@ import UsageDashboard from "./pages/UsageDashboard";
 import CreatorEarnings from "./pages/CreatorEarnings";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPrintPayouts from "./pages/AdminPrintPayouts";
+import ResolutionFlow from "./pages/ResolutionFlow";
 import ProviderAdmin from "./pages/ProviderAdmin";
 import Onboarding from "./pages/Onboarding";
 import Create from "./pages/Create";
@@ -159,6 +160,7 @@ function Router() {
         <Route path="/admin/providers" component={ProviderAdmin} />
         <Route path="/admin/gates" component={AdminGateAnalytics} />
         <Route path="/admin/print-payouts" component={AdminPrintPayouts} />
+        <Route path="/studio/resolution-flow" component={ResolutionFlow} />
         <Route path="/studio/quality-insights" component={QualityInsights} />
         <Route path="/demo-recording" component={DemoRecording} />
 

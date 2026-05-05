@@ -6145,25 +6145,25 @@
 - [x] Tests for cover designer + D10 wiring (30/30 passing)
 
 ### Item 2: D2.5 Sakuga Kantoku Resolution-Flow Dashboard (full auto-regen multi-round, 5-6 days)
-- [ ] Resolution-flow schema (migration 0059)
-  - [ ] `resolution_issues` table: genga_set_id, panel_id, issue_type, severity, description, status, assigned_to
-  - [ ] `resolution_rounds` table: issue_id, round_number, regen_params, result_url, reviewer_verdict
-  - [ ] `genga_consistency_scores` table: project_id, episode_id, consistency_score, drift_panels
-- [ ] Sakuga Kantoku engine (`server/benchmarks/sakuga-kantoku/resolution-engine.ts`)
-  - [ ] Consistency punch-list generator: compare genga set against character bible + style refs
-  - [ ] Issue classification: proportion drift, color inconsistency, off-model face, pose break, BG mismatch
-  - [ ] Auto-regen parameter builder: construct targeted regen prompts per issue type
-  - [ ] Multi-round tracking: record each regen attempt, score improvement, escalate if 3+ rounds fail
-  - [ ] Confidence scorer: per-panel pass/fail threshold based on issue severity
-- [ ] Resolution-flow UI (`/studio/resolution-flow`)
-  - [ ] Punch-list view: all open issues grouped by episode/panel with severity badges
-  - [ ] Side-by-side comparison: original vs regen attempt (swipe/overlay)
-  - [ ] Approve/reject/request-regen actions per issue
-  - [ ] Round history timeline per issue (attempt 1 → 2 → 3 with scores)
-  - [ ] Batch approve for low-severity issues below threshold
-- [ ] Integration with HITL gate system (Stage 5.5 consistency gate)
-- [ ] Creator-facing consistency status in project view
-- [ ] Tests for resolution-flow engine and UI procedures
+- [x] Resolution-flow schema (migration 0059)
+  - [x] `resolution_issues` table: genga_set_id, panel_id, issue_type, severity, description, status, assigned_to
+  - [x] `resolution_rounds` table: issue_id, round_number, regen_params, result_url, reviewer_verdict
+  - [x] `genga_consistency_scores` table: project_id, episode_id, consistency_score, drift_panels
+- [x] Sakuga Kantoku engine (`server/benchmarks/sakuga-kantoku/resolution-engine.ts`)
+  - [x] Consistency punch-list generator: compare genga set against character bible + style refs
+  - [x] Issue classification: proportion drift, color inconsistency, off-model face, pose break, BG mismatch
+  - [x] Auto-regen parameter builder: construct targeted regen prompts per issue type
+  - [x] Multi-round tracking: record each regen attempt, score improvement, escalate if 3+ rounds fail
+  - [x] Confidence scorer: per-panel pass/fail threshold based on issue severity
+- [x] Resolution-flow UI (`/studio/resolution-flow`)
+  - [x] Punch-list view: all open issues grouped by episode/panel with severity badges
+  - [x] Side-by-side comparison: original vs regen attempt (swipe/overlay)
+  - [x] Approve/reject/request-regen actions per issue
+  - [x] Round history timeline per issue (attempt 1 → 2 → 3 with scores)
+  - [x] Batch approve for low-severity issues below threshold
+- [x] Integration with HITL gate system (Stage 5.5 consistency gate)
+- [x] Creator-facing consistency status in project view
+- [x] Tests for resolution-flow engine and UI procedures (33/33 passing)
 
 ### Item 3: Sakufuu LoRA Training Pipeline + D9 Wiring Closure
 - [ ] **D9 WIRING CLOSURE (prerequisite):** Wire `injectSakufuuBias()` into pipeline orchestrator

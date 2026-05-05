@@ -2858,3 +2858,118 @@ export const creatorPayouts = mysqlTable("creator_payouts", {
 });
 export type CreatorPayout = typeof creatorPayouts.$inferSelect;
 export type InsertCreatorPayout = typeof creatorPayouts.$inferInsert;
+
+
+// ─── Resolution Flow (D2.5 Sakuga Kantoku) ────────────────────────────────────
+
+/**
+ * Resolution Issues — individual consistency problems flagged by the
+ * Sakuga Kantoku engine across a genga set.
+ */
+export const resolutionIssues = mysqlTable("resolution_issues", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The genga set (project + episode) this issue belongs to */
+  projectId: int("project_id").notNull(),
+  episodeId: int("episode_id").notNull(),
+  /** Specific panel with the issue */
+  panelId: int("panel_id").notNull(),
+  /** Issue classification */
+  issueType: mysqlEnum("issue_type", [
+    "proportion_drift",
+    "color_inconsistency",
+    "off_model_face",
+    "pose_break",
+    "bg_mismatch",
+    "style_deviation",
+    "line_weight_mismatch",
+  ]).notNull(),
+  /** Severity level (1-5, 5 = critical) */
+  severity: int("severity").notNull(),
+  /** Human-readable description of the issue */
+  description: text("description").notNull(),
+  /** Current status */
+  status: mysqlEnum("status", [
+    "open",
+    "in_progress",
+    "resolved",
+    "approved",
+    "escalated",
+    "wont_fix",
+  ]).default("open").notNull(),
+  /** Assigned reviewer (creator or admin) */
+  assignedToUserId: int("assigned_to_user_id").references(() => users.id),
+  /** Reference panel (the "correct" version to compare against) */
+  referencePanelUrl: text("reference_panel_url"),
+  /** Confidence score from the engine (0-1) */
+  confidenceScore: float("confidence_score"),
+  /** JSON metadata: bounding box, specific coordinates, etc. */
+  metadata: json("metadata"),
+  /** Number of regen rounds attempted */
+  roundCount: int("round_count").default(0).notNull(),
+  /** Resolved at timestamp */
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type ResolutionIssue = typeof resolutionIssues.$inferSelect;
+export type InsertResolutionIssue = typeof resolutionIssues.$inferInsert;
+
+/**
+ * Resolution Rounds — each regeneration attempt for a flagged issue.
+ * Tracks the multi-round auto-regen flow with creator approval.
+ */
+export const resolutionRounds = mysqlTable("resolution_rounds", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Parent issue */
+  issueId: int("issue_id").notNull().references(() => resolutionIssues.id, { onDelete: "cascade" }),
+  /** Round number (1-indexed) */
+  roundNumber: int("round_number").notNull(),
+  /** Regen parameters used (prompt modifications, seed, model config) */
+  regenParams: json("regen_params").notNull(),
+  /** URL of the regenerated panel result */
+  resultUrl: text("result_url"),
+  /** Reviewer's verdict on this round */
+  reviewerVerdict: mysqlEnum("reviewer_verdict", [
+    "pending",
+    "approved",
+    "rejected",
+    "partial_improvement",
+  ]).default("pending").notNull(),
+  /** Improvement score vs original (0-1, computed by engine) */
+  improvementScore: float("improvement_score"),
+  /** Reviewer notes */
+  reviewerNotes: text("reviewer_notes"),
+  /** Who reviewed this round */
+  reviewedByUserId: int("reviewed_by_user_id").references(() => users.id),
+  /** When the regen was triggered */
+  triggeredAt: timestamp("triggered_at").defaultNow().notNull(),
+  /** When the result was reviewed */
+  reviewedAt: timestamp("reviewed_at"),
+});
+export type ResolutionRound = typeof resolutionRounds.$inferSelect;
+export type InsertResolutionRound = typeof resolutionRounds.$inferInsert;
+
+/**
+ * Genga Consistency Scores — per-episode aggregate consistency metrics.
+ * Updated after each resolution round completes.
+ */
+export const gengaConsistencyScores = mysqlTable("genga_consistency_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Project ID */
+  projectId: int("project_id").notNull(),
+  /** Episode ID */
+  episodeId: int("episode_id").notNull(),
+  /** Overall consistency score (0-100) */
+  consistencyScore: float("consistency_score").notNull(),
+  /** Number of panels that drifted from reference */
+  driftPanelCount: int("drift_panel_count").default(0).notNull(),
+  /** Total panels in the episode */
+  totalPanelCount: int("total_panel_count").notNull(),
+  /** Breakdown by issue type (JSON: { type: count }) */
+  issueBreakdown: json("issue_breakdown"),
+  /** Last computed timestamp */
+  computedAt: timestamp("computed_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type GengaConsistencyScore = typeof gengaConsistencyScores.$inferSelect;
+export type InsertGengaConsistencyScore = typeof gengaConsistencyScores.$inferInsert;

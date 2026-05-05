@@ -99,6 +99,7 @@ import { layoutDirectorRouter, gengaDirectorRouter, sakugaKantokuRouter } from "
 import { tierSamplerRouter } from "./routers-tier-sampler";
 import { ingestionRouter } from "./routers-ingestion";
 import { printRouter, adminPrintRouter } from "./routers-print";
+import { resolutionRouter } from "./routers-resolution";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
   gateConfigRouter, qualityAnalyticsRouter, cascadeRewindRouter,
@@ -2422,6 +2423,9 @@ export const appRouter = router({
   // Wave 5A: Lulu Print Integration
   print: printRouter,
   adminPrint: adminPrintRouter,
+
+  // Wave 5B: Sakuga Kantoku Resolution-Flow
+  resolution: resolutionRouter,
 });
 
 export type AppRouter = typeof appRouter;
