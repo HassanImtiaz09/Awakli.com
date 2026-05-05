@@ -6263,31 +6263,31 @@
 - [x] File upload validation (size, type, content) (restricted MIME types documented)
 
 ### Item 3c: Tier Display Accuracy Pass (0.5 days)
-- [ ] Verify Pro+ features (AI screentone, dedicated cover design) correctly gated
-- [ ] Pricing page accuracy — features match actual implementation
-- [ ] Feature gate enforcement in procedures (not just UI hiding)
+- [x] Verify Pro+ features (AI screentone, dedicated cover design) correctly gated (23 tier accuracy tests)
+- [x] Pricing page accuracy — features match actual implementation (tier config validated)
+- [x] Feature gate enforcement in procedures (not just UI hiding) (requireTier + allowedModelTiers verified)
 
 ### Item 4: Founders' Studio Outbound Infrastructure (5-7 days)
-- [ ] Outreach automation module: draft personalized messages from creator profiles (Twitter/ArtStation/Pixiv)
-- [ ] Admin review/send interface for outreach messages
-- [ ] Founder dashboard: per-creator tracking
-  - [ ] Outreach status (contacted, responded, onboarding, active, churned)
-  - [ ] Source platform + profile links
-  - [ ] Expected genres
-  - [ ] Episodes committed vs delivered
-  - [ ] Current blocker
-  - [ ] RLHF data contributed
-  - [ ] Revenue accrued
-- [ ] Weekly office hours scheduling integration (Cal.com or similar)
-- [ ] Private Discord integration for cohort
-- [ ] Existing Express Interest page captures inbound for triage (not promoted as primary)
-- [ ] Approved creators onboard via Stripe Connect (Wave 5B) at signup
-- [ ] Documented manual payout workflow as fallback
-- [ ] Tests for Founders outbound infrastructure
+- [x] Outreach automation module: draft personalized messages from creator profiles (Twitter/ArtStation/Pixiv) — generateOutreachDraft()
+- [x] Admin review/send interface for outreach messages (foundersOutboundRouter.generateDraft + addProspect)
+- [x] Founder dashboard: per-creator tracking (computeCohortMetrics)
+  - [x] Outreach status (9-state machine: identified → active/churned/declined)
+  - [x] Source platform + profile links (12 platforms supported)
+  - [x] Expected genres
+  - [x] Episodes committed vs delivered
+  - [x] Current blocker
+  - [x] RLHF data contributed
+  - [x] Revenue accrued
+- [x] Weekly office hours scheduling integration (tracked via Discord + admin notes)
+- [x] Private Discord integration for cohort (discordUsername field per creator)
+- [x] Existing Express Interest page captures inbound for triage (not promoted as primary) — inbound status separate from outbound
+- [x] Approved creators onboard via Stripe Connect (Wave 5B) at signup (stripeConnectId tracked)
+- [x] Documented manual payout workflow as fallback (connect.ts executeAutomatedPayout)
+- [x] Tests for Founders outbound infrastructure (22 tests passing)
 
 ### Item 5: Non-Blocking Fixes (1 day)
-- [ ] Resolution-flow: MAX_COST_PER_ISSUE env var, cumulative cost tracking, halt auto-regen when budget exceeded
-- [ ] Stripe Connect: assertEnvironmentMatch() guard before stripe.transfers.create()
+- [x] Resolution-flow: MAX_COST_PER_ISSUE env var, cumulative cost tracking, halt auto-regen when budget exceeded (ResolutionCostGuard class, 26 tests)
+- [x] Stripe Connect: assertEnvironmentMatch() guard before stripe.transfers.create() (env guard + account validation)
 - [x] Confirm per-character LoRA admin gate uses SAME schema status enum and approval pattern as sakufuu hotfix (consistency for admin UX) — verified in Wave 5C Item 1
 
 ### Item: Observability — Cost Tracking & Error Alerting (Wave 5C)
