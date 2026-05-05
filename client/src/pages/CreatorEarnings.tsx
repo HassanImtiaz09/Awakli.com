@@ -6,6 +6,7 @@ import { getLoginUrl } from "@/const";
 import {
   DollarSign, TrendingUp, Users, Heart, ArrowRight, AlertCircle,
   Calendar, Gift, Lock, Unlock, Crown, Star, BarChart3, Eye,
+  Printer, Package,
 } from "lucide-react";
 import { PlatformLayout } from "@/components/awakli/Layouts";
 import { useState } from "react";
@@ -81,6 +82,72 @@ function EarningsBreakdown({ earnings }: { earnings: any }) {
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PrintRoyaltiesSection() {
+  const payouts = trpc.print.getMyPayouts.useQuery();
+  const data = payouts.data ?? [];
+
+  const pending = data.filter(p => p.status === 'pending' || p.status === 'approved');
+  const paid = data.filter(p => p.status === 'paid');
+  const pendingTotal = pending.reduce((s, p) => s + p.amountCents, 0);
+  const paidTotal = paid.reduce((s, p) => s + p.amountCents, 0);
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-[#0D0D1A] overflow-hidden mb-8">
+      <div className="p-6 border-b border-white/5 flex items-center gap-3">
+        <Printer className="w-5 h-5 text-token-cyan" />
+        <h2 className="text-lg font-heading font-semibold text-white">Print Royalties</h2>
+        <span className="ml-auto text-xs text-gray-500">{data.length} total</span>
+      </div>
+
+      {data.length === 0 ? (
+        <div className="p-8 text-center">
+          <Package className="w-8 h-8 text-gray-600 mx-auto mb-3" />
+          <p className="text-sm text-gray-500">No print royalties yet. You'll earn 15% of revenue when readers order prints of your manga.</p>
+        </div>
+      ) : (
+        <div className="p-6">
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="p-4 rounded-xl bg-[#08080F] border border-white/5">
+              <p className="text-xs text-gray-500 mb-1">Pending</p>
+              <p className="text-xl font-bold text-yellow-400">${(pendingTotal / 100).toFixed(2)}</p>
+              <p className="text-xs text-gray-600">{pending.length} payouts</p>
+            </div>
+            <div className="p-4 rounded-xl bg-[#08080F] border border-white/5">
+              <p className="text-xs text-gray-500 mb-1">Paid</p>
+              <p className="text-xl font-bold text-green-400">${(paidTotal / 100).toFixed(2)}</p>
+              <p className="text-xs text-gray-600">{paid.length} payouts</p>
+            </div>
+          </div>
+
+          {/* Recent payouts */}
+          <div className="space-y-2">
+            {data.slice(0, 5).map((payout: any) => (
+              <div key={payout.id} className="flex items-center justify-between p-3 rounded-lg bg-[#08080F] border border-white/5">
+                <div>
+                  <p className="text-sm text-white">Order #{payout.printOrderId}</p>
+                  <p className="text-xs text-gray-500">
+                    {payout.createdAt ? new Date(payout.createdAt).toLocaleDateString() : "—"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-green-400">+${(payout.amountCents / 100).toFixed(2)}</p>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    payout.status === 'paid' ? 'bg-green-500/10 text-green-400' :
+                    payout.status === 'approved' ? 'bg-blue-500/10 text-blue-400' :
+                    'bg-yellow-500/10 text-yellow-400'
+                  }`}>
+                    {payout.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -305,6 +372,9 @@ export default function CreatorEarnings() {
             </motion.div>
           )}
 
+          {/* Print Royalties */}
+          <PrintRoyaltiesSection />
+
           {/* Payout info */}
           <div className="mt-8 p-6 rounded-2xl border border-token-cyan/20 bg-token-cyan/5">
             <div className="flex items-start gap-4">
@@ -312,9 +382,9 @@ export default function CreatorEarnings() {
               <div>
                 <h3 className="text-sm font-semibold text-white mb-1">Payout Information</h3>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  Earnings are paid out monthly via Stripe Connect. Minimum payout threshold is $10.00.
-                  Connect your Stripe account in settings to enable payouts. Awakli takes a 20% platform fee
-                  on tips and premium episode revenue.
+                  Earnings are paid out monthly via manual Stripe transfer. Minimum payout threshold is $10.00.
+                  Print royalties are 15% of revenue (after printing costs). Awakli takes a 20% platform fee.
+                  Payouts are processed within 30 days of order shipment.
                 </p>
               </div>
             </div>

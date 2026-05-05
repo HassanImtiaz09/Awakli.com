@@ -6070,3 +6070,56 @@
 - [x] Webhook: signature verification (5 tests)
 - [x] Router: products, pricing, revenue split, package IDs (5 tests)
 - [x] Zero TypeScript errors
+
+---
+
+## Wave 5A Item 3: Creator Revenue Tracking
+
+### Sub-task 3a: Admin Payout Dashboard UI
+- [x] `AdminPrintPayouts.tsx` — full admin page at `/admin/print-payouts`
+- [x] Summary tab: per-creator aggregated balances (pending + paid)
+- [x] Pending tab: individual payout records with bulk approve/mark-paid actions
+- [x] Orders tab: all print orders with status filter and "Submit to Lulu" action
+- [x] Mark-as-paid dialog: Stripe transfer ID input + admin notes
+- [x] Manual payout instructions embedded in UI
+- [x] Route registered in App.tsx
+
+### Sub-task 3b: Creator Earnings Page (Print Royalties)
+- [x] Updated `CreatorEarnings.tsx` with `PrintRoyaltiesSection` component
+- [x] Shows pending/paid totals and recent payout history
+- [x] Uses `trpc.print.getMyPayouts` query
+- [x] Updated payout info text to reflect manual workflow (not Stripe Connect)
+- [x] Status badges (pending/approved/paid) with color coding
+
+### Sub-task 3c: Documentation
+- [x] `docs/manual-payout-workflow.md` — complete step-by-step admin guide
+- [x] Revenue split documented (65% Lulu / 20% platform / 15% creator)
+- [x] Minimum $10 threshold documented
+- [x] Transition plan to Stripe Connect (Wave 5B) documented
+
+### Tests
+- [x] All 233 benchmark tests passing (includes D10.M + Lulu + credentials)
+- [x] Zero TypeScript errors
+- [x] Dev server running clean
+
+---
+
+## Wave 5A Summary — All Items Complete
+
+| Item | Status | Tests |
+|------|--------|-------|
+| 1. D10.M Manga Finishing Agent | COMPLETE | 69 passing |
+| 2. Lulu Print Integration | COMPLETE | 38 passing |
+| 3. Creator Revenue Tracking | COMPLETE | (covered by Item 2 tests + UI) |
+| **Total** | **ALL COMPLETE** | **233 benchmark tests passing** |
+
+### Prerequisites Addressed
+- [x] D9 Sakufuu Tracker wired into pipeline (Wave 4.5 hotfix — `sakufuu-pipeline.ts`)
+- [x] D10 vector store: JSON-array corpus store operational for D10.M Sensei context
+
+### User Modifications Applied
+- [x] (1) Pod Package ID: B5 default + trim size selector (B5/A5/tankōbon/US trade) from day one
+- [x] (2) Screentone: programmatic halftone (ami-ten, kake-ami, suna-me, gradation) — AI screentone deferred to Pro+ upsell
+- [x] (3) Creator revenue: DB tracking + manual payout workflow doc + admin UI — Stripe Connect committed to Wave 5B
+- [x] (4) Cover generation: auto-from-title-card MVP — dedicated cover design committed to Wave 5B
+- [x] (5) Lulu credentials: client built mock-ready, real credentials pending from user
