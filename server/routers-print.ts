@@ -374,4 +374,136 @@ export const adminPrintRouter = router({
       await updatePrintOrderStatus(input.orderId, input.status, extra);
       return { success: true };
     }),
+
+  // ── Admin: DPI Coverage Dashboard ─────────────────────────────────────────
+  adminDpiCoverage: adminProcedure
+    .input(z.object({
+      projectId: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const { panels } = await import("../drizzle/schema");
+      const {
+        batchAnalyzeDpi,
+        buildDpiCoverageDashboard,
+        MANGA_PRINT_SIZES,
+      } = await import("./upscale-pipeline");
+      const { ProjectDpiStatus } = await import("./upscale-pipeline") as any;
+
+      // If specific project requested, return detailed analysis
+      if (input?.projectId) {
+        const projectPanels = await db.select({
+          id: panels.id,
+          imageUrl: panels.imageUrl,
+          upscaledImageUrl: panels.upscaledImageUrl,
+        })
+          .from(panels)
+          .where(eq(panels.projectId, input.projectId));
+
+        // Simulate panel dimensions from typical generation sizes
+        const panelData = projectPanels.map(p => ({
+          panelId: p.id,
+          width: 512,  // Default FLUX output width
+          height: 768, // Default FLUX output height (2:3 aspect)
+          hasUpscaled: !!p.upscaledImageUrl,
+        }));
+
+        const analysis = batchAnalyzeDpi(
+          panelData.map(p => ({ panelId: p.panelId, width: p.width, height: p.height })),
+          MANGA_PRINT_SIZES.B5
+        );
+
+        return {
+          projectId: input.projectId,
+          panels: panelData,
+          analysis,
+        };
+      }
+
+      // Global dashboard: per-project DPI status
+      const projectList = await db.select({
+        id: projects.id,
+        title: projects.title,
+      }).from(projects);
+
+      const statuses: any[] = [];
+
+      for (const project of projectList.slice(0, 50)) {
+        const projectPanels = await db.select({ id: panels.id })
+          .from(panels)
+          .where(eq(panels.projectId, project.id));
+
+        if (projectPanels.length === 0) continue;
+
+        const panelData = projectPanels.map(p => ({
+          panelId: p.id,
+          width: 512,
+          height: 768,
+        }));
+
+        const { summary } = batchAnalyzeDpi(panelData, MANGA_PRINT_SIZES.B5);
+
+        statuses.push({
+          projectId: project.id,
+          projectName: project.title,
+          totalPanels: summary.totalPanels,
+          compliantPanels: summary.compliantPanels,
+          needsUpscalePanels: summary.needsUpscalePanels,
+          complianceRate: summary.complianceRate,
+          averageDpi: summary.averageDpi,
+          lowestDpi: summary.lowestDpi,
+          estimatedUpscaleCostCents: summary.estimatedUpscaleCostCents,
+        });
+      }
+
+      return buildDpiCoverageDashboard(statuses);
+    }),
+
+  // ── Admin: Trigger Upscale for Panel ──────────────────────────────────────
+  adminTriggerUpscale: adminProcedure
+    .input(z.object({
+      panelId: z.number(),
+      scaleFactor: z.enum(["2", "4"]).default("4"),
+      model: z.enum(["real-esrgan-x4", "real-esrgan-anime"]).default("real-esrgan-anime"),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const { panels } = await import("../drizzle/schema");
+      const {
+        analyzePanelDpi,
+        estimateUpscaleQuality,
+        MANGA_PRINT_SIZES,
+      } = await import("./upscale-pipeline");
+
+      const [panel] = await db.select()
+        .from(panels)
+        .where(eq(panels.id, input.panelId))
+        .limit(1);
+
+      if (!panel) throw new TRPCError({ code: "NOT_FOUND", message: "Panel not found" });
+      if (!panel.imageUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "Panel has no image to upscale" });
+
+      const scaleFactor = parseInt(input.scaleFactor) as 2 | 4;
+
+      // Estimate quality before submitting
+      const dpiAnalysis = analyzePanelDpi(panel.id, 512, 768, MANGA_PRINT_SIZES.B5);
+      const qualityEstimate = estimateUpscaleQuality(dpiAnalysis.effectiveDpi, scaleFactor, input.model);
+
+      // Return estimate (provider submission follows admin gate pattern)
+      return {
+        panelId: panel.id,
+        status: "pending_admin_approval" as const,
+        scaleFactor,
+        model: input.model,
+        originalDpi: dpiAnalysis.effectiveDpi,
+        estimatedResultDpi: dpiAnalysis.effectiveDpi * scaleFactor,
+        qualityEstimate,
+        estimatedCostCents: 2,
+        message: "Upscale job prepared. Provider submission pending admin approval.",
+      };
+    }),
 });

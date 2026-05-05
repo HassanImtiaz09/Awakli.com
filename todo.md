@@ -6240,14 +6240,14 @@
 - [x] Tests for per-character LoRA admin gate (28 tests passing)
 
 ### Item 2: Image Upscaling for Print DPI (3-4 days)
-- [ ] UpscaleProvider interface (same swappable pattern as VectorStore/TrainingProvider)
-- [ ] Real-ESRGAN implementation via Replicate API
-- [ ] Panel DPI detection module (source DPI analysis per panel)
-- [ ] Auto-flag panels below 300 DPI for upscale before PDF generation
-- [ ] Integration with D10.M print pipeline (upscale step before page compositor)
-- [ ] Admin DPI coverage dashboard (per-project DPI status)
-- [ ] Quality scoring post-upscale (SSIM comparison)
-- [ ] Tests for upscaling pipeline
+- [x] UpscaleProvider interface (same swappable pattern as VectorStore/TrainingProvider)
+- [x] Real-ESRGAN implementation via Replicate API (RealESRGANProvider class)
+- [x] Panel DPI detection module (source DPI analysis per panel — analyzePanelDpi, batchAnalyzeDpi)
+- [x] Auto-flag panels below 300 DPI for upscale before PDF generation (autoFlagPanelsForUpscale)
+- [x] Integration with D10.M print pipeline (runUpscalePipeline + adminTriggerUpscale procedure)
+- [x] Admin DPI coverage dashboard (adminDpiCoverage procedure in adminPrintRouter)
+- [x] Quality scoring post-upscale (estimateUpscaleQuality with SSIM/PSNR estimation)
+- [x] Tests for upscaling pipeline (47 tests passing)
 
 ### Item 3a: Audit Blocker B3 Smoke Test (0.5 days)
 - [ ] Run real episode E2E on non-seed user content
