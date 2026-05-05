@@ -48,9 +48,12 @@ describe("C1: Script Stage", () => {
       "utf-8"
     );
     expect(src).toContain("(3c)");
-    // Should appear on both Regenerate and Regen with notes buttons
-    const matches = src.match(/\(3c\)/g);
-    expect(matches?.length).toBeGreaterThanOrEqual(2);
+    // RegenPopover shows dynamic cost via creditCost prop (default 3)
+    const popover = fs.readFileSync(
+      path.join(CLIENT_SRC, "components/awakli/RegenPopover.tsx"),
+      "utf-8"
+    );
+    expect(popover).toContain("creditCost = 3");
   });
 
   it("ScriptEditor detail panel regen shows 3c cost", () => {

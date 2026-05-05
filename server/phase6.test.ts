@@ -60,16 +60,16 @@ describe("Tier Configuration", () => {
     expect(TIERS.free_trial.maxProjects).toBe(3);
   });
 
-  it("creator tier should have 35 credits and $29/mo", () => {
+  it("creator tier should have 35 credits and $19/mo", () => {
     expect(TIERS.creator.credits).toBe(35);
-    expect(TIERS.creator.monthlyPrice).toBe(2900);
+    expect(TIERS.creator.monthlyPrice).toBe(1900);
     expect(TIERS.creator.hasWatermark).toBe(false);
     expect(TIERS.creator.maxProjects).toBe(10);
   });
 
-  it("studio tier should have 600 credits and $499/mo", () => {
+  it("studio tier should have 600 credits and $149/mo", () => {
     expect(TIERS.studio.credits).toBe(600);
-    expect(TIERS.studio.monthlyPrice).toBe(49900);
+    expect(TIERS.studio.monthlyPrice).toBe(14900);
     expect(TIERS.studio.hasApiAccess).toBe(true);
     expect(TIERS.studio.hasPrioritySupport).toBe(true);
   });

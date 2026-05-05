@@ -15,7 +15,7 @@ const GENRE_COLORS: Record<string, string> = {
   romance:   "var(--token-violet)",
   fantasy:   "var(--token-gold)",
   horror:    "#FF4444",
-  comedy:    "#FFB800",
+  comedy:    "#FF6E7F",
   drama:     "#B8B8CC",
   scifi:     "var(--token-cyan)",
   slice:     "#88CC88",

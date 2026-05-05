@@ -198,8 +198,8 @@ describe("Stage 1 · Script — Regeneration Limits", () => {
     expect(getRegenLimit("creator")).toBe(15);
   });
 
-  it("creator_pro tier gets 15 regenerations", () => {
-    expect(getRegenLimit("creator_pro")).toBe(15);
+  it("creator_pro tier gets unlimited regenerations", () => {
+    expect(getRegenLimit("creator_pro")).toBe(Infinity);
   });
 
   it("studio tier gets unlimited regenerations", () => {

@@ -31,7 +31,7 @@ describe("Wan 2.1 Adapter (Fal.ai)", () => {
     const adapter = getAdapter("wan_21")!;
     const result = adapter.validateParams({ prompt: "test", durationSeconds: 15 } as any);
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain("max 10s for wan_21");
+    expect(result.errors).toContain("max 10s for Wan");
   });
 
   it("passes validation for valid params", async () => {
@@ -43,28 +43,28 @@ describe("Wan 2.1 Adapter (Fal.ai)", () => {
     expect(result.errors).toBeUndefined();
   });
 
-  it("estimates $0.40 for 720p resolution (default)", async () => {
+  it("estimates $0.50 for 720p resolution (default 5s × $0.10/sec)", async () => {
     await import("./provider-router/adapters/video-providers");
     const { getAdapter } = await import("./provider-router/registry");
     const adapter = getAdapter("wan_21")!;
     const cost = adapter.estimateCostUsd({ prompt: "test", durationSeconds: 5 } as any);
-    expect(cost).toBe(0.40);
+    expect(cost).toBe(0.50);
   });
 
-  it("estimates $0.20 for 480p resolution", async () => {
+  it("estimates $0.50 for 480p resolution (same rate as 720p)", async () => {
     await import("./provider-router/adapters/video-providers");
     const { getAdapter } = await import("./provider-router/registry");
     const adapter = getAdapter("wan_21")!;
     const cost = adapter.estimateCostUsd({ prompt: "test", resolution: "480p" } as any);
-    expect(cost).toBe(0.20);
+    expect(cost).toBe(0.50);
   });
 
-  it("estimates $0.40 for explicit 720p resolution", async () => {
+  it("estimates $0.50 for explicit 720p resolution", async () => {
     await import("./provider-router/adapters/video-providers");
     const { getAdapter } = await import("./provider-router/registry");
     const adapter = getAdapter("wan_21")!;
     const cost = adapter.estimateCostUsd({ prompt: "test", resolution: "720p" } as any);
-    expect(cost).toBe(0.40);
+    expect(cost).toBe(0.50);
   });
 });
 
@@ -532,7 +532,7 @@ describe("Fal.ai Cost Estimator Integration", () => {
     const { estimateCost } = await import("./provider-router/cost-estimator");
     const est = estimateCost("wan_21", { prompt: "test", durationSeconds: 5 } as any);
     expect(est.providerId).toBe("wan_21");
-    expect(est.estimatedUsd).toBe(0.40); // 720p default
+    expect(est.estimatedUsd).toBe(0.50); // 5s × $0.10/sec
     expect(est.estimatedCredits).toBeGreaterThan(0);
   });
 

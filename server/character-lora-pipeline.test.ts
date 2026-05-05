@@ -768,10 +768,15 @@ describe("Consistency Mechanism", () => {
       expect(PROVIDER_CAPABILITIES.local_controlnet.supportsLora).toBe(true);
     });
 
-    it("cloud providers do not support LoRA", () => {
-      for (const key of ["kling_v1", "kling_v2_6", "wan_2_6", "hunyuan_video", "flux_schnell", "pika_2_2"]) {
+    it("cloud providers without LoRA support", () => {
+      for (const key of ["kling_v1", "kling_v2_6", "flux_schnell", "pika_2_2"]) {
         expect(PROVIDER_CAPABILITIES[key].supportsLora).toBe(false);
       }
+    });
+
+    it("wan_2_6 and hunyuan_video support Motion LoRA adapters", () => {
+      expect(PROVIDER_CAPABILITIES["wan_2_6"].supportsLora).toBe(true);
+      expect(PROVIDER_CAPABILITIES["hunyuan_video"].supportsLora).toBe(true);
     });
   });
 });

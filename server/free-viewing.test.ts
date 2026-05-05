@@ -250,13 +250,13 @@ describe("SEO helpers", () => {
 
 // ─── Navigation Structure ───────────────────────────────────────────────────
 describe("navigation for anonymous users", () => {
-  it("TopNav exports PUBLIC_NAV_LINKS with Trending", async () => {
+  it("TopNav exports AUDIENCE_NAV with Trending", async () => {
     // We can verify the component file has the right structure
     const fs = await import("fs");
     const content = fs.readFileSync("client/src/components/awakli/TopNav.tsx", "utf-8");
-    expect(content).toContain("PUBLIC_NAV_LINKS");
+    expect(content).toContain("AUDIENCE_NAV");
     expect(content).toContain("/trending");
-    expect(content).toContain("AUTH_NAV_LINKS");
+    expect(content).toContain("CREATOR_NAV");
     expect(content).toContain("/studio");
   });
 });

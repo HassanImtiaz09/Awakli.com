@@ -326,17 +326,17 @@ describe("Pipeline Integration", () => {
   });
 
   describe("HITL Bridge integration", () => {
-    it("should include foley_gen and ambient_gen in OrchestratorNode type", async () => {
+    it("should include audio_timing node in OrchestratorNode (subsumes foley/ambient)", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync("/home/ubuntu/awakli/server/hitl/orchestrator-bridge.ts", "utf-8");
-      expect(content).toContain('"foley_gen"');
-      expect(content).toContain('"ambient_gen"');
+      expect(content).toContain('"audio_timing"');
+      expect(content).toContain('"fx_composite"');
     });
 
-    it("should map foley_gen to stage 8", async () => {
+    it("should map audio_timing to stages 12-13", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync("/home/ubuntu/awakli/server/hitl/orchestrator-bridge.ts", "utf-8");
-      expect(content).toContain('foley_gen: 8');
+      expect(content).toContain('audio_timing: [12, 13]');
     });
   });
 
@@ -394,10 +394,10 @@ describe("Pipeline Integration", () => {
       expect(nodeMatches!.length).toBeGreaterThanOrEqual(6);
     });
 
-    it("should have 5 connections in the graph", async () => {
+    it("should have 6 connections in the graph (7 nodes)", async () => {
       const fs = await import("fs");
       const content = fs.readFileSync("/home/ubuntu/awakli/client/src/pages/PipelineDashboard.tsx", "utf-8");
-      expect(content).toContain("[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]]");
+      expect(content).toContain("[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]]");
     });
   });
 });

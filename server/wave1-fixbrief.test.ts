@@ -11,12 +11,13 @@ import { describe, it, expect } from "vitest";
 import { STAGES } from "../client/src/layouts/CreateWizardLayout";
 
 describe("X1: Pipeline order", () => {
-  it("has 7 stages in the correct order", () => {
-    expect(STAGES.length).toBe(7);
+  it("has 8 stages in the correct order (Storyboard added)", () => {
+    expect(STAGES.length).toBe(8);
     expect(STAGES.map((s) => s.path)).toEqual([
       "input",
       "script",
       "panels",
+      "storyboard",
       "publish",
       "anime-gate",
       "setup",
@@ -24,13 +25,13 @@ describe("X1: Pipeline order", () => {
     ]);
   });
 
-  it("manga path is stages 0-3 (Input→Script→Panels→Publish)", () => {
-    const mangaStages = STAGES.slice(0, 4).map((s) => s.label);
-    expect(mangaStages).toEqual(["Input", "Script", "Panels", "Publish"]);
+  it("manga path is stages 0-4 (Input→Script→Panels→Storyboard→Publish)", () => {
+    const mangaStages = STAGES.slice(0, 5).map((s) => s.label);
+    expect(mangaStages).toEqual(["Input", "Script", "Panels", "Storyboard", "Publish"]);
   });
 
-  it("anime path is stages 4-6 (Gate→Setup→Video)", () => {
-    const animeStages = STAGES.slice(4).map((s) => s.label);
+  it("anime path is stages 5-7 (Gate→Setup→Video)", () => {
+    const animeStages = STAGES.slice(5).map((s) => s.label);
     expect(animeStages).toEqual(["Gate", "Setup", "Video"]);
   });
 });

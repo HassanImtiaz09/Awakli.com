@@ -110,16 +110,14 @@ describe("Appendix A — Tier Capability Matrix", () => {
 
   // ─── S4-B: Anime gate pass-through ────────────────────────
   describe("S4-B — Anime gate pass-through (stage_anime_gate)", () => {
-    it("Apprentice does NOT have stage_anime_gate", () => {
-      expect(tierHasCapability("free_trial", "stage_anime_gate")).toBe(false);
-    });
-    it("Mangaka+ has stage_anime_gate", () => {
+    it("All tiers have stage_anime_gate (X2: gate visible to all, upsells)", () => {
+      expect(tierHasCapability("free_trial", "stage_anime_gate")).toBe(true);
       expect(tierHasCapability("creator", "stage_anime_gate")).toBe(true);
       expect(tierHasCapability("creator_pro", "stage_anime_gate")).toBe(true);
       expect(tierHasCapability("studio", "stage_anime_gate")).toBe(true);
     });
-    it("min tier for stage_anime_gate is creator (Mangaka)", () => {
-      expect(getMinTier("stage_anime_gate")).toBe("creator");
+    it("min tier for stage_anime_gate is free_trial (X2: visible to all)", () => {
+      expect(getMinTier("stage_anime_gate")).toBe("free_trial");
     });
   });
 
@@ -158,10 +156,9 @@ describe("Appendix A — Tier Capability Matrix", () => {
     it("Apprentice does NOT have stage_video", () => {
       expect(tierHasCapability("free_trial", "stage_video")).toBe(false);
     });
-    it("Mangaka does NOT have stage_video (spec says Mangaka gets 60s but via anime gate)", () => {
-      // stage_video min tier is creator_pro (Studio) per the matrix
-      // Mangaka accesses video through the anime gate upgrade flow
-      expect(getMinTier("stage_video")).toBe("creator_pro");
+    it("Mangaka has stage_video (X2: creator tier now includes video)", () => {
+      expect(getMinTier("stage_video")).toBe("creator");
+      expect(tierHasCapability("creator", "stage_video")).toBe(true);
     });
     it("Studio+ has stage_video", () => {
       expect(tierHasCapability("creator_pro", "stage_video")).toBe(true);
@@ -195,8 +192,8 @@ describe("Appendix A — Tier Capability Matrix", () => {
     it("Studio is $49/mo", () => {
       expect(TIER_META.creator_pro.monthlyPrice).toBe(49);
     });
-    it("Studio Pro is $99/mo", () => {
-      expect(TIER_META.studio.monthlyPrice).toBe(99);
+    it("Studio Pro is $149/mo", () => {
+      expect(TIER_META.studio.monthlyPrice).toBe(149);
     });
     it("Enterprise is custom (null)", () => {
       expect(TIER_META.enterprise.monthlyPrice).toBeNull();
@@ -286,11 +283,11 @@ describe("Appendix B — Analytics Event Dictionary", () => {
 describe("Appendix C — Token Reference", () => {
   // ─── Colors ────────────────────────────────────────────────
   describe("Colors", () => {
-    it("cyan is #00F0FF", () => {
-      expect(colors.cyan).toBe("#00F0FF");
+    it("cyan is #E040FB (brand refresh: magenta)", () => {
+      expect(colors.cyan).toBe("#E040FB");
     });
-    it("violet is #6B5BFF", () => {
-      expect(colors.violet).toBe("#6B5BFF");
+    it("violet is #7C4DFF (brand refresh)", () => {
+      expect(colors.violet).toBe("#7C4DFF");
     });
     it("lavender is #B388FF", () => {
       expect(colors.lavender).toBe("#B388FF");

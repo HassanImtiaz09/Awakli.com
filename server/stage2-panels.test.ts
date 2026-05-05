@@ -82,12 +82,12 @@ describe("Stage 2 · Panels — Regen Limits by Tier", () => {
     expect(getRegenLimit("free_trial")).toBe(5);
   });
 
-  it("creator (Apprentice) tier gets 5 redraws", () => {
-    expect(getRegenLimit("creator")).toBe(5);
+  it("creator (Mangaka) tier gets 15 redraws", () => {
+    expect(getRegenLimit("creator")).toBe(15);
   });
 
-  it("creator_pro (Mangaka) tier gets 15 redraws", () => {
-    expect(getRegenLimit("creator_pro")).toBe(15);
+  it("creator_pro (Studio) tier gets unlimited redraws", () => {
+    expect(getRegenLimit("creator_pro")).toBe(Infinity);
   });
 
   it("studio tier gets unlimited redraws", () => {
@@ -203,17 +203,17 @@ describe("Stage 2 · Panels — Regen Cap Logic", () => {
     expect(canRedraw).toBe(true);
   });
 
-  it("cap triggers upgrade modal when exceeded", () => {
+  it("cap triggers upgrade modal when exceeded for free_trial", () => {
     const regenCount = 5;
-    const regenLimit = getRegenLimit("creator");
+    const regenLimit = getRegenLimit("free_trial");
     const shouldShowUpgrade = regenCount >= regenLimit;
     expect(shouldShowUpgrade).toBe(true);
   });
 
-  it("Mangaka user has higher cap than Apprentice", () => {
-    const apprenticeCap = getRegenLimit("creator");
-    const mangakaCap = getRegenLimit("creator_pro");
-    expect(mangakaCap).toBeGreaterThan(apprenticeCap);
+  it("Creator user has higher cap than Free Trial", () => {
+    const freeCap = getRegenLimit("free_trial");
+    const creatorCap = getRegenLimit("creator");
+    expect(creatorCap).toBeGreaterThan(freeCap);
   });
 });
 

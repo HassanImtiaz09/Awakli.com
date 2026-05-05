@@ -173,14 +173,14 @@ describe("Feature 3 – Back to manga link on anime-gate", () => {
   it("anime-gate passes project?.slug as mangaSlug to TierCompareCard in idle state", () => {
     const idleIdx = animeGateSrc.indexOf("Idle state (default");
     expect(idleIdx).toBeGreaterThan(0);
-    const idleSection = animeGateSrc.slice(idleIdx, idleIdx + 800);
+    const idleSection = animeGateSrc.slice(idleIdx, idleIdx + 1000);
     expect(idleSection).toContain("mangaSlug={project?.slug}");
   });
 
   it("anime-gate passes project?.slug as mangaSlug to TierCompareCard in checkout state", () => {
     const checkoutIdx = animeGateSrc.indexOf("Checkout waiting");
     expect(checkoutIdx).toBeGreaterThan(0);
-    const checkoutSection = animeGateSrc.slice(checkoutIdx, checkoutIdx + 1400);
+    const checkoutSection = animeGateSrc.slice(checkoutIdx, checkoutIdx + 1600);
     expect(checkoutSection).toContain("mangaSlug={project?.slug}");
   });
 

@@ -250,38 +250,54 @@ describe("P3-F: Legacy accent palette deletion", () => {
   });
 });
 
-// ─── P4-F: Stage numeral alignment ────────────────────────────────────
+// ─── P4-F: Stage numeral alignment ────────────────────────────────────────
 describe("P4-F: Stage numeral alignment", () => {
-  const expectedNumerals: Record<string, string> = {
-    "pages/create/script.tsx": "Stage 02",
-    "pages/create/panels.tsx": "Stage 03",
-    "pages/create/publish.tsx": "Stage 04",
-    "pages/create/setup.tsx": "Stage 06",
-    "pages/create/video.tsx": "Stage 07",
-  };
+  // StageHeader derives numerals dynamically from STAGES array index.
+  // After Storyboard added: Input(01) Script(02) Panels(03) Storyboard(04) Publish(05) Gate(06) Setup(07) Video(08)
+  it("StageHeader component derives numeral from STAGES index", () => {
+    const stageHeaderSrc = readClientFile("components/awakli/StageHeader.tsx");
+    expect(stageHeaderSrc).toContain('String(index + 1).padStart(2, "0")');
+    expect(stageHeaderSrc).toContain("Stage {numeral}");
+  });
 
-  for (const [file, expected] of Object.entries(expectedNumerals)) {
-    it(`${file} shows "${expected}"`, () => {
-      const src = readClientFile(file);
-      expect(src).toContain(expected);
-    });
-  }
+  it("create pages use StageHeader with correct stageKey", () => {
+    const script = readClientFile("pages/create/script.tsx");
+    expect(script).toContain('stageKey="script"');
 
-  it("no old off-by-one numerals remain", () => {
-    // Script should NOT say Stage 01, Panels should NOT say Stage 02, etc.
-    const scriptSrc = readClientFile("pages/create/script.tsx");
-    expect(scriptSrc).not.toMatch(/Stage 01 —/);
+    const panels = readClientFile("pages/create/panels.tsx");
+    expect(panels).toContain('stageKey="panels"');
 
-    const panelsSrc = readClientFile("pages/create/panels.tsx");
-    expect(panelsSrc).not.toMatch(/Stage 02 —/);
+    const publish = readClientFile("pages/create/publish.tsx");
+    expect(publish).toContain('stageKey="publish"');
 
-    const publishSrc = readClientFile("pages/create/publish.tsx");
-    expect(publishSrc).not.toMatch(/Stage 03 —/);
+    const setup = readClientFile("pages/create/setup.tsx");
+    expect(setup).toContain('stageKey="setup"');
 
-    const setupSrc = readClientFile("pages/create/setup.tsx");
-    expect(setupSrc).not.toMatch(/Stage 05 —/);
+    const video = readClientFile("pages/create/video.tsx");
+    expect(video).toContain('stageKey="video"');
+  });
 
-    const videoSrc = readClientFile("pages/create/video.tsx");
-    expect(videoSrc).not.toMatch(/Stage 06 —/);
+  it("STAGES array produces correct numerals for each page", async () => {
+    const { STAGES } = await import("../client/src/layouts/CreateWizardLayout");
+    const expected: Record<string, string> = {
+      script: "02",
+      panels: "03",
+      publish: "05",
+      setup: "07",
+      video: "08",
+    };
+    for (const [key, numeral] of Object.entries(expected)) {
+      const idx = STAGES.findIndex((s: any) => s.key === key);
+      expect(String(idx + 1).padStart(2, "0")).toBe(numeral);
+    }
+  });
+
+  it("no hardcoded stage numerals in page source files", () => {
+    // Pages should use StageHeader component, not hardcoded "Stage XX" strings
+    const pages = ["pages/create/script.tsx", "pages/create/panels.tsx", "pages/create/publish.tsx", "pages/create/setup.tsx", "pages/create/video.tsx"];
+    for (const p of pages) {
+      const src = readClientFile(p);
+      expect(src).not.toMatch(/Stage \d{2} —/);
+    }
   });
 });

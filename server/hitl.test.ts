@@ -16,16 +16,16 @@ import { describe, it, expect } from "vitest";
 // ─── Stage Config Tests ────────────────────────────────────────────────
 
 describe("HITL Stage Configuration", () => {
-  it("should export 12 stages", async () => {
+  it("should export 17 stages", async () => {
     const { TOTAL_STAGES, STAGE_NAMES, STAGE_DISPLAY_NAMES } = await import("./hitl/stage-config");
-    expect(TOTAL_STAGES).toBe(12);
-    expect(Object.keys(STAGE_NAMES)).toHaveLength(12);
-    expect(Object.keys(STAGE_DISPLAY_NAMES)).toHaveLength(12);
+    expect(TOTAL_STAGES).toBe(17);
+    expect(Object.keys(STAGE_NAMES)).toHaveLength(17);
+    expect(Object.keys(STAGE_DISPLAY_NAMES)).toHaveLength(17);
   });
 
-  it("should have all stage numbers from 1 to 12", async () => {
+  it("should have all stage numbers from 1 to 17", async () => {
     const { STAGE_NAMES } = await import("./hitl/stage-config");
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 17; i++) {
       expect(STAGE_NAMES[i]).toBeDefined();
       expect(typeof STAGE_NAMES[i]).toBe("string");
     }
@@ -33,13 +33,13 @@ describe("HITL Stage Configuration", () => {
 
   it("should have correct gate type for each default assignment", async () => {
     const { DEFAULT_GATE_ASSIGNMENTS } = await import("./hitl/stage-config");
-    expect(DEFAULT_GATE_ASSIGNMENTS).toHaveLength(12);
+    expect(DEFAULT_GATE_ASSIGNMENTS).toHaveLength(17);
 
     const validGateTypes = ["blocking", "advisory", "ambient"];
     for (const assignment of DEFAULT_GATE_ASSIGNMENTS) {
       expect(validGateTypes).toContain(assignment.gateType);
       expect(assignment.stageNumber).toBeGreaterThanOrEqual(1);
-      expect(assignment.stageNumber).toBeLessThanOrEqual(12);
+      expect(assignment.stageNumber).toBeLessThanOrEqual(17);
       expect(assignment.autoAdvanceThreshold).toBeGreaterThan(0);
       expect(assignment.autoAdvanceThreshold).toBeLessThanOrEqual(100);
       expect(assignment.reviewThreshold).toBeGreaterThan(0);
@@ -48,34 +48,36 @@ describe("HITL Stage Configuration", () => {
     }
   });
 
-  it("should mark stage 12 (episode_publish) as locked blocking gate", async () => {
+  it("should mark stage 16 (mastering_harness) as the final quality gate", async () => {
     const { DEFAULT_GATE_ASSIGNMENTS } = await import("./hitl/stage-config");
-    const stage12 = DEFAULT_GATE_ASSIGNMENTS.find(a => a.stageNumber === 12);
-    expect(stage12).toBeDefined();
-    expect(stage12!.gateType).toBe("blocking");
-    expect(stage12!.isLocked).toBe(true);
-    expect(stage12!.autoAdvanceThreshold).toBe(90);
+    const stage16 = DEFAULT_GATE_ASSIGNMENTS.find(a => a.stageNumber === 16);
+    expect(stage16).toBeDefined();
+    expect(stage16!.gateType).toBe("blocking");
   });
 
-  it("should have blocking gates for critical visual stages (3, 4, 10, 12)", async () => {
+  it("should have blocking gates for critical stages (1-7, 11, 12, 15, 16)", async () => {
     const { DEFAULT_GATE_ASSIGNMENTS } = await import("./hitl/stage-config");
     const blockingStages = DEFAULT_GATE_ASSIGNMENTS
       .filter(a => a.gateType === "blocking")
       .map(a => a.stageNumber);
-    expect(blockingStages).toContain(3);  // character_sheet_gen
-    expect(blockingStages).toContain(4);  // keyframe_generation
-    expect(blockingStages).toContain(10); // video_composite
-    expect(blockingStages).toContain(12); // episode_publish
+    expect(blockingStages).toContain(1);  // script
+    expect(blockingStages).toContain(3);  // character_design
+    expect(blockingStages).toContain(5);  // ekonte
+    expect(blockingStages).toContain(11); // per_clip_continuity
+    expect(blockingStages).toContain(12); // x_sheet
+    expect(blockingStages).toContain(15); // satsuei
   });
 
-  it("should have ambient gates for low-risk stages (1, 8, 11)", async () => {
+  it("should have advisory gates for lower-risk stages (8, 9, 10, 13, 14)", async () => {
     const { DEFAULT_GATE_ASSIGNMENTS } = await import("./hitl/stage-config");
-    const ambientStages = DEFAULT_GATE_ASSIGNMENTS
-      .filter(a => a.gateType === "ambient")
+    const advisoryStages = DEFAULT_GATE_ASSIGNMENTS
+      .filter(a => a.gateType === "advisory")
       .map(a => a.stageNumber);
-    expect(ambientStages).toContain(1);  // manga_analysis
-    expect(ambientStages).toContain(8);  // sfx_foley
-    expect(ambientStages).toContain(11); // subtitle_render
+    expect(advisoryStages).toContain(8);  // sakuga_kantoku_review
+    expect(advisoryStages).toContain(9);  // sakuga_tagging
+    expect(advisoryStages).toContain(10); // video_generation
+    expect(advisoryStages).toContain(13); // ato_fuki
+    expect(advisoryStages).toContain(14); // fx_pass
   });
 
   it("should have 5 tier names", async () => {
@@ -88,28 +90,27 @@ describe("HITL Stage Configuration", () => {
     expect(TIER_NAMES).toContain("enterprise");
   });
 
-  it("should have credit estimates for all 12 stages", async () => {
+  it("should have credit estimates for all 17 stages", async () => {
     const { STAGE_CREDIT_ESTIMATES } = await import("./hitl/stage-config");
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 17; i++) {
       expect(STAGE_CREDIT_ESTIMATES[i]).toBeDefined();
       expect(typeof STAGE_CREDIT_ESTIMATES[i]).toBe("number");
       expect(STAGE_CREDIT_ESTIMATES[i]).toBeGreaterThanOrEqual(0);
     }
-    // Video generation should be the most expensive
-    expect(STAGE_CREDIT_ESTIMATES[5]).toBeGreaterThan(STAGE_CREDIT_ESTIMATES[1]);
+    // Video generation (stage 10) should be the most expensive
+    expect(STAGE_CREDIT_ESTIMATES[10]).toBeGreaterThan(STAGE_CREDIT_ESTIMATES[1]);
   });
 
   it("should correctly determine stage skippability", async () => {
     const { isStageSkippable } = await import("./hitl/stage-config");
-    // Ambient gates are skippable (except stage 12)
-    expect(isStageSkippable(1, "ambient")).toBe(true);
-    expect(isStageSkippable(8, "ambient")).toBe(true);
-    expect(isStageSkippable(11, "ambient")).toBe(true);
-    // Stage 12 is never skippable
-    expect(isStageSkippable(12, "ambient")).toBe(false);
-    // Blocking and advisory gates are not skippable
-    expect(isStageSkippable(3, "blocking")).toBe(false);
-    expect(isStageSkippable(5, "advisory")).toBe(false);
+    // Stages 1-16 are required traversal — never skippable regardless of gate type
+    expect(isStageSkippable(1, "blocking")).toBe(false);
+    expect(isStageSkippable(8, "advisory")).toBe(false);
+    expect(isStageSkippable(10, "advisory")).toBe(false);
+    expect(isStageSkippable(12, "blocking")).toBe(false);
+    expect(isStageSkippable(16, "blocking")).toBe(false);
+    // Stage 17 (continual_learning) is ambient + NOT required traversal — skippable
+    expect(isStageSkippable(17, "ambient")).toBe(true);
   });
 
   it("should export timeout constants", async () => {
@@ -447,7 +448,7 @@ describe("HITL Notification Dispatcher", () => {
     expect(payload.type).toBe("gate:ready");
     expect(payload.gateId).toBe(1);
     expect(payload.stageNumber).toBe(5);
-    expect(payload.stageName).toBe("Video Generation");
+    expect(payload.stageName).toBe("Storyboard / Ekonte (絵コンテ)");
     expect(payload.gateType).toBe("blocking");
     expect(payload.confidenceScore).toBe(75);
   });
@@ -677,7 +678,7 @@ describe("HITL Barrel Export", () => {
   it("should re-export all public functions from index", async () => {
     const mod = await import("./hitl/index");
     // Stage config
-    expect(mod.TOTAL_STAGES).toBe(12);
+    expect(mod.TOTAL_STAGES).toBe(17);
     expect(mod.STAGE_NAMES).toBeDefined();
     expect(mod.DEFAULT_GATE_ASSIGNMENTS).toBeDefined();
     // Confidence scorer

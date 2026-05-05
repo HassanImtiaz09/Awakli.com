@@ -227,14 +227,16 @@ describe("Assembly settings lip sync gate", () => {
 // ─── HITL bridge mapping ───────────────────────────────────────────────
 
 describe("HITL bridge lip_sync mapping", () => {
-  it("OrchestratorNode type includes lip_sync", async () => {
-    const { NODE_TO_PRIMARY_STAGE } = await import("./hitl/orchestrator-bridge");
-    expect(NODE_TO_PRIMARY_STAGE).toHaveProperty("lip_sync");
+  it("audio_timing node covers lip_sync stage (stage 13 = ato_fuki)", async () => {
+    const { NODE_TO_STAGES } = await import("./hitl/orchestrator-bridge");
+    // Lip sync is part of the audio_timing node (stages 12-13)
+    expect(NODE_TO_STAGES.audio_timing).toContain(13);
   });
 
-  it("lip_sync maps to stage 6 (voice_synthesis)", async () => {
-    const { NODE_TO_PRIMARY_STAGE } = await import("./hitl/orchestrator-bridge");
-    expect(NODE_TO_PRIMARY_STAGE.lip_sync).toBe(6);
+  it("lip_sync is still a node in pipelineOrchestrator NODE_ORDER", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync("/home/ubuntu/awakli/server/pipelineOrchestrator.ts", "utf-8");
+    expect(content).toContain('"lip_sync"');
   });
 });
 

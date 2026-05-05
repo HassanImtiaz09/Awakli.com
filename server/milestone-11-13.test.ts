@@ -135,9 +135,7 @@ describe("Milestone 13: Engagement Service", () => {
   describe("module exports", () => {
     it("exports all required functions", async () => {
       const engagement = await import("./engagement");
-      expect(typeof engagement.toggleLike).toBe("function");
-      expect(typeof engagement.getLikeStatus).toBe("function");
-      expect(typeof engagement.getLikeCount).toBe("function");
+      // toggleLike/getLikeStatus/getLikeCount removed (voting feature deleted)
       expect(typeof engagement.addComment).toBe("function");
       expect(typeof engagement.getComments).toBe("function");
       expect(typeof engagement.removeComment).toBe("function");
@@ -160,9 +158,7 @@ describe("Milestone 13: Engagement Router", () => {
     it("has all expected procedures", async () => {
       const { engagementRouter } = await import("./routers-engagement");
       const procedures = Object.keys((engagementRouter as any)._def.procedures || {});
-      expect(procedures).toContain("toggleLike");
-      expect(procedures).toContain("getLikeStatus");
-      expect(procedures).toContain("getLikeCount");
+      // toggleLike/getLikeStatus/getLikeCount removed (voting feature deleted)
       expect(procedures).toContain("addComment");
       expect(procedures).toContain("getComments");
       expect(procedures).toContain("deleteComment");

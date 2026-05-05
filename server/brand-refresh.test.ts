@@ -51,8 +51,7 @@ describe("B5: Navigation rename and regroup", () => {
     expect(topNav).not.toMatch(/label:\s*["']Codex["']/);
   });
 
-  it("TopNav uses 'Vote' instead of 'Compete'", () => {
-    expect(topNav).toContain("Vote");
+  it("TopNav does not use legacy 'Compete' label", () => {
     expect(topNav).not.toMatch(/label:\s*["']Compete["']/);
   });
 
@@ -298,9 +297,9 @@ describe("Deferred components still exist for future use", () => {
     expect(comp).toContain("Maximize");
   });
 
-  it("WatchItHappen uses v3 video URL", () => {
+  it("WatchItHappen uses v4 video URL", () => {
     const comp = read("client/src/components/awakli/WatchItHappen.tsx");
-    expect(comp).toContain("awakli-demo-homepage-fix4");
+    expect(comp).toContain("v4-final-homepage");
   });
 
   it("StreamingTonight.tsx still exists", () => {
@@ -387,22 +386,7 @@ describe("UI Brief: Discover page badge removal", () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════════════════════════
-   UI Improvement Brief — Leaderboard progress rings
-   ═══════════════════════════════════════════════════════════════════════ */
-describe("UI Brief: Leaderboard circular progress rings", () => {
-  const leaderboard = read("client/src/pages/Leaderboard.tsx");
-
-  it("RisingRow uses SVG circle elements for progress ring", () => {
-    expect(leaderboard).toContain("<circle");
-    expect(leaderboard).toContain("strokeDasharray");
-  });
-
-  it("Progress ring has gradient definition", () => {
-    expect(leaderboard).toContain("ring-grad-row");
-    expect(leaderboard).toContain("linearGradient");
-  });
-});
+/* Leaderboard progress rings — REMOVED (feature deleted in Wave 3) */
 
 /* ═══════════════════════════════════════════════════════════════════════
    UI Improvement Brief — Characters empty state

@@ -8,13 +8,13 @@ import { describe, expect, it } from "vitest";
  */
 
 describe("useAdvanceStage hook contract", () => {
-  it("STAGES array has exactly 7 entries matching wizard paths", async () => {
+  it("STAGES array has exactly 8 entries matching wizard paths", async () => {
     // Dynamically import the layout to verify STAGES
     const mod = await import("../client/src/layouts/CreateWizardLayout");
     const { STAGES } = mod;
-    expect(STAGES).toHaveLength(7);
+    expect(STAGES).toHaveLength(8);
     expect(STAGES.map((s: any) => s.path)).toEqual([
-      "input", "setup", "script", "panels", "anime-gate", "video", "publish",
+      "input", "script", "panels", "storyboard", "publish", "anime-gate", "setup", "video",
     ]);
   });
 

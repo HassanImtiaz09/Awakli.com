@@ -67,12 +67,12 @@ describe("Stage 2B · Batch Bar — Batch Limit by Tier", () => {
     expect(getBatchLimit("free_trial")).toBe(0);
   });
 
-  it("creator (Apprentice) has no batch (limit 0)", () => {
-    expect(getBatchLimit("creator")).toBe(0);
+  it("creator (Mangaka) can batch up to 8 panels", () => {
+    expect(getBatchLimit("creator")).toBe(8);
   });
 
-  it("creator_pro (Mangaka) can batch up to 8 panels", () => {
-    expect(getBatchLimit("creator_pro")).toBe(8);
+  it("creator_pro (Studio) can batch unlimited panels", () => {
+    expect(getBatchLimit("creator_pro")).toBe(Infinity);
   });
 
   it("studio can batch unlimited panels", () => {
@@ -124,17 +124,16 @@ describe("Stage 2B · Batch Bar — Credit Calculation", () => {
 describe("Stage 2B · Batch Bar — Over-limit Detection", () => {
   it("Mangaka selecting 9 panels exceeds batch limit of 8", () => {
     const selectedCount = 9;
-    const maxBatch = getBatchLimit("creator_pro");
+    const maxBatch = getBatchLimit("creator");
     const overLimit = selectedCount > maxBatch && maxBatch !== Infinity;
     expect(overLimit).toBe(true);
   });
-
   it("Mangaka selecting 8 panels does not exceed limit", () => {
     const selectedCount = 8;
-    const maxBatch = getBatchLimit("creator_pro");
+    const maxBatch = getBatchLimit("creator");
     const overLimit = selectedCount > maxBatch && maxBatch !== Infinity;
     expect(overLimit).toBe(false);
-  });
+  });;
 
   it("Studio selecting 100 panels never exceeds limit", () => {
     const selectedCount = 100;
@@ -280,8 +279,12 @@ describe("Stage 2B · Tier Gating — Feature Access", () => {
     expect(batchLimit).toBe(Infinity);
   });
 
-  it("Mangaka regen limit is 15", () => {
-    expect(getRegenLimit("creator_pro")).toBe(15);
+  it("Creator (Mangaka) regen limit is 15", () => {
+    expect(getRegenLimit("creator")).toBe(15);
+  });
+
+  it("Creator Pro (Studio) regen limit is unlimited", () => {
+    expect(getRegenLimit("creator_pro")).toBe(Infinity);
   });
 
   it("Studio regen limit is unlimited", () => {

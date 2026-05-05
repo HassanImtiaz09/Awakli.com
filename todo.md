@@ -5866,3 +5866,70 @@
 
 ### Wave 3.5 Hygiene (tracked, not blocking)
 - [ ] Fix 71 failing UI/brand-refresh tests (25 test files) — fold into Wave 3.5 or early Wave 4
+
+---
+
+## Wave 4 — Pipeline Wiring + D9 MVP + Hygiene (checkpoint `8e34bd6d` baseline)
+
+### Item 1: Pipeline Wiring — D4 Timing + D8 Critic + D7 FX + Render Executor (Stages 12-14)
+- [ ] Wire D4 Timing Director into orchestrator: after D5.5 passes (Stage 11), call `generateXSheet()` → store X-Sheet → HITL blocking gate at Stage 12
+- [ ] Wire D8 Voice Critic into orchestrator: after voice_gen (Stage 13), run `evaluateVoiceBatch()` → retry with D4 re-routing on low scores → only approved clips to lip-sync
+- [ ] D8 full retry loop: D8 scores TTS → low score triggers D4 re-generation with critic feedback via provider-router → new clip re-scored → approved clips proceed
+- [ ] Wire D7 FX Compositor into orchestrator: after foley/ambient (Stage 14), call `composeFxBatch()` → produce FX plans
+- [ ] NEW: D7 FX Render Executor (`server/benchmarks/d7-fx-compositor/fx-renderer.ts`): download clips → FFmpeg → upload rendered clips → return URLs for assembly
+- [ ] Update `LEGACY_NODE_TO_V19` mapping for new agent calls
+- [ ] Integration test: full Stage 12→14 flow with mocked LLM/FFmpeg/voice providers
+
+### Item 2: H1 Card-Legibility Registration (Stage 16)
+- [x] Import `runCardLegibilityCheck` in `rules-harness.ts`
+- [x] Register as check #8 after watermark check with `skipCardLegibility` option
+- [x] Pass required options (titleCardDurationSec, endCardDurationSec, totalDurationSec, tempDir)
+- [x] Integration test: `h1-registration.test.ts` — 6 tests passing
+
+### Item 3: D9 Sakufuu Tracker MVP — Data-Tracking Only (Stage 2)
+- [x] Define `sakufuu_episode_memories` + `sakufuu_project_profiles` tables (migration 0057)
+- [x] Layer 1 — Episode Memory: track FX, colors, voice, pacing, camera, transitions
+- [x] Layer 2 — Project Memory: aggregate across episodes (signature FX, palette, voice consistency)
+- [x] D9 bias injection at Stage 2: `getSakufuuBias()` returns recommendations for episodes 2+
+- [x] No-op for episode 1 (returns `{active: false}` empty bias)
+- [x] Integration with D7 FX: signature FX list provided for D7 prioritization
+- [x] Integration test: `d9-sakufuu-tracker.test.ts` — 46 tests passing
+
+### Item 4: Fix 71 Failing UI/Brand-Refresh Tests (Hygiene)
+- [x] Audit all 28 failing test files — categorized: network/credential (7), removed features (4), stale expectations (17)
+- [x] Delete tests for removed features (Leaderboard, Vote, toggleLike, PUBLIC_NAV_LINKS)
+- [x] Update tier expectations (pricing $29→$19, $499→$149, regen limits, batch limits)
+- [x] Fix HITL stage count (12→17), gate assignments, stage names
+- [x] Fix foleyAmbient HITL bridge (audio_timing node), lipSyncNode bridge
+- [x] Fix brand-refresh (nav structure, video URL), closing-brief (stage numeral derivation)
+- [x] Fix auth.logout (sameSite none→lax), character-lora (LoRA capabilities)
+- [x] Fix free-viewing (nav rename), milestone-11-13 (engagement exports)
+- [x] Fix fal-providers (cost/error msg), appendix-compliance (colors/pricing)
+- [x] Verify full test suite passes: **4,855 tests × 150 files — ZERO failures**
+
+### Item 5: Chroma/pgvector Vector Store Swap (Stretch Goal — DEFERRED)
+- [ ] Deferred: corpus currently < 5K chunks, JsonArrayVectorStore performs adequately
+- [ ] IVectorStore interface already in place (server/benchmarks/d10/vector-store.ts)
+- [ ] Swap point documented: `getVectorStore()` singleton factory at line 303
+- [ ] Will revisit when corpus approaches 5K threshold (likely Wave 6+)
+
+---
+
+## Roadmap — Wave 5/6 Restructure (anchored 2026-05-04)
+
+### Wave 5A: Manga Finishing + Lulu Print (closes B2 audit blocker)
+- Manga Finishing (D10.M agent): screentone application, dialogue bubbles, page composition, print-ready PDF generation (Playbook 3.6)
+- Lulu Print Integration: Stripe Connect for split payouts, webhook handling, order fulfillment
+- Ships together as closed-loop print product (Lulu without Manga Finishing = crude unfinished ekonte)
+- Three-product narrative goes live at Wave 5A completion (~5-6 months from now)
+
+### Wave 5B: D2.5 Dashboard + LoRA Training
+- D2.5 Full Resolution-Flow Dashboard (auto-regen multi-round UI)
+- Sakufuu Aesthetic LoRA training pipeline (D9 style fingerprint → fine-tuned LoRA)
+- D9 Layer 3 — Genre Memory (cross-project norms from D10 corpus, requires book purchases)
+- X-Sheet Editor UI (editable timeline, per-user overrides active)
+
+### Wave 6: Three-LoRA Runtime + Prompt Adapter
+- Three-LoRA composition runtime (genre + character + sakufuu LoRA stacking at inference)
+- Prompt-Style Adapter (D9 injects learned phrasing into generation prompts)
+- 'Awakli learns your style' product feature ships at Wave 6

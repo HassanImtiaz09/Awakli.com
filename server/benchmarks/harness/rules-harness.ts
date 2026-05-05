@@ -1,7 +1,7 @@
 /**
  * H1 · Rules-Based Release Harness (Tier 1)
  *
- * Top-level runner that executes all 7 deterministic checks in sequence.
+ * Top-level runner that executes all 8 deterministic checks in sequence.
  * Returns a HarnessVerdict with pass/fail per check and routing hints.
  *
  * Cost: $0/episode. Wall-clock: ~30s for a 3-min episode.
@@ -15,6 +15,7 @@ import { runDurationCheck, type DurationCheckOptions } from "./checks/duration-c
 import { runFaceCountCheck, type FaceCountCheckOptions } from "./checks/face-count-check.js";
 import { runWatermarkCheck, type WatermarkCheckOptions } from "./checks/watermark-check.js";
 import { runFileIntegrityCheck, type FileIntegrityCheckOptions } from "./checks/file-integrity-check.js";
+import { runCardLegibilityCheck, type CardLegibilityOptions } from "./checks/card-legibility-check.js";
 
 export interface RulesHarnessOptions {
   /** Path to the assembled video file */
@@ -48,6 +49,8 @@ export interface RulesHarnessOptions {
   lufsRange?: [number, number];
   /** Custom LRA range for loudness check (default: [6, 14]) */
   lraRange?: [number, number];
+  /** Skip card legibility check (default: false) */
+  skipCardLegibility?: boolean;
 }
 
 export async function runRulesHarness(options: RulesHarnessOptions): Promise<HarnessVerdict> {
@@ -140,6 +143,22 @@ export async function runRulesHarness(options: RulesHarnessOptions): Promise<Har
   console.log(`  │ watermark:     ${watermark.passed ? "✓" : "✗"} (${watermark.durationMs}ms)`);
   if (!watermark.passed && options.requireWatermark) {
     console.log(`  │   → ${watermark.details}`);
+  }
+
+  // 8. Card Legibility Check (title + end card text contrast)
+  if (!options.skipCardLegibility) {
+    const cardLegibility = runCardLegibilityCheck({
+      videoPath: options.videoPath,
+      titleCardDurationSec: options.titleCardDurationSec,
+      endCardDurationSec: options.endCardDurationSec,
+      totalDurationSec: options.totalDurationSec ?? 0,
+      tempDir: options.tempDir,
+    });
+    checks.push(cardLegibility);
+    console.log(`  │ cardLegibility: ${cardLegibility.passed ? "✓" : "✗"} (${cardLegibility.durationMs}ms)`);
+    if (!cardLegibility.passed) {
+      console.log(`  │   → ${cardLegibility.details}`);
+    }
   }
 
   const totalDurationMs = Date.now() - start;

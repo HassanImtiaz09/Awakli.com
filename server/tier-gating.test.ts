@@ -101,20 +101,20 @@ describe("shared/tierMatrix", () => {
       expect(getMinTier("stage_input")).toBe("free_trial");
     });
 
-    it("stage_anime_gate requires creator", () => {
-      expect(getMinTier("stage_anime_gate")).toBe("creator");
+    it("stage_anime_gate requires free_trial (X2: gate visible to all, upsells)", () => {
+      expect(getMinTier("stage_anime_gate")).toBe("free_trial");
     });
 
-    it("stage_video requires creator_pro", () => {
-      expect(getMinTier("stage_video")).toBe("creator_pro");
+    it("stage_video requires creator (X2 update)", () => {
+      expect(getMinTier("stage_video")).toBe("creator");
     });
 
-    it("stage_publish requires creator_pro", () => {
-      expect(getMinTier("stage_publish")).toBe("creator_pro");
+    it("stage_publish requires free_trial (X2: open to all)", () => {
+      expect(getMinTier("stage_publish")).toBe("free_trial");
     });
 
-    it("voice_cloning requires studio", () => {
-      expect(getMinTier("voice_cloning")).toBe("studio");
+    it("voice_cloning requires creator_pro", () => {
+      expect(getMinTier("voice_cloning")).toBe("creator_pro");
     });
 
     it("api_access requires enterprise", () => {
@@ -127,16 +127,16 @@ describe("shared/tierMatrix", () => {
       expect(tierHasCapability("free_trial", "stage_input")).toBe(true);
     });
 
-    it("free_trial cannot access stage_anime_gate", () => {
-      expect(tierHasCapability("free_trial", "stage_anime_gate")).toBe(false);
+    it("free_trial can access stage_anime_gate (X2: gate visible to all)", () => {
+      expect(tierHasCapability("free_trial", "stage_anime_gate")).toBe(true);
     });
 
     it("creator can access stage_anime_gate", () => {
       expect(tierHasCapability("creator", "stage_anime_gate")).toBe(true);
     });
 
-    it("creator cannot access stage_video", () => {
-      expect(tierHasCapability("creator", "stage_video")).toBe(false);
+    it("creator can access stage_video (X2 update)", () => {
+      expect(tierHasCapability("creator", "stage_video")).toBe(true);
     });
 
     it("creator_pro can access stage_video", () => {
@@ -154,12 +154,12 @@ describe("shared/tierMatrix", () => {
     it("free_trial has a subset of capabilities", () => {
       const caps = getTierCapabilities("free_trial");
       expect(caps).toContain("stage_input");
-      expect(caps).toContain("stage_setup");
       expect(caps).toContain("stage_script");
       expect(caps).toContain("stage_panels");
       expect(caps).toContain("community_voting");
-      expect(caps).not.toContain("stage_anime_gate");
-      expect(caps).not.toContain("stage_video");
+      expect(caps).toContain("stage_anime_gate"); // X2: gate visible to all
+      expect(caps).not.toContain("stage_setup"); // X2: now creator tier
+      expect(caps).not.toContain("ai_video_generation");
     });
 
     it("enterprise has all capabilities", () => {
@@ -193,8 +193,8 @@ describe("shared/tierMatrix", () => {
   });
 
   describe("buildUpgradePayload", () => {
-    it("returns correct payload for free_trial user denied stage_anime_gate", () => {
-      const payload = buildUpgradePayload("free_trial", "stage_anime_gate");
+    it("returns correct payload for free_trial user denied stage_setup", () => {
+      const payload = buildUpgradePayload("free_trial", "stage_setup");
       expect(payload.currentTier).toBe("free_trial");
       expect(payload.required).toBe("creator");
       expect(payload.requiredDisplayName).toBe("Mangaka");
@@ -203,30 +203,30 @@ describe("shared/tierMatrix", () => {
       expect(payload.pricingUrl).toBe("/pricing");
     });
 
-    it("returns correct payload for creator denied stage_video", () => {
-      const payload = buildUpgradePayload("creator", "stage_video");
-      expect(payload.currentTier).toBe("creator");
+    it("returns correct payload for free_trial denied ai_video_generation", () => {
+      const payload = buildUpgradePayload("free_trial", "ai_video_generation");
+      expect(payload.currentTier).toBe("free_trial");
       expect(payload.required).toBe("creator_pro");
       expect(payload.requiredDisplayName).toBe("Studio");
     });
 
-    it("returns correct payload for creator_pro denied voice_cloning", () => {
-      const payload = buildUpgradePayload("creator_pro", "voice_cloning");
-      expect(payload.currentTier).toBe("creator_pro");
-      expect(payload.required).toBe("studio");
-      expect(payload.requiredDisplayName).toBe("Studio Pro");
+    it("returns correct payload for creator denied voice_cloning", () => {
+      const payload = buildUpgradePayload("creator", "voice_cloning");
+      expect(payload.currentTier).toBe("creator");
+      expect(payload.required).toBe("creator_pro");
+      expect(payload.requiredDisplayName).toBe("Studio");
     });
   });
 
   describe("stageToCapability", () => {
-    it("maps stage indices 0-6 to capability keys", () => {
+    it("maps stage indices 0-6 to capability keys (new pipeline order)", () => {
       expect(stageToCapability(0)).toBe("stage_input");
-      expect(stageToCapability(1)).toBe("stage_setup");
-      expect(stageToCapability(2)).toBe("stage_script");
-      expect(stageToCapability(3)).toBe("stage_panels");
+      expect(stageToCapability(1)).toBe("stage_script");
+      expect(stageToCapability(2)).toBe("stage_panels");
+      expect(stageToCapability(3)).toBe("stage_publish");
       expect(stageToCapability(4)).toBe("stage_anime_gate");
-      expect(stageToCapability(5)).toBe("stage_video");
-      expect(stageToCapability(6)).toBe("stage_publish");
+      expect(stageToCapability(5)).toBe("stage_setup");
+      expect(stageToCapability(6)).toBe("stage_video");
     });
 
     it("returns null for out-of-range indices", () => {
@@ -298,16 +298,15 @@ describe("tier matrix consistency", () => {
     }
   });
 
-  it("stage capabilities are monotonically non-decreasing in tier requirement", () => {
-    const stageOrder = [0, 1, 2, 3, 4, 5, 6];
-    let prevLevel = 0;
-    for (const idx of stageOrder) {
-      const cap = stageToCapability(idx);
-      if (!cap) continue;
-      const level = tierLevel(getMinTier(cap));
-      expect(level).toBeGreaterThanOrEqual(prevLevel);
-      prevLevel = level;
-    }
+  it("stage capabilities follow expected tier progression", () => {
+    // New order: Input(free) → Script(free) → Panels(free) → Publish(free) → Gate(free) → Setup(creator) → Video(creator)
+    const stages = [0, 1, 2, 3, 4, 5, 6].map(i => {
+      const cap = stageToCapability(i);
+      return cap ? tierLevel(getMinTier(cap)) : 0;
+    });
+    // First 5 stages are free_trial (0), last 2 are creator (1)
+    expect(stages.slice(0, 5).every(l => l === 0)).toBe(true);
+    expect(stages.slice(5).every(l => l >= 1)).toBe(true);
   });
 
   it("TIER_META display names match the spec copy", () => {

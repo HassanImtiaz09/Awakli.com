@@ -69,26 +69,7 @@ describe("Phase 4: Community Features", () => {
     });
   });
 
-  // ─── Leaderboard ─────────────────────────────────────────────────
-  describe("leaderboard", () => {
-    it("get returns an array for week period", async () => {
-      const caller = appRouter.createCaller(createPublicContext());
-      const result = await caller.leaderboard.get({ period: "week" });
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it("get returns an array for month period", async () => {
-      const caller = appRouter.createCaller(createPublicContext());
-      const result = await caller.leaderboard.get({ period: "month" });
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it("get returns an array for all period", async () => {
-      const caller = appRouter.createCaller(createPublicContext());
-      const result = await caller.leaderboard.get({ period: "all" });
-      expect(Array.isArray(result)).toBe(true);
-    });
-  });
+  // ─── Leaderboard (removed — voting feature deleted) ─────────────
 
   // ─── Follows ─────────────────────────────────────────────────────
   describe("follows", () => {
@@ -206,18 +187,5 @@ describe("Phase 4: Community Features", () => {
     });
   });
 
-  // ─── Votes ───────────────────────────────────────────────────────
-  describe("votes", () => {
-    it("get returns vote data for an episode", async () => {
-      const caller = appRouter.createCaller(createPublicContext());
-      const result = await caller.voting.get({ episodeId: 1 });
-      expect(result).toHaveProperty("upvotes");
-      expect(result).toHaveProperty("downvotes");
-    });
-
-    it("cast requires authentication", async () => {
-      const caller = appRouter.createCaller(createPublicContext());
-      await expect(caller.voting.cast({ episodeId: 1, voteType: "up" })).rejects.toThrow();
-    });
-  });
+  // ─── Votes (removed — voting feature deleted) ───────────────────
 });
