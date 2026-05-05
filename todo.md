@@ -6123,3 +6123,84 @@
 - [x] (3) Creator revenue: DB tracking + manual payout workflow doc + admin UI — Stripe Connect committed to Wave 5B
 - [x] (4) Cover generation: auto-from-title-card MVP — dedicated cover design committed to Wave 5B
 - [x] (5) Lulu credentials: client built mock-ready, real credentials pending from user
+
+---
+
+## Wave 5B Scope
+
+### Item 1: Dedicated Cover Design Step
+- [ ] Cover composition engine (`server/benchmarks/d10-m-manga-finishing/cover-designer.ts`)
+  - [ ] Title typography: genre-appropriate font selection + sizing + placement
+  - [ ] Chapter info: volume number, chapter range, subtitle
+  - [ ] Author attribution: creator name with configurable placement
+  - [ ] Ekonte-aware composition: analyze key panels for focal point, avoid text overlap
+  - [ ] Spine text generation (title + volume + author)
+  - [ ] Back cover: synopsis text + barcode area + genre tags
+- [ ] Cover template system: 4 trim sizes × 2 orientations × genre variants
+- [ ] Integration with D10.M orchestrator (replace auto-from-title-card for Pro+ users)
+- [ ] Tests for cover designer
+
+### Item 2: D2.5 Sakuga Kantoku Resolution-Flow Dashboard
+- [ ] Resolution-flow schema (migration 0059)
+  - [ ] `resolution_issues` table: genga_set_id, panel_id, issue_type, severity, description, status, assigned_to
+  - [ ] `resolution_rounds` table: issue_id, round_number, regen_params, result_url, reviewer_verdict
+  - [ ] `genga_consistency_scores` table: project_id, episode_id, consistency_score, drift_panels
+- [ ] Sakuga Kantoku engine (`server/benchmarks/sakuga-kantoku/resolution-engine.ts`)
+  - [ ] Consistency punch-list generator: compare genga set against character bible + style refs
+  - [ ] Issue classification: proportion drift, color inconsistency, off-model face, pose break, BG mismatch
+  - [ ] Auto-regen parameter builder: construct targeted regen prompts per issue type
+  - [ ] Multi-round tracking: record each regen attempt, score improvement, escalate if 3+ rounds fail
+  - [ ] Confidence scorer: per-panel pass/fail threshold based on issue severity
+- [ ] Resolution-flow UI (`/studio/resolution-flow`)
+  - [ ] Punch-list view: all open issues grouped by episode/panel with severity badges
+  - [ ] Side-by-side comparison: original vs regen attempt (swipe/overlay)
+  - [ ] Approve/reject/request-regen actions per issue
+  - [ ] Round history timeline per issue (attempt 1 → 2 → 3 with scores)
+  - [ ] Batch approve for low-severity issues below threshold
+- [ ] Integration with HITL gate system (Stage 5.5 consistency gate)
+- [ ] Creator-facing consistency status in project view
+- [ ] Tests for resolution-flow engine and UI procedures
+
+### Item 3: Sakufuu LoRA Training Pipeline + D9 Wiring Closure
+- [ ] **D9 WIRING CLOSURE (prerequisite):** Wire `injectSakufuuBias()` into pipeline orchestrator
+  - [ ] Import sakufuu-pipeline into `server/hitl/orchestrator-bridge.ts` or `server/pipelineOrchestrator.ts`
+  - [ ] Call `injectSakufuuBias()` at Stage 2 (pre-generation)
+  - [ ] Pass `bias.signatureFx` to D7 FX Compositor stage
+  - [ ] Pass `bias.suggestedPalette` + `bias.suggestedPacing` to video generation stage
+  - [ ] Pass `bias.voiceTargets` to voice generation stage
+  - [ ] Call `recordSakufuuMemory()` after Stage 16 (post-assembly)
+  - [ ] Integration test: verify bias flows from D9 → D7 for episode 2+
+- [ ] LoRA training config schema (migration 0060)
+  - [ ] `lora_training_jobs` table: creator_id, style_corpus, status, model_url, config
+  - [ ] `sakufuu_style_samples` table: curated panels for training data
+- [ ] Training pipeline module (`server/benchmarks/sakufuu/lora-training.ts`)
+  - [ ] TrainingProvider interface (Replicate MVP, Modal swap later)
+  - [ ] Style sample extraction: auto-select representative panels from creator's works
+  - [ ] Training data preparation: crop, normalize, caption generation
+  - [ ] Training job submission via Replicate API
+  - [ ] Model artifact storage (S3 + DB reference)
+  - [ ] Training progress webhook handler
+- [ ] Integration with D9 Sakufuu Tracker
+  - [ ] Per-creator style bias derived from trained LoRA weights (when available)
+  - [ ] Statistical bias fallback: episode-memory-based bias from `getSakufuuBias()` —
+        uses FX frequency analysis, color temperature averaging, and camera distribution
+        aggregation across prior episodes (no LoRA needed, works from episode 2+)
+- [ ] Admin training management page
+  - [ ] Queue training jobs, monitor progress, approve/reject models
+  - [ ] Cost tracking per training run
+- [ ] Tests for LoRA training pipeline + D9 wiring integration
+
+### Item 4: Stripe Connect Onboarding (deferred to end per user request)
+- [ ] Stripe Connect account creation for creators
+- [ ] Onboarding flow (Express accounts)
+- [ ] Automated payout distribution (replace manual workflow)
+- [ ] Creator payout dashboard with Connect status
+- [ ] Webhook handlers for Connect events (account.updated, payout.paid)
+- [ ] Migration from manual payouts to automated
+- [ ] Tests for Stripe Connect integration
+
+### Lulu Credentials Integration
+- [x] LULU_CLIENT_KEY and LULU_CLIENT_SECRET stored in env
+- [x] OAuth2 token acquisition validated (sandbox)
+- [x] API cost calculation endpoint reachable
+- [x] Credential validation test: `lulu-credentials.test.ts` — 4 tests passing
