@@ -6224,3 +6224,68 @@
 
 - [ ] Resolution-flow: per-issue cumulative cost ceiling via env var (3 rounds can have wildly different costs)
 - [ ] Stripe Connect: runtime guard preventing test account IDs from being used with live API keys (pre-production-cutover priority)
+
+---
+
+## Wave 5C Scope (17-22 days)
+
+### Item 1: Per-Character LoRA Training (3-4 days)
+- [x] Refactor existing character LoRA to use SAME schema status enum as sakufuu hotfix (pending_admin_approval)
+- [x] Refactor characters.trainLora to NOT call provider — insert with pending_admin_approval + cost estimate
+- [x] Add adminApproveCharacterLora procedure (triggers Replicate after admin review)
+- [x] Add adminRejectCharacterLora procedure (cancels with reason)
+- [x] Share TrainingProvider interface with sakufuu LoRA (no parallel implementation)
+- [x] Per-character cost tracking in admin dashboard (estimatedCostCents stored + adminListPendingCharacterLora)
+- [x] NOTE: Three-LoRA composition runtime (genre + character + sakufuu at inference) is Wave 6, NOT 5C
+- [x] Tests for per-character LoRA admin gate (28 tests passing)
+
+### Item 2: Image Upscaling for Print DPI (3-4 days)
+- [ ] UpscaleProvider interface (same swappable pattern as VectorStore/TrainingProvider)
+- [ ] Real-ESRGAN implementation via Replicate API
+- [ ] Panel DPI detection module (source DPI analysis per panel)
+- [ ] Auto-flag panels below 300 DPI for upscale before PDF generation
+- [ ] Integration with D10.M print pipeline (upscale step before page compositor)
+- [ ] Admin DPI coverage dashboard (per-project DPI status)
+- [ ] Quality scoring post-upscale (SSIM comparison)
+- [ ] Tests for upscaling pipeline
+
+### Item 3a: Audit Blocker B3 Smoke Test (0.5 days)
+- [ ] Run real episode E2E on non-seed user content
+- [ ] Validate pipeline produces expected artifacts at each stage
+- [ ] Document any failures/gaps found
+
+### Item 3b: Security Audit (3-5 days)
+- [ ] Rate limiting on auth endpoints
+- [ ] Input sanitization audit across all public procedures
+- [ ] Public procedure review (ensure no unprotected admin operations)
+- [ ] CSRF/XSS protection verification
+- [ ] SQL injection prevention check (parameterized queries)
+- [ ] File upload validation (size, type, content)
+
+### Item 3c: Tier Display Accuracy Pass (0.5 days)
+- [ ] Verify Pro+ features (AI screentone, dedicated cover design) correctly gated
+- [ ] Pricing page accuracy — features match actual implementation
+- [ ] Feature gate enforcement in procedures (not just UI hiding)
+
+### Item 4: Founders' Studio Outbound Infrastructure (5-7 days)
+- [ ] Outreach automation module: draft personalized messages from creator profiles (Twitter/ArtStation/Pixiv)
+- [ ] Admin review/send interface for outreach messages
+- [ ] Founder dashboard: per-creator tracking
+  - [ ] Outreach status (contacted, responded, onboarding, active, churned)
+  - [ ] Source platform + profile links
+  - [ ] Expected genres
+  - [ ] Episodes committed vs delivered
+  - [ ] Current blocker
+  - [ ] RLHF data contributed
+  - [ ] Revenue accrued
+- [ ] Weekly office hours scheduling integration (Cal.com or similar)
+- [ ] Private Discord integration for cohort
+- [ ] Existing Express Interest page captures inbound for triage (not promoted as primary)
+- [ ] Approved creators onboard via Stripe Connect (Wave 5B) at signup
+- [ ] Documented manual payout workflow as fallback
+- [ ] Tests for Founders outbound infrastructure
+
+### Item 5: Non-Blocking Fixes (1 day)
+- [ ] Resolution-flow: MAX_COST_PER_ISSUE env var, cumulative cost tracking, halt auto-regen when budget exceeded
+- [ ] Stripe Connect: assertEnvironmentMatch() guard before stripe.transfers.create()
+- [ ] Confirm per-character LoRA admin gate uses SAME schema status enum and approval pattern as sakufuu hotfix (consistency for admin UX)

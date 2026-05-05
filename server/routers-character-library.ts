@@ -10,7 +10,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { eq, and, desc, asc, sql, inArray } from "drizzle-orm";
 import {
@@ -281,8 +281,8 @@ export const characterLibraryRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Character must have a reference sheet before training" });
       }
 
-      if (char.loraStatus === "training" || char.loraStatus === "validating") {
-        throw new TRPCError({ code: "CONFLICT", message: "Training already in progress for this character" });
+      if (char.loraStatus === "training" || char.loraStatus === "validating" || char.loraStatus === "pending_admin_approval") {
+        throw new TRPCError({ code: "CONFLICT", message: "Training already in progress or pending approval for this character" });
       }
 
       // Determine next version
@@ -319,23 +319,27 @@ export const characterLibraryRouter = router({
       });
       const loraId = (loraResult as any).insertId as number;
 
-      // Create training job
+      // Compute cost estimate WITHOUT submitting to provider
       const estimate = estimateTrainingJob(input.gpuType, input.trainingSteps);
+      const estimatedCostCents = Math.round(estimate.withMargin.costUsd * 100);
+
+      // Create training job with pending_admin_approval (NO provider call)
       const [jobResult] = await db.insert(loraTrainingJobs).values({
         characterId: input.characterId,
         loraId,
         userId: ctx.user.id,
-        status: "queued",
+        status: "pending_admin_approval",
         priority: 1,
         gpuType: input.gpuType,
         costUsd: String(estimate.withMargin.costUsd),
         costCredits: String(estimate.withMargin.costCredits),
+        estimatedCostCents,
       });
       const jobId = (jobResult as any).insertId as number;
 
-      // Update character status
+      // Update character status to pending_admin_approval
       await db.update(characterLibrary)
-        .set({ loraStatus: "training" })
+        .set({ loraStatus: "pending_admin_approval" })
         .where(eq(characterLibrary.id, input.characterId));
 
       // Preprocess the dataset
@@ -350,11 +354,14 @@ export const characterLibraryRouter = router({
         loraId,
         version: nextVersion,
         triggerWord,
+        status: "pending_admin_approval" as const,
+        estimatedCostCents,
         estimate,
         dataset: {
           totalImages: dataset.totalImages,
           triggerWord: dataset.triggerWord,
         },
+        message: "Training request submitted. Awaiting admin approval before provider submission.",
       };
     }),
 
@@ -390,9 +397,9 @@ export const characterLibraryRouter = router({
         });
       }
 
-      // Skip characters already training
-      const alreadyTraining = chars.filter(c => c.loraStatus === "training" || c.loraStatus === "validating");
-      const toTrain = chars.filter(c => c.loraStatus !== "training" && c.loraStatus !== "validating");
+      // Skip characters already training or pending approval
+      const alreadyTraining = chars.filter(c => c.loraStatus === "training" || c.loraStatus === "validating" || c.loraStatus === "pending_admin_approval");
+      const toTrain = chars.filter(c => c.loraStatus !== "training" && c.loraStatus !== "validating" && c.loraStatus !== "pending_admin_approval");
 
       if (toTrain.length === 0) {
         return { batchId: null, jobs: [], skipped: alreadyTraining.map(c => c.name), estimate: null };
@@ -428,24 +435,26 @@ export const characterLibraryRouter = router({
         });
         const loraId = (loraResult as any).insertId as number;
 
-        // Create training job
+        // Create training job with pending_admin_approval (NO provider call)
         const estimate = estimateTrainingJob(input.gpuType, 800);
+        const estimatedCostCents = Math.round(estimate.withMargin.costUsd * 100);
         const [jobResult] = await db.insert(loraTrainingJobs).values({
           characterId: char.id,
           loraId,
           userId: ctx.user.id,
-          status: "queued",
+          status: "pending_admin_approval",
           priority,
           batchId,
           gpuType: input.gpuType,
           costUsd: String(estimate.withMargin.costUsd),
           costCredits: String(estimate.withMargin.costCredits),
+          estimatedCostCents,
         });
         const jobId = (jobResult as any).insertId as number;
 
-        // Update character status
+        // Update character status to pending_admin_approval
         await db.update(characterLibrary)
-          .set({ loraStatus: "training" })
+          .set({ loraStatus: "pending_admin_approval" })
           .where(eq(characterLibrary.id, char.id));
 
         jobs.push({ characterId: char.id, name: char.name, jobId, loraId, priority });
@@ -1711,6 +1720,145 @@ export const characterLibraryRouter = router({
         dimensions: result.dimensions,
         computeTimeMs: result.computeTimeMs,
         status: "ready" as const,
+      };
+    }),
+
+  // ── Admin: Approve Character LoRA Training ─────────────────────────────
+  adminApproveCharacterLora: adminProcedure
+    .input(z.object({
+      jobId: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [job] = await db.select()
+        .from(loraTrainingJobs)
+        .where(eq(loraTrainingJobs.id, input.jobId))
+        .limit(1);
+
+      if (!job) throw new TRPCError({ code: "NOT_FOUND", message: "Training job not found" });
+
+      if (job.status !== "pending_admin_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Can only approve jobs in pending_admin_approval status. Current: ${job.status}`,
+        });
+      }
+
+      // Update job status to queued (approved by admin, ready for provider)
+      await db.update(loraTrainingJobs)
+        .set({
+          status: "queued",
+          adminApprovedBy: ctx.user.id,
+          adminApprovedAt: new Date(),
+        })
+        .where(eq(loraTrainingJobs.id, input.jobId));
+
+      // Update character status to training
+      await db.update(characterLibrary)
+        .set({ loraStatus: "training" })
+        .where(eq(characterLibrary.id, job.characterId));
+
+      return {
+        success: true,
+        jobId: input.jobId,
+        status: "queued" as const,
+        message: "Training approved. Job queued for provider submission.",
+      };
+    }),
+
+  // ── Admin: Reject Character LoRA Training ──────────────────────────────
+  adminRejectCharacterLora: adminProcedure
+    .input(z.object({
+      jobId: z.number(),
+      reason: z.string().min(1, "Rejection reason required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [job] = await db.select()
+        .from(loraTrainingJobs)
+        .where(eq(loraTrainingJobs.id, input.jobId))
+        .limit(1);
+
+      if (!job) throw new TRPCError({ code: "NOT_FOUND", message: "Training job not found" });
+
+      if (job.status !== "pending_admin_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Can only reject jobs in pending_admin_approval status. Current: ${job.status}`,
+        });
+      }
+
+      // Set job to cancelled with rejection reason
+      await db.update(loraTrainingJobs)
+        .set({
+          status: "cancelled",
+          rejectionReason: input.reason,
+          adminApprovedBy: ctx.user.id,
+          adminApprovedAt: new Date(),
+        })
+        .where(eq(loraTrainingJobs.id, input.jobId));
+
+      // Reset character loraStatus back to previous state
+      const [char] = await db.select()
+        .from(characterLibrary)
+        .where(eq(characterLibrary.id, job.characterId))
+        .limit(1);
+
+      const newStatus = char?.activeLoraId ? "active" : "untrained";
+      await db.update(characterLibrary)
+        .set({ loraStatus: newStatus })
+        .where(eq(characterLibrary.id, job.characterId));
+
+      return {
+        success: true,
+        jobId: input.jobId,
+        status: "cancelled" as const,
+        message: `Training request rejected: ${input.reason}`,
+      };
+    }),
+
+  // ── Admin: List Pending Character LoRA Jobs ────────────────────────────
+  adminListPendingCharacterLora: adminProcedure
+    .input(z.object({
+      status: z.enum(["pending_admin_approval", "queued", "preprocessing", "training", "validating", "completed", "failed", "cancelled"]).optional(),
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().min(0).default(0),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const statusFilter = input?.status || "pending_admin_approval";
+      const limit = input?.limit || 50;
+      const offset = input?.offset || 0;
+
+      const jobs = await db.select()
+        .from(loraTrainingJobs)
+        .where(eq(loraTrainingJobs.status, statusFilter))
+        .orderBy(desc(loraTrainingJobs.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Enrich with character names
+      const charIds = Array.from(new Set(jobs.map(j => j.characterId)));
+      const chars = charIds.length > 0
+        ? await db.select({ id: characterLibrary.id, name: characterLibrary.name })
+            .from(characterLibrary)
+            .where(inArray(characterLibrary.id, charIds))
+        : [];
+      const charMap = new Map(chars.map(c => [c.id, c.name]));
+
+      return {
+        jobs: jobs.map(j => ({
+          ...j,
+          characterName: charMap.get(j.characterId) ?? "Unknown",
+        })),
+        total: jobs.length,
       };
     }),
 });

@@ -1380,6 +1380,7 @@ export const characterLibrary = mysqlTable("character_library", {
   referenceSheetUrl: text("referenceSheetUrl"),
   loraStatus: mysqlEnum("loraStatus", [
     "untrained",
+    "pending_admin_approval",
     "training",
     "validating",
     "active",
@@ -1435,21 +1436,27 @@ export const loraTrainingJobs = mysqlTable("lora_training_jobs", {
   loraId: int("loraId"),  // references character_loras.id (set after LoRA record created)
   userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   status: mysqlEnum("trainingJobStatus", [
+    "pending_admin_approval",
     "queued",
     "preprocessing",
     "training",
     "validating",
     "completed",
     "failed",
-  ]).default("queued").notNull(),
+    "cancelled",
+  ]).default("pending_admin_approval").notNull(),
   priority: int("priority").default(5).notNull(),  // 1=highest, 10=lowest
   runpodJobId: varchar("runpodJobId", { length: 255 }),
   gpuType: varchar("gpuType", { length: 32 }),  // 'h100_sxm', 'a100_80gb', 'rtx_4090'
   gpuSeconds: decimal("gpuSeconds", { precision: 10, scale: 3 }),
   costUsd: decimal("costUsd", { precision: 10, scale: 4 }),
   costCredits: decimal("costCredits", { precision: 10, scale: 4 }),
+  estimatedCostCents: int("estimatedCostCents"),  // Pre-computed cost estimate for admin review
   errorMessage: text("errorMessage"),
+  rejectionReason: text("rejectionReason"),  // Admin rejection reason
   batchId: varchar("batchId", { length: 64 }),  // groups jobs in a batch training session
+  adminApprovedBy: int("adminApprovedBy"),  // Admin who approved training
+  adminApprovedAt: timestamp("adminApprovedAt"),
   startedAt: timestamp("startedAt"),
   completedAt: timestamp("completedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
