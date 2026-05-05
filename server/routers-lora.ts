@@ -2,9 +2,9 @@
  * LoRA Training Router
  *
  * Provides tRPC procedures for:
- * - Submitting LoRA training jobs
+ * - Submitting LoRA training requests (pending_admin_approval — NO provider call)
+ * - Admin: approve training submission (triggers provider), approve/reject models, manage costs
  * - Checking training status
- * - Admin: approve/reject models, view queue, manage costs
  * - Creator: view their trained models
  */
 
@@ -54,7 +54,7 @@ export const loraRouter = router({
     return getCreatorLoraStatus(jobs as any);
   }),
 
-  /** Submit a new training job */
+  /** Submit a new training job request (enters pending_admin_approval — NO provider call) */
   submitTraining: protectedProcedure
     .input(z.object({
       projectId: z.number().optional(),
@@ -72,12 +72,7 @@ export const loraRouter = router({
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const apiToken = process.env.REPLICATE_API_TOKEN;
-      if (!apiToken) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Training provider not configured" });
-      }
-
-      // Extract style samples
+      // Extract style samples (validation only — no provider call)
       const samples = extractStyleSamples(
         input.panelUrls.map(p => ({ url: p.url, sourceType: p.sourceType })),
       );
@@ -89,34 +84,35 @@ export const loraRouter = router({
         });
       }
 
-      // Submit training
-      const provider = new ReplicateTrainingProvider(apiToken);
-      const result = await runTrainingPipeline({
-        creatorId: ctx.user.id,
-        projectId: input.projectId,
+      // Compute cost estimate WITHOUT submitting to provider
+      const steps = input.configOverrides?.steps || 1000;
+      const estimatedCostCents = Math.ceil((steps / 1000) * 80); // ~$0.80 per 1000 steps
+
+      const config = {
+        baseModel: "ostris/flux-dev-lora-trainer",
         triggerWord: input.triggerWord,
-        genre: input.genre,
-        samples,
-        configOverrides: input.configOverrides as Partial<TrainingConfig> | undefined,
-      }, provider);
+        steps,
+        learningRate: input.configOverrides?.learningRate || 0.0001,
+        loraRank: input.configOverrides?.loraRank || 16,
+        resolution: input.configOverrides?.resolution || 512,
+        batchSize: 1,
+        useCaptions: true,
+      };
 
-      if (result.status === "no_samples") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "No valid samples for training" });
-      }
-
-      // Save to DB
+      // Save to DB with pending_admin_approval status (NO externalJobId yet)
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
       const [inserted] = await db.insert(sakufuuLoraJobs).values({
         creatorId: ctx.user.id,
         projectId: input.projectId || null,
         provider: "replicate",
-        externalJobId: result.jobId,
-        status: "preparing",
-        config: result.config,
-        sampleCount: result.sampleCount,
-        trainingSteps: result.config.steps,
-        costCents: result.estimatedCostCents,
+        externalJobId: null, // Not submitted yet — awaiting admin approval
+        status: "pending_admin_approval",
+        config,
+        sampleCount: samples.length,
+        trainingSteps: steps,
+        costCents: 0, // Actual cost tracked after submission
+        estimatedCostCents,
         metadata: { triggerWord: input.triggerWord, genre: input.genre },
       });
 
@@ -137,9 +133,10 @@ export const loraRouter = router({
 
       return {
         jobId: inserted.insertId,
-        externalJobId: result.jobId,
-        sampleCount: result.sampleCount,
-        estimatedCostCents: result.estimatedCostCents,
+        status: "pending_admin_approval" as const,
+        sampleCount: samples.length,
+        estimatedCostCents,
+        message: "Training request submitted. Awaiting admin approval before provider submission.",
       };
     }),
 
@@ -202,10 +199,126 @@ export const loraRouter = router({
 
   // ─── Admin Procedures ────────────────────────────────────────────────────
 
+  /** Approve a training submission — triggers actual provider.submitTraining() */
+  adminApproveTraining: adminProcedure
+    .input(z.object({
+      jobId: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const [job] = await db
+        .select()
+        .from(sakufuuLoraJobs)
+        .where(eq(sakufuuLoraJobs.id, input.jobId));
+
+      if (!job) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (job.status !== "pending_admin_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Can only approve jobs in pending_admin_approval status. Current: ${job.status}`,
+        });
+      }
+
+      // Now actually submit to provider
+      const apiToken = process.env.REPLICATE_API_TOKEN;
+      if (!apiToken) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Training provider not configured" });
+      }
+
+      // Retrieve the style samples for this job
+      const samples = await db
+        .select()
+        .from(sakufuuStyleSamples)
+        .where(eq(sakufuuStyleSamples.trainingJobId, job.id));
+
+      const config = job.config as TrainingConfig;
+      const provider = new ReplicateTrainingProvider(apiToken);
+
+      const result = await runTrainingPipeline({
+        creatorId: job.creatorId,
+        projectId: job.projectId || undefined,
+        triggerWord: config.triggerWord,
+        genre: (job.metadata as any)?.genre,
+        samples: samples.map(s => ({
+          url: s.sourceUrl,
+          sourceType: (s.sourceType || "panel") as "panel" | "character_sheet" | "cover" | "custom",
+          qualityScore: s.qualityScore || 0.6,
+        })),
+        configOverrides: config,
+      }, provider);
+
+      if (result.status === "no_samples") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No valid samples found for training" });
+      }
+
+      // Update job with provider submission details
+      await db.update(sakufuuLoraJobs)
+        .set({
+          status: "preparing",
+          externalJobId: result.jobId,
+          costCents: result.estimatedCostCents,
+          adminApprovedBy: ctx.user.id,
+          adminApprovedAt: new Date(),
+        })
+        .where(eq(sakufuuLoraJobs.id, job.id));
+
+      return {
+        success: true,
+        jobId: job.id,
+        externalJobId: result.jobId,
+        estimatedCostCents: result.estimatedCostCents,
+        message: "Training approved and submitted to provider.",
+      };
+    }),
+
+  /** Reject a training submission (admin) */
+  adminRejectTraining: adminProcedure
+    .input(z.object({
+      jobId: z.number(),
+      reason: z.string().min(1, "Rejection reason required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const [job] = await db
+        .select()
+        .from(sakufuuLoraJobs)
+        .where(eq(sakufuuLoraJobs.id, input.jobId));
+
+      if (!job) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (job.status !== "pending_admin_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Can only reject jobs in pending_admin_approval status. Current: ${job.status}`,
+        });
+      }
+
+      await db.update(sakufuuLoraJobs)
+        .set({
+          status: "cancelled",
+          errorMessage: `Admin rejected: ${input.reason}`,
+          adminApprovedBy: ctx.user.id,
+          adminApprovedAt: new Date(),
+        })
+        .where(eq(sakufuuLoraJobs.id, job.id));
+
+      return { success: true, jobId: job.id, message: "Training request rejected." };
+    }),
+
   /** Get all training jobs (admin) */
   adminListJobs: adminProcedure
     .input(z.object({
-      status: z.enum(["pending", "preparing", "training", "completed", "failed", "cancelled"]).optional(),
+      status: z.enum(["pending_admin_approval", "pending", "preparing", "training", "completed", "failed", "cancelled"]).optional(),
       limit: z.number().min(1).max(100).default(50),
       offset: z.number().min(0).default(0),
     }))
@@ -228,7 +341,7 @@ export const loraRouter = router({
       return { jobs, total: countResult?.count || 0 };
     }),
 
-  /** Approve or reject a trained model (admin) */
+  /** Approve or reject a trained model for use (admin) — distinct from training approval */
   adminApproveModel: adminProcedure
     .input(z.object({
       jobId: z.number(),
@@ -273,11 +386,11 @@ export const loraRouter = router({
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      if (!["pending", "preparing", "training"].includes(job.status)) {
+      if (!["pending_admin_approval", "pending", "preparing", "training"].includes(job.status)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Can only cancel active jobs" });
       }
 
-      // Cancel on provider
+      // Cancel on provider if already submitted
       if (job.externalJobId) {
         const apiToken = process.env.REPLICATE_API_TOKEN;
         if (apiToken) {
@@ -304,9 +417,11 @@ export const loraRouter = router({
     const [summary] = await db
       .select({
         totalJobs: sql<number>`COUNT(*)`,
+        pendingApproval: sql<number>`SUM(CASE WHEN status = 'pending_admin_approval' THEN 1 ELSE 0 END)`,
         completedJobs: sql<number>`SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)`,
         failedJobs: sql<number>`SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END)`,
         totalCostCents: sql<number>`SUM(cost_cents)`,
+        totalEstimatedCents: sql<number>`SUM(estimated_cost_cents)`,
         avgCostCents: sql<number>`AVG(cost_cents)`,
         totalDurationSeconds: sql<number>`SUM(duration_seconds)`,
       })
@@ -314,9 +429,11 @@ export const loraRouter = router({
 
     return {
       totalJobs: summary?.totalJobs || 0,
+      pendingApproval: summary?.pendingApproval || 0,
       completedJobs: summary?.completedJobs || 0,
       failedJobs: summary?.failedJobs || 0,
       totalCostUsd: ((summary?.totalCostCents || 0) / 100).toFixed(2),
+      totalEstimatedUsd: ((summary?.totalEstimatedCents || 0) / 100).toFixed(2),
       avgCostUsd: ((summary?.avgCostCents || 0) / 100).toFixed(2),
       totalTrainingHours: ((summary?.totalDurationSeconds || 0) / 3600).toFixed(1),
     };

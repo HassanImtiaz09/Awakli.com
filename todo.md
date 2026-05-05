@@ -6208,3 +6208,19 @@
 - [x] OAuth2 token acquisition validated (sandbox)
 - [x] API cost calculation endpoint reachable
 - [x] Credential validation test: `lulu-credentials.test.ts` — 4 tests passing
+
+---
+
+## Wave 5B Hotfix: LoRA Training Admin Gate (COMPLETE)
+
+- [x] Add `pending_admin_approval` status to `sakufuu_lora_jobs` schema (migration 0062)
+- [x] Refactor `submitTraining` to insert with `pending_admin_approval` status + compute cost estimate (NO Replicate call)
+- [x] Add `adminApproveTraining` procedure (distinct from `adminApproveModel`) that triggers `provider.submitTraining()` after admin review
+- [x] Add `adminRejectTraining` procedure (sets status to cancelled with reason)
+- [x] Update tests to cover the new admin gate flow (41/41 passing)
+- [x] Self-verify fix confirmed: submitTraining lines 57-138 contain zero provider calls
+
+## Wave 5C Backlog (not blocking)
+
+- [ ] Resolution-flow: per-issue cumulative cost ceiling via env var (3 rounds can have wildly different costs)
+- [ ] Stripe Connect: runtime guard preventing test account IDs from being used with live API keys (pre-production-cutover priority)

@@ -2987,7 +2987,7 @@ export const sakufuuLoraJobs = mysqlTable("sakufuu_lora_jobs", {
   /** External job ID from provider */
   externalJobId: varchar("external_job_id", { length: 255 }),
   /** Status of the training job */
-  status: mysqlEnum("sakufuu_lora_status", ["pending", "preparing", "training", "completed", "failed", "cancelled"]).default("pending").notNull(),
+  status: mysqlEnum("sakufuu_lora_status", ["pending_admin_approval", "pending", "preparing", "training", "completed", "failed", "cancelled"]).default("pending_admin_approval").notNull(),
   /** Training configuration (JSON) */
   config: json("config"),
   /** Number of training images used */
@@ -3000,12 +3000,18 @@ export const sakufuuLoraJobs = mysqlTable("sakufuu_lora_jobs", {
   modelFileKey: varchar("model_file_key", { length: 512 }),
   /** Training cost in USD cents */
   costCents: int("cost_cents").default(0).notNull(),
+  /** Pre-submission cost estimate (before admin approval) */
+  estimatedCostCents: int("estimated_cost_cents").default(0).notNull(),
   /** Training duration in seconds */
   durationSeconds: int("duration_seconds"),
   /** Error message if failed */
   errorMessage: text("error_message"),
-  /** Admin approval status */
+  /** Admin approval status (for completed model use) */
   approved: mysqlEnum("sakufuu_lora_approved", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  /** Admin who approved the training submission */
+  adminApprovedBy: int("admin_approved_by"),
+  /** When admin approved the training submission */
+  adminApprovedAt: timestamp("admin_approved_at"),
   /** Metadata (trigger word, base model, etc.) */
   metadata: json("metadata"),
   startedAt: timestamp("started_at"),
