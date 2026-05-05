@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe/webhook";
+import { handleLuluWebhook } from "../benchmarks/lulu/lulu-webhook";
 import { registerImageWebhookRoutes } from "../image-router/webhooks";
 import { rateLimitMiddleware } from "./rate-limit";
 import { requestTimingMiddleware, healthHandler } from "../observability";
@@ -41,6 +42,9 @@ async function startServer() {
 
   // Stripe webhook needs raw body BEFORE json parser
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
+  // Lulu webhook needs raw body for HMAC verification
+  app.post("/api/lulu/webhook", express.raw({ type: "application/json" }), handleLuluWebhook);
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

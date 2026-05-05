@@ -5997,3 +5997,76 @@
 - [x] PDF generator: spine calc, skeleton, validation, cover, Lulu ID, generation (14 tests)
 - [x] Orchestrator: full pipeline, timing, validation, craft guidance (9 tests)
 - [x] Zero TypeScript errors
+
+---
+
+## Wave 5A Item 2: Lulu Print Integration
+
+### Sub-task 2a: Print Order Schema (Migration 0058)
+- [x] `print_orders` table — full lifecycle tracking (payment → production → shipping → delivery)
+- [x] `creator_payouts` table — royalty tracking with approval/payment workflow
+- [x] Enum statuses: created, payment_pending, paid, submitted_to_lulu, production, shipped, delivered, failed, cancelled, refunded
+- [x] Payout statuses: pending, approved, paid, failed
+- [x] JSON columns for shipping address and webhook event audit log
+- [x] Migration 0058 applied to production database
+
+### Sub-task 2b: Lulu API Client
+- [x] `lulu-client.ts` — full Lulu Print API v2 client
+- [x] OAuth2 client_credentials flow with token caching
+- [x] Sandbox/production URL switching
+- [x] `createPrintJob()` — submit print orders with shipping + line items
+- [x] `getPrintJob()` / `cancelPrintJob()` — order management
+- [x] `calculateCost()` — pre-order cost estimation
+- [x] `registerWebhook()` / `listWebhooks()` — webhook management
+- [x] Singleton pattern with `getLuluClient()` (returns null if unconfigured)
+- [x] Pending: Lulu sandbox credentials from user
+
+### Sub-task 2c: Print Products Configuration
+- [x] `print-products.ts` — 6 product variants across 4 trim sizes
+- [x] B5 (default), A5, tankōbon, US trade — FC and BW options
+- [x] Price calculation: base + per-page + shipping
+- [x] Revenue split: ~65% Lulu cost, 20% platform margin, 15% creator royalty
+- [x] Page count validation (24-800 pages)
+- [x] 4 shipping methods: MAIL, GROUND, EXPEDITED, EXPRESS
+
+### Sub-task 2d: Stripe Checkout for Print Orders
+- [x] `routers-print.ts` — tRPC procedures for print ordering
+- [x] `print.createCheckout` — creates Stripe one-time payment session
+- [x] Shipping address collection (29 countries)
+- [x] Order metadata linking (user_id, order_id, project_id)
+- [x] `print.getMyOrders` / `print.getOrder` — user order history
+- [x] `print.getProducts` / `print.getShippingOptions` / `print.calculatePrice`
+- [x] Wired into appRouter as `print` and `adminPrint` namespaces
+
+### Sub-task 2e: Manual Payout Admin Workflow
+- [x] `db-print.ts` — database helpers for orders + payouts
+- [x] `adminPrint.getPayoutSummary` — per-creator aggregated balances
+- [x] `adminPrint.getPendingPayouts` — individual records awaiting approval
+- [x] `adminPrint.approvePayouts` — bulk approve with admin audit
+- [x] `adminPrint.markPaid` — record Stripe transfer ID after manual transfer
+- [x] `docs/manual-payout-workflow.md` — step-by-step admin instructions
+- [x] Minimum $10 payout threshold documented
+- [x] Transition plan to Stripe Connect (Wave 5B) documented
+
+### Sub-task 2f: Lulu Webhook Handler
+- [x] `lulu-webhook.ts` — Express handler at `/api/lulu/webhook`
+- [x] HMAC-SHA256 signature verification
+- [x] Status mapping: Lulu → internal (CREATED→submitted, IN_PRODUCTION→production, SHIPPED→shipped, etc.)
+- [x] Tracking number/URL extraction from SHIPPED events
+- [x] Auto-creates `creator_payouts` record when order ships
+- [x] Owner notifications for shipped/delivered/failed events
+- [x] Webhook event audit log (appended to order's JSON column)
+- [x] Registered in `server/_core/index.ts` before JSON parser
+
+### Sub-task 2g: Admin Print Order Management
+- [x] `adminPrint.getAllOrders` — paginated with status filter
+- [x] `adminPrint.submitToLulu` — manual trigger after PDFs uploaded
+- [x] `adminPrint.updateOrderStatus` — manual status override with tracking
+
+### Tests
+- [x] Integration test: `lulu-print-integration.test.ts` — **38 tests passing**
+- [x] Print products: catalog, pricing, validation, shipping (20 tests)
+- [x] Lulu client: auth, createPrintJob, calculateCost, getPrintJob (8 tests)
+- [x] Webhook: signature verification (5 tests)
+- [x] Router: products, pricing, revenue split, package IDs (5 tests)
+- [x] Zero TypeScript errors

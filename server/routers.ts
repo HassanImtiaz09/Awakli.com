@@ -98,6 +98,7 @@ import { colorDirectorRouter } from "./routers-color-director";
 import { layoutDirectorRouter, gengaDirectorRouter, sakugaKantokuRouter } from "./routers-layout-genga-sakuga";
 import { tierSamplerRouter } from "./routers-tier-sampler";
 import { ingestionRouter } from "./routers-ingestion";
+import { printRouter, adminPrintRouter } from "./routers-print";
 import {
   gateReviewRouter, pipelineStageRouter, batchReviewRouter,
   gateConfigRouter, qualityAnalyticsRouter, cascadeRewindRouter,
@@ -2417,6 +2418,10 @@ export const appRouter = router({
 
   // Wave 2 Item 5: D10 Web-Only Corpus Ingestion
   ingestion: ingestionRouter,
+
+  // Wave 5A: Lulu Print Integration
+  print: printRouter,
+  adminPrint: adminPrintRouter,
 });
 
 export type AppRouter = typeof appRouter;

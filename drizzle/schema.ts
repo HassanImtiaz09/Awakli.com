@@ -2738,3 +2738,123 @@ export const xSheetOverrides = mysqlTable("x_sheet_overrides", {
 });
 export type XSheetOverride = typeof xSheetOverrides.$inferSelect;
 export type InsertXSheetOverride = typeof xSheetOverrides.$inferInsert;
+
+// ─── Print Orders (Wave 5A — Lulu Print Integration) ─────────────────────────
+
+/**
+ * Print Orders — tracks manga print product orders through Lulu POD.
+ *
+ * Lifecycle: created → payment_pending → paid → submitted_to_lulu →
+ *            production → shipped → delivered
+ * OR: created → payment_pending → paid → submitted_to_lulu → failed
+ * OR: created → payment_pending → cancelled
+ */
+export const printOrders = mysqlTable("print_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  /** User who placed the order */
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Project this print belongs to */
+  projectId: int("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  /** Episode/chapter ID (nullable for full-volume orders) */
+  episodeId: int("episode_id"),
+  /** Order status */
+  status: mysqlEnum("status", [
+    "created",
+    "payment_pending",
+    "paid",
+    "submitted_to_lulu",
+    "production",
+    "shipped",
+    "delivered",
+    "failed",
+    "cancelled",
+    "refunded",
+  ]).default("created").notNull(),
+  /** Trim size selected */
+  trimSize: mysqlEnum("trim_size", ["b5", "a5", "tankobon", "us_trade"]).default("b5").notNull(),
+  /** Number of pages in the print */
+  pageCount: int("page_count").notNull(),
+  /** Interior PDF S3 URL */
+  interiorPdfUrl: text("interior_pdf_url"),
+  /** Cover PDF S3 URL */
+  coverPdfUrl: text("cover_pdf_url"),
+  /** Lulu pod_package_id */
+  luluPackageId: varchar("lulu_package_id", { length: 64 }),
+  /** Lulu print job ID (from their API) */
+  luluPrintJobId: varchar("lulu_print_job_id", { length: 128 }),
+  /** Lulu line item ID */
+  luluLineItemId: varchar("lulu_line_item_id", { length: 128 }),
+  /** Stripe checkout session ID */
+  stripeCheckoutSessionId: varchar("stripe_checkout_session_id", { length: 255 }),
+  /** Stripe payment intent ID */
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  /** Total price charged to customer (cents) */
+  totalPriceCents: int("total_price_cents").notNull(),
+  /** Print cost from Lulu (cents) — what we pay Lulu */
+  printCostCents: int("print_cost_cents"),
+  /** Platform margin (cents) — our cut */
+  platformMarginCents: int("platform_margin_cents"),
+  /** Creator royalty (cents) — creator's cut */
+  creatorRoyaltyCents: int("creator_royalty_cents"),
+  /** Creator user ID (project owner who gets royalty) */
+  creatorUserId: int("creator_user_id").references(() => users.id),
+  /** Shipping address (JSON) */
+  shippingAddress: json("shipping_address"),
+  /** Shipping method */
+  shippingMethod: mysqlEnum("shipping_method", ["MAIL", "GROUND", "EXPEDITED", "EXPRESS"]).default("MAIL"),
+  /** Shipping cost (cents) */
+  shippingCostCents: int("shipping_cost_cents"),
+  /** Tracking number (from Lulu webhook) */
+  trackingNumber: varchar("tracking_number", { length: 128 }),
+  /** Tracking URL */
+  trackingUrl: text("tracking_url"),
+  /** Lulu webhook event log (JSON array of events) */
+  webhookEvents: json("webhook_events"),
+  /** Error message if failed */
+  errorMessage: text("error_message"),
+  /** Quantity ordered */
+  quantity: int("quantity").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  /** When payment was confirmed */
+  paidAt: timestamp("paid_at"),
+  /** When submitted to Lulu */
+  submittedAt: timestamp("submitted_at"),
+  /** When shipped */
+  shippedAt: timestamp("shipped_at"),
+  /** When delivered */
+  deliveredAt: timestamp("delivered_at"),
+});
+export type PrintOrder = typeof printOrders.$inferSelect;
+export type InsertPrintOrder = typeof printOrders.$inferInsert;
+
+/**
+ * Creator Payouts — tracks owed and paid royalties per creator.
+ *
+ * Wave 5A: Manual payout workflow only (admin views balances, triggers
+ * manual Stripe transfers). Automated Stripe Connect onboarding → Wave 5B.
+ */
+export const creatorPayouts = mysqlTable("creator_payouts", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Creator user ID */
+  creatorUserId: int("creator_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Related print order */
+  printOrderId: int("print_order_id").notNull().references(() => printOrders.id, { onDelete: "cascade" }),
+  /** Amount owed (cents) */
+  amountCents: int("amount_cents").notNull(),
+  /** Payout status */
+  status: mysqlEnum("status", ["pending", "approved", "paid", "failed"]).default("pending").notNull(),
+  /** Admin who approved/processed the payout */
+  processedByUserId: int("processed_by_user_id").references(() => users.id),
+  /** Stripe transfer ID (when paid manually) */
+  stripeTransferId: varchar("stripe_transfer_id", { length: 255 }),
+  /** Notes from admin */
+  adminNotes: text("admin_notes"),
+  /** When payout was approved */
+  approvedAt: timestamp("approved_at"),
+  /** When payout was actually sent */
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CreatorPayout = typeof creatorPayouts.$inferSelect;
+export type InsertCreatorPayout = typeof creatorPayouts.$inferInsert;
