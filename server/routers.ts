@@ -90,6 +90,8 @@ import { costOptimizerRouter } from "./routers-cost-optimizer";
 import { marketplaceRouter as loraMarketplaceRouter } from "./routers-marketplace";
 import { parallelSliceRouter } from "./routers-parallel-slice";
 import { foundersRouter } from "./routers-founders";
+import { foundersIntegrationsRouter } from "./founders-integrations";
+import { foundersOutboundRouter } from "./founders-outbound";
 import { clipQualityRouter } from "./routers-quality";
 import { craftLibraryRouter } from "./routers-craft-library";
 import { styleBundlesRouter } from "./routers-style-bundles";
@@ -2432,6 +2434,10 @@ export const appRouter = router({
   lora: loraRouter,
   // Wave 5B: Stripe Connect
   connect: connectRouter,
+  // Wave 5C: Founders' Studio Integrations (Cal.com + Discord)
+  foundersIntegrations: foundersIntegrationsRouter,
+  // Wave 5C: Founders' Studio Outbound
+  foundersOutbound: foundersOutboundRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -6221,9 +6221,8 @@
 - [x] Self-verify fix confirmed: submitTraining lines 57-138 contain zero provider calls
 
 ## Wave 5C Backlog (not blocking)
-
-- [ ] Resolution-flow: per-issue cumulative cost ceiling via env var (3 rounds can have wildly different costs)
-- [ ] Stripe Connect: runtime guard preventing test account IDs from being used with live API keys (pre-production-cutover priority)
+- [x] Resolution-flow: per-issue cumulative cost ceiling via env var (3 rounds can have wildly different costs) — implemented in ResolutionCostGuard (Wave 5C Item 5)
+- [x] Stripe Connect: runtime guard preventing test account IDs from being used with live API keys (pre-production-cutover priority) — implemented in assertEnvironmentMatch() (Wave 5C Item 5))
 
 ---
 
@@ -6310,3 +6309,19 @@
 
 ### Item: Wave 5C Architecture Documentation
 - [x] docs/wave-5c-architecture.md — full architecture doc covering all 5C items
+
+## Wave 5C Gaps (CLOSED)
+
+### Gap 1: Per-Character LoRA tRPC Procedures
+- [x] `trainCharacterLora` in server/routers-character-bible.ts:175 (pending_admin_approval + cost estimate, no Replicate call)
+- [x] `adminApproveCharacterLora` in server/routers-character-bible.ts:266 (triggers Replicate after admin review)
+- [x] `adminRejectCharacterLora` in server/routers-character-bible.ts:356 (cancels with reason)
+- [x] Self-verified: 50 tests in wave5c-gaps.test.ts confirm procedures exist with correct behavior
+
+### Gap 2: Founders Outbound Missing Pieces
+- [x] Cal.com scheduling: server/founders-integrations.ts:64 (getUpcomingOfficeHours), :89 (getAvailableSlots), :113 (createOfficeHoursBooking)
+- [x] Discord cohort: server/founders-integrations.ts:198 (sendCohortMessage), :233 (generateCohortInvite), :274 (assignCohortRole)
+- [x] `initiateStripeConnectOnboarding` in server/routers-founders.ts:141 (adminProcedure, bridges approval → Stripe Connect)
+- [x] Founder dashboard UI: client/src/pages/AdminFoundersDashboard.tsx, route /admin/founders (App.tsx:164)
+- [x] All routers wired: foundersIntegrations + foundersOutbound in server/routers.ts:2438-2440
+- [x] Self-verified: file paths + line excerpts confirmed for all pieces

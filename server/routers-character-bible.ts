@@ -10,7 +10,12 @@
  */
 
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "./_core/trpc";
+import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { getDb } from "./db";
+import { loraTrainingJobs, characterLibrary, characterLoras } from "../drizzle/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { estimateTrainingJob } from "./lora-training-pipeline";
 import {
   getCharacterRegistry,
   upsertCharacterRegistry,
@@ -159,5 +164,237 @@ export const characterBibleRouter = router({
     .query(({ input }) => {
       const state = getPipelineState(input.projectId);
       return state ?? null;
+    }),
+
+  // ─── Train Character LoRA (Admin Gate Pattern) ────────────────────────
+  /**
+   * Inserts a training job with pending_admin_approval status + cost estimate.
+   * Does NOT call any provider — admin must approve first.
+   * Mirrors the sakufuu pattern in routers-lora.ts.
+   */
+  trainCharacterLora: protectedProcedure
+    .input(z.object({
+      characterId: z.number(),
+      projectId: z.number(),
+      gpuType: z.enum(["h100_sxm", "a100_80gb", "rtx_4090"]).default("h100_sxm"),
+      trainingSteps: z.number().min(500).max(1500).default(1200),
+      learningRate: z.number().min(5e-5).max(3e-4).default(1e-4),
+      rank: z.number().min(16).max(64).default(32),
+      alpha: z.number().min(8).max(32).default(16),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Verify ownership
+      const [char] = await db.select()
+        .from(characterLibrary)
+        .where(and(
+          eq(characterLibrary.id, input.characterId),
+          eq(characterLibrary.userId, ctx.user.id)
+        ))
+        .limit(1);
+      if (!char) throw new TRPCError({ code: "NOT_FOUND", message: "Character not found or not owned by user" });
+
+      // Block if already in-flight
+      if (char.loraStatus === "training" || char.loraStatus === "validating" || char.loraStatus === "pending_admin_approval") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Training already in progress or pending approval. Current status: ${char.loraStatus}`,
+        });
+      }
+
+      // Require reference sheet
+      if (!char.referenceSheetUrl) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Character must have a reference sheet before training" });
+      }
+
+      // Determine next LoRA version
+      const [maxVersion] = await db.select({ max: sql<number>`COALESCE(MAX(version), 0)` })
+        .from(characterLoras)
+        .where(eq(characterLoras.characterId, input.characterId));
+      const nextVersion = (maxVersion?.max ?? 0) + 1;
+
+      // Build trigger word
+      const triggerWord = `awk_${input.characterId}`;
+
+      // Compute cost estimate (NO provider call)
+      const estimate = estimateTrainingJob(input.gpuType, input.trainingSteps);
+      const estimatedCostCents = Math.round(estimate.withMargin.costUsd * 100);
+
+      // Insert training job as pending_admin_approval
+      const [jobResult] = await db.insert(loraTrainingJobs).values({
+        characterId: input.characterId,
+        loraId: 0, // Will be assigned after approval
+        userId: ctx.user.id,
+        status: "pending_admin_approval",
+        priority: 1,
+        gpuType: input.gpuType,
+        costUsd: String(estimate.withMargin.costUsd),
+        costCredits: String(estimate.withMargin.costCredits),
+        estimatedCostCents,
+      });
+      const jobId = (jobResult as any).insertId as number;
+
+      // Update character status
+      await db.update(characterLibrary)
+        .set({ loraStatus: "pending_admin_approval" })
+        .where(eq(characterLibrary.id, input.characterId));
+
+      return {
+        jobId,
+        characterId: input.characterId,
+        version: nextVersion,
+        triggerWord,
+        status: "pending_admin_approval" as const,
+        estimatedCostCents,
+        estimate: {
+          gpuType: input.gpuType,
+          trainingSteps: input.trainingSteps,
+          costUsd: estimate.withMargin.costUsd,
+          costCredits: estimate.withMargin.costCredits,
+        },
+        message: "Training request submitted. Awaiting admin approval before provider submission.",
+      };
+    }),
+
+  // ─── Admin: Approve Character LoRA Training ───────────────────────────
+  /**
+   * Admin approves a pending training job → triggers actual Replicate submission.
+   * Mirrors adminApproveTraining in routers-lora.ts.
+   */
+  adminApproveCharacterLora: adminProcedure
+    .input(z.object({
+      jobId: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [job] = await db.select()
+        .from(loraTrainingJobs)
+        .where(eq(loraTrainingJobs.id, input.jobId))
+        .limit(1);
+      if (!job) throw new TRPCError({ code: "NOT_FOUND", message: "Training job not found" });
+
+      if (job.status !== "pending_admin_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Can only approve jobs in pending_admin_approval status. Current: ${job.status}`,
+        });
+      }
+
+      // Verify Replicate token is configured
+      const apiToken = process.env.REPLICATE_API_TOKEN;
+      if (!apiToken) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Training provider (Replicate) not configured" });
+      }
+
+      // Get character for training data
+      const [char] = await db.select()
+        .from(characterLibrary)
+        .where(eq(characterLibrary.id, job.characterId))
+        .limit(1);
+      if (!char) throw new TRPCError({ code: "NOT_FOUND", message: "Character not found" });
+
+      // Submit to Replicate
+      const triggerWord = `awk_${job.characterId}`;
+      const response = await fetch("https://api.replicate.com/v1/trainings", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "ostris/flux-dev-lora-trainer",
+          input: {
+            input_images: char.referenceSheetUrl,
+            trigger_word: triggerWord,
+            steps: 1200,
+            learning_rate: 1e-4,
+            resolution: "512,768",
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Provider submission failed: ${response.status} ${errorText}`,
+        });
+      }
+
+      const replicateResult = await response.json() as { id: string };
+
+      // Update job: approved + queued with external job ID
+      await db.update(loraTrainingJobs)
+        .set({
+          status: "queued",
+          runpodJobId: replicateResult.id,
+          adminApprovedBy: ctx.user.id,
+          adminApprovedAt: new Date(),
+        })
+        .where(eq(loraTrainingJobs.id, input.jobId));
+
+      // Update character status to training
+      await db.update(characterLibrary)
+        .set({ loraStatus: "training" })
+        .where(eq(characterLibrary.id, job.characterId));
+
+      return {
+        success: true,
+        jobId: input.jobId,
+        externalJobId: replicateResult.id,
+        status: "queued" as const,
+        message: "Training approved and submitted to Replicate.",
+      };
+    }),
+
+  // ─── Admin: Reject Character LoRA Training ────────────────────────────
+  adminRejectCharacterLora: adminProcedure
+    .input(z.object({
+      jobId: z.number(),
+      reason: z.string().min(1, "Rejection reason required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [job] = await db.select()
+        .from(loraTrainingJobs)
+        .where(eq(loraTrainingJobs.id, input.jobId))
+        .limit(1);
+      if (!job) throw new TRPCError({ code: "NOT_FOUND", message: "Training job not found" });
+
+      if (job.status !== "pending_admin_approval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Can only reject jobs in pending_admin_approval status. Current: ${job.status}`,
+        });
+      }
+
+      await db.update(loraTrainingJobs)
+        .set({
+          status: "cancelled",
+          rejectionReason: input.reason,
+          adminApprovedBy: ctx.user.id,
+          adminApprovedAt: new Date(),
+        })
+        .where(eq(loraTrainingJobs.id, input.jobId));
+
+      // Reset character loraStatus to untrained
+      await db.update(characterLibrary)
+        .set({ loraStatus: "untrained" })
+        .where(eq(characterLibrary.id, job.characterId));
+
+      return {
+        success: true,
+        jobId: input.jobId,
+        status: "cancelled" as const,
+        reason: input.reason,
+        message: "Training rejected. Character LoRA status reset.",
+      };
     }),
 });

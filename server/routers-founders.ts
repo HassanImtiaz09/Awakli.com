@@ -6,11 +6,12 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { founderInterest } from "../drizzle/schema";
+import { founderInterest, stripeConnectAccounts } from "../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
+import { createExpressAccount, generateOnboardingLink } from "./stripe/connect";
 
 const OUTPUT_TRACKS = ["manga", "genga", "full_anime"] as const;
 
@@ -130,5 +131,99 @@ export const foundersRouter = router({
         .where(eq(founderInterest.id, input.id));
 
       return { success: true } as const;
+    }),
+
+  /**
+   * Admin: Initiate Stripe Connect onboarding for an approved founder.
+   * Creates an Express account and returns the onboarding URL.
+   * This bridges the gap between admin approval and actual Stripe Connect setup.
+   */
+  initiateStripeConnectOnboarding: adminProcedure
+    .input(z.object({
+      founderInterestId: z.number().int(),
+      origin: z.string().url(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Get the founder interest record
+      const [founder] = await db
+        .select()
+        .from(founderInterest)
+        .where(eq(founderInterest.id, input.founderInterestId))
+        .limit(1);
+
+      if (!founder) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Founder interest record not found" });
+      }
+
+      // Must be shortlisted or contacted to initiate onboarding
+      if (!founder.status || !['shortlisted', 'contacted'].includes(founder.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot initiate onboarding for status '${founder.status}'. Must be 'shortlisted' or 'contacted'.`,
+        });
+      }
+
+      // Check if they already have a Connect account (via userId)
+      if (founder.userId) {
+        const [existing] = await db
+          .select()
+          .from(stripeConnectAccounts)
+          .where(eq(stripeConnectAccounts.userId, founder.userId))
+          .limit(1);
+
+        if (existing) {
+          // If incomplete, generate a fresh link
+          if (existing.onboardingStatus !== 'complete') {
+            const url = await generateOnboardingLink(
+              existing.stripeAccountId,
+              founder.userId,
+              input.origin,
+            );
+            return {
+              success: true,
+              accountId: existing.stripeAccountId,
+              onboardingUrl: url,
+              isExisting: true,
+              message: "Existing incomplete account — fresh onboarding link generated.",
+            };
+          }
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "This founder already has a completed Stripe Connect account.",
+          });
+        }
+      }
+
+      // Create new Express account
+      if (!founder.userId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Founder must have a registered user account before Stripe Connect onboarding. Ask them to sign up first.",
+        });
+      }
+
+      const result = await createExpressAccount({
+        userId: founder.userId,
+        email: founder.email,
+      });
+
+      // Update status to contacted if it was shortlisted
+      if (founder.status === 'shortlisted') {
+        await db
+          .update(founderInterest)
+          .set({ status: 'contacted' })
+          .where(eq(founderInterest.id, input.founderInterestId));
+      }
+
+      return {
+        success: true,
+        accountId: result.accountId,
+        onboardingUrl: result.onboardingUrl,
+        isExisting: false,
+        message: "Stripe Connect Express account created. Share the onboarding URL with the founder.",
+      };
     }),
 });
