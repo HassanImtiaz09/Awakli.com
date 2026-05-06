@@ -6484,3 +6484,17 @@ For each new module/export, the following MUST be demonstrated before declaring 
 3. Integration point is shown with file path + line excerpt
 4. TypeScript compiles with 0 errors after integration
 5. Existing tests still pass (no regressions introduced)
+
+## Wave 6B Mini-Completion Sprint (v1.9.1 final)
+
+### MCS-1: Persist video quality test results to fixture JSON
+- [x] Execute video-quality-test.mjs with real API calls (7/8 success, 2026-05-06T20:35Z)
+- [x] Persist raw API responses, generation times, computed scores to test-results/premium-video-quality-2026-05-06.json
+- [x] Update PREMIUM_VIDEO_QUALITY_MATRIX comments + measured values to reference the fixture file
+
+### MCS-2: Drizzle migration for embedding_ref MEDIUMTEXT
+- [x] Created drizzle/0064_craft_library_embedding_expansion.sql (proper ALTER TABLE statement)
+- [x] Migration already applied to live DB (confirmed: column type = mediumtext)
+- [x] Updated drizzle/schema.ts: embeddingRef changed from varchar(128) to text()
+- [x] Removed runtime ALTER from seed-genre-retrieval-pool.mjs, replaced with type verification
+- [x] All tests still passing (163/163 in sanity check)

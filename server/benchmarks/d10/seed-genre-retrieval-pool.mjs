@@ -143,14 +143,15 @@ async function main() {
 
   // Step 1.5: Ensure embedding_ref column can hold JSON arrays
   // Original schema has varchar(128) which is too small for 64-dim vectors (~1300 chars)
-  // This ALTER is required for production RAG activation (Wave 4 migration note)
-  console.log("[SeedPool] Expanding embedding_ref column for JSON vector storage...");
-  try {
-    await conn.execute("ALTER TABLE craft_library_chunks MODIFY COLUMN embedding_ref MEDIUMTEXT");
-    console.log("[SeedPool] embedding_ref expanded to MEDIUMTEXT");
-  } catch (err) {
-    console.log("[SeedPool] embedding_ref already expanded or ALTER failed: " + err.message);
+  // NOTE: embedding_ref column expansion (varchar(128) → MEDIUMTEXT) is now handled by
+  // migration 0064_craft_library_embedding_expansion.sql. No runtime ALTER needed.
+  // Verify the column type is correct before proceeding.
+  const [colInfo] = await conn.execute("SHOW COLUMNS FROM craft_library_chunks WHERE Field = 'embedding_ref'");
+  if (colInfo[0]?.Type !== 'mediumtext') {
+    console.error("[SeedPool] ERROR: embedding_ref is not MEDIUMTEXT. Apply migration 0064 first.");
+    process.exit(1);
   }
+  console.log("[SeedPool] embedding_ref column type verified: MEDIUMTEXT");
 
   console.log("[SeedPool] Creating test source...");
   try {

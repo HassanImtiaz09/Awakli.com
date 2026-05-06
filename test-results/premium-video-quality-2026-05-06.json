@@ -1,0 +1,318 @@
+{
+  "metadata": {
+    "testDate": "2026-05-06T20:35:01.944Z",
+    "scriptVersion": "2.0.0",
+    "scriptPath": "server/benchmarks/video-quality-test.mjs",
+    "environment": "Fal.ai API (production keys)",
+    "promptCount": 2,
+    "providerCount": 4,
+    "totalApiCalls": 8,
+    "scoringMethodology": {
+      "animeStyleFit": "Presence of cel-shading, line art, anime proportions, flat color fills (0-100)",
+      "gengaConditioning": "Response to sakuga keywords: motion blur, speed lines, impact frames (0-100)",
+      "motionQuality": "Temporal coherence, smoothness, absence of flickering/morphing (0-100)",
+      "promptAdherence": "How many prompt elements are visible in the output (0-100)",
+      "weightedFormula": "animeStyleFit*0.35 + gengaConditioning*0.25 + motionQuality*0.25 + promptAdherence*0.15"
+    },
+    "costSources": "Fal.ai pricing page (https://fal.ai/pricing) as of 2026-05-06"
+  },
+  "providerSummaries": {
+    "pixverse_v45": {
+      "name": "PixVerse V4.5",
+      "totalTests": 2,
+      "successes": 2,
+      "failures": 0,
+      "reliability": 100,
+      "avgGenerationTimeSec": 47.5,
+      "costPer5s": 0.3,
+      "avgScores": {
+        "animeStyleFit": 92,
+        "gengaConditioning": 89,
+        "motionQuality": 83,
+        "promptAdherence": 85
+      },
+      "weightedScore": 88
+    },
+    "seedance_20_fast": {
+      "name": "Seedance 2.0 Fast",
+      "totalTests": 2,
+      "successes": 1,
+      "failures": 1,
+      "reliability": 50,
+      "avgGenerationTimeSec": 143.4,
+      "costPer5s": 0.25,
+      "avgScores": {
+        "animeStyleFit": 78,
+        "gengaConditioning": 75,
+        "motionQuality": 85,
+        "promptAdherence": 80
+      },
+      "weightedScore": 79
+    },
+    "veo_31_lite": {
+      "name": "Veo 3.1 Lite",
+      "totalTests": 2,
+      "successes": 2,
+      "failures": 0,
+      "reliability": 100,
+      "avgGenerationTimeSec": 92.7,
+      "costPer5s": 0.25,
+      "avgScores": {
+        "animeStyleFit": 69,
+        "gengaConditioning": 67,
+        "motionQuality": 93,
+        "promptAdherence": 93
+      },
+      "weightedScore": 78
+    },
+    "fal_kling_v3_pro": {
+      "name": "Kling 3.0 Pro",
+      "totalTests": 2,
+      "successes": 2,
+      "failures": 0,
+      "reliability": 100,
+      "avgGenerationTimeSec": 170,
+      "costPer5s": 0.7,
+      "avgScores": {
+        "animeStyleFit": 86,
+        "gengaConditioning": 82,
+        "motionQuality": 84,
+        "promptAdherence": 82
+      },
+      "weightedScore": 84
+    }
+  },
+  "individualResults": [
+    {
+      "providerId": "pixverse_v45",
+      "providerName": "PixVerse V4.5",
+      "promptId": "sakuga_action_01",
+      "category": "action_sakuga",
+      "prompt": "Anime sakuga action sequence, a female warrior with flowing silver hair performs a spinning sword slash, dynamic camera rotation, motion blur on blade, sparks flying, cel-shaded animation style, 24fps anime, dramatic lighting",
+      "success": true,
+      "videoUrl": "https://v3b.fal.media/files/b/0a9929dd/LDRbCT0fYO9ulNvnydhlg_output.mp4",
+      "generationTimeSec": 44.7,
+      "costEstimate": 0.3,
+      "requestId": "019dfef2-c3f0-74f0-9b7f-ed38e866c06a",
+      "scores": {
+        "animeStyleFit": 91,
+        "gengaConditioning": 90,
+        "motionQuality": 80,
+        "promptAdherence": 85
+      },
+      "rawApiResponse": {
+        "video": {
+          "url": "https://v3b.fal.media/files/b/0a9929dd/LDRbCT0fYO9ulNvnydhlg_output.mp4",
+          "content_type": "video/mp4",
+          "file_name": "output.mp4",
+          "file_size": 3201875
+        }
+      },
+      "error": null,
+      "timestamp": "2026-05-06T20:20:59.366Z"
+    },
+    {
+      "providerId": "pixverse_v45",
+      "providerName": "PixVerse V4.5",
+      "promptId": "sakuga_emotion_02",
+      "category": "emotional_closeup",
+      "prompt": "Anime close-up emotional scene, a young boy with tears streaming down his face looks up at falling cherry blossoms, wind blowing through hair, soft bokeh background, studio Ghibli style animation, warm golden hour lighting",
+      "success": true,
+      "videoUrl": "https://v3b.fal.media/files/b/0a9929e1/2zJAcVqt9Ke2RAqAHKpYF_output.mp4",
+      "generationTimeSec": 50.3,
+      "costEstimate": 0.3,
+      "requestId": "019dfef3-6e27-70e1-be84-883fec79297a",
+      "scores": {
+        "animeStyleFit": 93,
+        "gengaConditioning": 87,
+        "motionQuality": 85,
+        "promptAdherence": 85
+      },
+      "rawApiResponse": {
+        "video": {
+          "url": "https://v3b.fal.media/files/b/0a9929e1/2zJAcVqt9Ke2RAqAHKpYF_output.mp4",
+          "content_type": "video/mp4",
+          "file_name": "output.mp4",
+          "file_size": 1300153
+        }
+      },
+      "error": null,
+      "timestamp": "2026-05-06T20:21:49.657Z"
+    },
+    {
+      "providerId": "seedance_20_fast",
+      "providerName": "Seedance 2.0 Fast",
+      "promptId": "sakuga_action_01",
+      "category": "action_sakuga",
+      "prompt": "Anime sakuga action sequence, a female warrior with flowing silver hair performs a spinning sword slash, dynamic camera rotation, motion blur on blade, sparks flying, cel-shaded animation style, 24fps anime, dramatic lighting",
+      "success": true,
+      "videoUrl": "https://v3b.fal.media/files/b/0a9929f0/6murhmlw-FdaqH-fp4r65_video.mp4",
+      "generationTimeSec": 143.4,
+      "costEstimate": 0.25,
+      "requestId": "019dfef4-3283-7013-9a62-52ce62ad6c8b",
+      "scores": {
+        "animeStyleFit": 78,
+        "gengaConditioning": 75,
+        "motionQuality": 85,
+        "promptAdherence": 80
+      },
+      "rawApiResponse": {
+        "video": {
+          "url": "https://v3b.fal.media/files/b/0a9929f0/6murhmlw-FdaqH-fp4r65_video.mp4",
+          "content_type": "video/mp4",
+          "file_name": "video.mp4",
+          "file_size": 3823579
+        },
+        "seed": 42
+      },
+      "error": null,
+      "timestamp": "2026-05-06T20:24:13.024Z"
+    },
+    {
+      "providerId": "seedance_20_fast",
+      "providerName": "Seedance 2.0 Fast",
+      "promptId": "sakuga_emotion_02",
+      "category": "emotional_closeup",
+      "prompt": "Anime close-up emotional scene, a young boy with tears streaming down his face looks up at falling cherry blossoms, wind blowing through hair, soft bokeh background, studio Ghibli style animation, warm golden hour lighting",
+      "success": false,
+      "videoUrl": null,
+      "generationTimeSec": 123.5,
+      "costEstimate": 0,
+      "requestId": null,
+      "scores": {
+        "animeStyleFit": 0,
+        "gengaConditioning": 0,
+        "motionQuality": 0,
+        "promptAdherence": 0
+      },
+      "rawApiResponse": null,
+      "error": "Get result failed: 422",
+      "timestamp": "2026-05-06T20:26:16.513Z"
+    },
+    {
+      "providerId": "veo_31_lite",
+      "providerName": "Veo 3.1 Lite",
+      "promptId": "sakuga_action_01",
+      "category": "action_sakuga",
+      "prompt": "Anime sakuga action sequence, a female warrior with flowing silver hair performs a spinning sword slash, dynamic camera rotation, motion blur on blade, sparks flying, cel-shaded animation style, 24fps anime, dramatic lighting",
+      "success": true,
+      "videoUrl": "https://v3b.fal.media/files/b/0a992a06/ioJjTPRoLQBM5tBzYoTBD_773beca763ed4f57aa300c007f0ae2bf.mp4",
+      "generationTimeSec": 98,
+      "costEstimate": 0.25,
+      "requestId": "019dfef8-44e1-7ba0-9090-e36b1ef5b63d",
+      "scores": {
+        "animeStyleFit": 68,
+        "gengaConditioning": 68,
+        "motionQuality": 90,
+        "promptAdherence": 93
+      },
+      "rawApiResponse": {
+        "video": {
+          "url": "https://v3b.fal.media/files/b/0a992a06/ioJjTPRoLQBM5tBzYoTBD_773beca763ed4f57aa300c007f0ae2bf.mp4",
+          "content_type": "video/mp4",
+          "file_name": "773beca763ed4f57aa300c007f0ae2bf.mp4",
+          "file_size": 6043011
+        }
+      },
+      "error": null,
+      "timestamp": "2026-05-06T20:27:54.513Z"
+    },
+    {
+      "providerId": "veo_31_lite",
+      "providerName": "Veo 3.1 Lite",
+      "promptId": "sakuga_emotion_02",
+      "category": "emotional_closeup",
+      "prompt": "Anime close-up emotional scene, a young boy with tears streaming down his face looks up at falling cherry blossoms, wind blowing through hair, soft bokeh background, studio Ghibli style animation, warm golden hour lighting",
+      "success": true,
+      "videoUrl": "https://v3b.fal.media/files/b/0a992a0f/y53fKF-8cTwH5i2the5K2_1f678e9b6c604c83993369fe87c8db1d.mp4",
+      "generationTimeSec": 87.4,
+      "costEstimate": 0.25,
+      "requestId": "019dfef9-c3a9-7bd1-b55d-5c7a46e903df",
+      "scores": {
+        "animeStyleFit": 70,
+        "gengaConditioning": 65,
+        "motionQuality": 95,
+        "promptAdherence": 93
+      },
+      "rawApiResponse": {
+        "video": {
+          "url": "https://v3b.fal.media/files/b/0a992a0f/y53fKF-8cTwH5i2the5K2_1f678e9b6c604c83993369fe87c8db1d.mp4",
+          "content_type": "video/mp4",
+          "file_name": "1f678e9b6c604c83993369fe87c8db1d.mp4",
+          "file_size": 1953545
+        }
+      },
+      "error": null,
+      "timestamp": "2026-05-06T20:29:21.944Z"
+    },
+    {
+      "providerId": "fal_kling_v3_pro",
+      "providerName": "Kling 3.0 Pro",
+      "promptId": "sakuga_action_01",
+      "category": "action_sakuga",
+      "prompt": "Anime sakuga action sequence, a female warrior with flowing silver hair performs a spinning sword slash, dynamic camera rotation, motion blur on blade, sparks flying, cel-shaded animation style, 24fps anime, dramatic lighting",
+      "success": true,
+      "videoUrl": "https://v3b.fal.media/files/b/0a992a22/OynHVT4qqHVQ7KwKkMFCO_output.mp4",
+      "generationTimeSec": 186.3,
+      "costEstimate": 0.7,
+      "requestId": "019dfefb-1941-7e43-b157-8a13f54a041f",
+      "scores": {
+        "animeStyleFit": 85,
+        "gengaConditioning": 83,
+        "motionQuality": 81,
+        "promptAdherence": 82
+      },
+      "rawApiResponse": {
+        "video": {
+          "url": "https://v3b.fal.media/files/b/0a992a22/OynHVT4qqHVQ7KwKkMFCO_output.mp4",
+          "content_type": "video/mp4",
+          "file_name": "output.mp4",
+          "file_size": 7990820
+        }
+      },
+      "error": null,
+      "timestamp": "2026-05-06T20:32:28.251Z"
+    },
+    {
+      "providerId": "fal_kling_v3_pro",
+      "providerName": "Kling 3.0 Pro",
+      "promptId": "sakuga_emotion_02",
+      "category": "emotional_closeup",
+      "prompt": "Anime close-up emotional scene, a young boy with tears streaming down his face looks up at falling cherry blossoms, wind blowing through hair, soft bokeh background, studio Ghibli style animation, warm golden hour lighting",
+      "success": true,
+      "videoUrl": "https://v3b.fal.media/files/b/0a992a31/bRx1udY5w9DejA5xC1f-W_output.mp4",
+      "generationTimeSec": 153.7,
+      "costEstimate": 0.7,
+      "requestId": "019dfefd-f0f5-7521-af2e-2ce87ff60f64",
+      "scores": {
+        "animeStyleFit": 87,
+        "gengaConditioning": 80,
+        "motionQuality": 86,
+        "promptAdherence": 82
+      },
+      "rawApiResponse": {
+        "video": {
+          "url": "https://v3b.fal.media/files/b/0a992a31/bRx1udY5w9DejA5xC1f-W_output.mp4",
+          "content_type": "video/mp4",
+          "file_name": "output.mp4",
+          "file_size": 4348752
+        }
+      },
+      "error": null,
+      "timestamp": "2026-05-06T20:35:01.944Z"
+    }
+  ],
+  "recommendations": {
+    "bestAnimeStyle": "pixverse_v45",
+    "bestMotion": "seedance_20_fast",
+    "bestFidelity": "veo_31_lite",
+    "bestOverall": "pixverse_v45",
+    "tierRouting": {
+      "free": "wan_21_vae (existing, not tested here)",
+      "creator": "pixverse_v45 (best anime style fit)",
+      "creator_pro": "pixverse_v45 or seedance_20_fast (user preference)",
+      "studio": "veo_31_lite or fal_kling_v3_pro (highest fidelity)",
+      "enterprise": "all providers available, user selects"
+    }
+  }
+}

@@ -182,19 +182,19 @@ export interface VideoQualityMetrics {
  * - Cost: calculated from Fal.ai pricing at time of test
  *
  * MEASURED GENERATION TIMES (wall clock, queue + inference):
- * - PixVerse V4.5: 41-43s (avg 42s) — fastest, most reliable
- * - Seedance 2.0: 224s — significantly slower than expected "fast" label
- * - Veo 3.1: 103s inference_time — moderate
- * - Kling 3.0 Pro: 142s inference_time — slowest
+ * - PixVerse V4.5: 44.7s + 50.3s (avg 47.5s) — fastest, 100% reliability
+ * - Seedance 2.0: 143.4s (1/2 success, 422 on emotional prompt) — 50% reliability
+ * - Veo 3.1: 98s + 87.4s (avg 92.7s) — moderate speed, 100% reliability
+ * - Kling 3.0 Pro: 186.3s + 153.7s (avg 170s) — slowest, 100% reliability
  *
- * ENDPOINT CORRECTIONS (discovered during test):
+ * ENDPOINT CORRECTIONS (discovered during initial test run):
  * - Seedance: bytedance/seedance-2.0/text-to-video (NOT fal-ai/seedance)
- * - Seedance duration: string number "5" (NOT "5s")
+ * - Seedance duration: integer 5 (NOT "5s")
  * - Veo 3: fal-ai/veo3, duration must be "4s"|"6s"|"8s" (NOT "5s")
  * - Kling: fal-ai/kling-video/v2/master/text-to-video
  *
- * SUCCESS RATE: PixVerse 100%, Seedance 100%, Veo 3 100%, Kling 100%
- * (after endpoint/param corrections; initial failures were param format issues)
+ * SUCCESS RATE: PixVerse 100% (2/2), Seedance 50% (1/2), Veo 3 100% (2/2), Kling 100% (2/2)
+ * Total: 7/8 successful generations
  *
  * VISUAL QUALITY NOTES:
  * - PixVerse V4.5: Best anime style adherence — outputs look like actual anime frames.
@@ -208,8 +208,9 @@ export interface VideoQualityMetrics {
  * - Kling 3.0 Pro: Good balance across all metrics. Decent anime style when prompted.
  *   Largest output files (8MB vs 2-5MB for others). Native audio available.
  *
- * @see server/benchmarks/video-quality-test.mjs for test script
- * @see server/benchmarks/video-quality-results.json for raw results
+ * @see server/benchmarks/video-quality-test.mjs for test script (292 lines)
+ * @see test-results/premium-video-quality-2026-05-06.json for raw API responses + computed scores
+ * Fixture includes: video URLs, file sizes, request IDs, generation times, per-prompt scores
  */
 export const PREMIUM_VIDEO_QUALITY_MATRIX: VideoQualityMetrics[] = [
   {
@@ -220,7 +221,7 @@ export const PREMIUM_VIDEO_QUALITY_MATRIX: VideoQualityMetrics[] = [
     animeStyleAdherence: 91,  // BEST: outputs genuinely look like anime production
     characterConsistency: 72, // Weakest point: face drift between frames
     promptAdherence: 82,      // Follows prompt well, good keyword response
-    generationSpeedSec: 42,   // MEASURED: avg of 41s + 43s
+    generationSpeedSec: 47.5, // MEASURED: avg of 44.7s + 50.3s (run 2026-05-06T20:35Z)
     costPer5sClip: 0.30,      // Fal.ai pricing as of 2026-05-06
     nativeAudioQuality: null,  // No audio support
     lipSyncAccuracy: null,
@@ -237,7 +238,7 @@ export const PREMIUM_VIDEO_QUALITY_MATRIX: VideoQualityMetrics[] = [
     animeStyleAdherence: 71,  // Tends semi-realistic, needs strong anime prompting
     characterConsistency: 83, // Good face/body consistency across frames
     promptAdherence: 80,      // Follows prompt but interprets loosely
-    generationSpeedSec: 224,  // MEASURED: much slower than expected
+    generationSpeedSec: 143.4,// MEASURED: 143.4s (1/2 success, run 2026-05-06T20:35Z)
     costPer5sClip: 0.25,      // Fal.ai pricing as of 2026-05-06
     nativeAudioQuality: null,  // No audio in text-to-video mode
     lipSyncAccuracy: null,
@@ -254,7 +255,7 @@ export const PREMIUM_VIDEO_QUALITY_MATRIX: VideoQualityMetrics[] = [
     animeStyleAdherence: 68,  // WEAKEST: tends photorealistic/3D, not cel-shaded
     characterConsistency: 86, // Good consistency, strong face preservation
     promptAdherence: 93,      // BEST: highest prompt-to-output alignment
-    generationSpeedSec: 103,  // MEASURED: inference_time from API metrics
+    generationSpeedSec: 92.7, // MEASURED: avg of 98s + 87.4s (run 2026-05-06T20:35Z)
     costPer5sClip: 0.25,      // Fal.ai pricing as of 2026-05-06 (8s clip prorated)
     nativeAudioQuality: 85,   // Confirmed: audio generation available (disabled for §5.1)
     lipSyncAccuracy: 82,      // Estimated from Veo 3 lip-sync demos
@@ -271,7 +272,7 @@ export const PREMIUM_VIDEO_QUALITY_MATRIX: VideoQualityMetrics[] = [
     animeStyleAdherence: 78,  // Decent anime when prompted, not native style
     characterConsistency: 84, // Good consistency, reliable face preservation
     promptAdherence: 80,      // Follows prompt adequately
-    generationSpeedSec: 142,  // MEASURED: inference_time from API metrics
+    generationSpeedSec: 170,  // MEASURED: avg of 186.3s + 153.7s (run 2026-05-06T20:35Z)
     costPer5sClip: 0.70,      // MOST EXPENSIVE: Fal.ai pricing as of 2026-05-06
     nativeAudioQuality: 78,   // Audio available via Omni mode
     lipSyncAccuracy: 80,      // Lip-sync via Omni mode

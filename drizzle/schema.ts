@@ -2323,8 +2323,10 @@ export const craftLibraryChunks = mysqlTable("craft_library_chunks", {
   chunkIndex: int("chunk_index").notNull(),
   /** Approximate token count for budget estimation */
   tokenCount: int("token_count").notNull().default(0),
-  /** External embedding reference (Chroma document ID) */
-  embeddingRef: varchar("embedding_ref", { length: 128 }),
+  /** Embedding vector storage: JSON array of 64-dim float vector (~1300 chars)
+   * Expanded from varchar(128) in migration 0064 to support direct vector storage
+   * until pgvector/Chroma migration (Wave 4 swap target) */
+  embeddingRef: text("embedding_ref"),
   /** Chunk-level metadata: page number, chapter, timestamp, heading, etc. */
   metadata: json("chunk_metadata"),
   createdAt: timestamp("chunk_created_at").defaultNow().notNull(),
