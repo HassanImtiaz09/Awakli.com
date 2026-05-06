@@ -29,7 +29,9 @@ import {
   getRoutingDataByRun,
   updatePipelineAssetRouting,
   getPanelsByEpisode,
+  getUserSubscriptionTier,
 } from "./db";
+import { isModelTierAllowed, getMaxProviderTier } from "./premium-tier-features";
 
 export const modelRoutingRouter = router({
   /**
@@ -288,9 +290,22 @@ export const modelRoutingRouter = router({
       assetId: z.number(),
       forceTier: z.number().min(1).max(4),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const m = MODEL_MAP[input.forceTier];
       if (!m) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid tier" });
+
+      // ─── TIER GATE: Premium model access ───
+      // Map internal routing tier (1-4) to model tier names for access check
+      const TIER_TO_MODEL_TIER: Record<number, string> = { 1: "ultra", 2: "premium", 3: "standard", 4: "budget" };
+      const requestedModelTier = TIER_TO_MODEL_TIER[input.forceTier] || "standard";
+      const userTier = await getUserSubscriptionTier(ctx.user.id);
+      if (!isModelTierAllowed(userTier, requestedModelTier)) {
+        const maxTier = getMaxProviderTier(userTier);
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `Your plan does not allow Tier ${input.forceTier} models (requires ${requestedModelTier} access). Max provider tier: ${maxTier}. Upgrade to unlock.`,
+        });
+      }
 
       await updatePipelineAssetRouting(input.assetId, {
         klingModelUsed: m.model,

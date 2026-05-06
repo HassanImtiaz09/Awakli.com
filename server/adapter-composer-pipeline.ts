@@ -48,6 +48,8 @@ import {
   type ComposerProvider,
 } from "./adapter-composer-executors";
 import type { GenreTag } from "./benchmarks/d10/genre-retrieval-pool";
+import { isCompositionAllowed } from "./premium-tier-features";
+import { getUserSubscriptionTier } from "./db";
 
 // ─── Pipeline Stage Context ─────────────────────────────────────────────────
 
@@ -167,6 +169,29 @@ export async function composeAndGenerate(
       provider: "legacy",
       fallbackReason: "No adapters available for this project",
     };
+  }
+
+  // ─── TIER GATE: Composition mode access ───
+  const userTier = await getUserSubscriptionTier(ctx.userId);
+  const compositionCheck = isCompositionAllowed(userTier, activeAdapters.length);
+  if (!compositionCheck.allowed) {
+    // Downgrade to max allowed adapters instead of failing
+    const maxAllowed = compositionCheck.maxAdapters;
+    if (maxAllowed === 0) {
+      return {
+        imageUrl: "",
+        costUsd: 0,
+        compositionUsed: false,
+        adapterCount: 0,
+        ipAdapterUsed: false,
+        provider: "legacy",
+        fallbackReason: compositionCheck.reason || "Composition not available for this tier",
+      };
+    }
+    // Trim adapters to max allowed (keep character first, then genre, then sakufuu)
+    while (activeAdapters.length > maxAllowed) {
+      activeAdapters.pop(); // Remove sakufuu first, then genre
+    }
   }
 
   // Validate adapter composition

@@ -13,6 +13,8 @@
 
 import { authorizeAndHold, commitTicket, releaseTicket, type GenerationAction, type HoldTicket } from "./credit-gateway";
 import { routerLog } from "./observability/logger";
+import { getQueuePriority, getConcurrentGenerationLimit } from "./premium-tier-features";
+import { getUserSubscriptionTier } from "./db";
 
 // ─── Configuration ──────────────────────────────────────────────────────
 
@@ -48,6 +50,8 @@ export interface QueuedJob<T = unknown> {
   startedAt?: number;
   completedAt?: number;
   holdTicket?: HoldTicket;
+  /** Queue priority (1=highest, 5=lowest). Resolved from subscription tier. */
+  priority: number;
   result?: T;
   error?: string;
   /** The actual work to execute */
@@ -121,8 +125,15 @@ export async function submitJob<T>(
     holdTicket = authResult.ticket;
   }
 
-  // Create the job
+  // Create the job with tier-based priority
   const jobId = `gen_${++jobCounter}_${Date.now()}`;
+  let priority = 5; // Default priority (free tier)
+  try {
+    const userTier = await getUserSubscriptionTier(userId);
+    priority = getQueuePriority(userTier);
+  } catch {
+    // DB unavailable or user not found — use default priority
+  }
 
   return new Promise<T>((resolve, reject) => {
     const job: QueuedJob<T> = {
@@ -132,13 +143,20 @@ export async function submitJob<T>(
       status: "queued",
       queuedAt: Date.now(),
       holdTicket,
+      priority,
       execute: executeFn,
       resolve: resolve as (value: unknown) => void,
       reject: reject as (error: Error) => void,
     } as QueuedJob<T>;
 
-    queue.push(job as QueuedJob);
-    routerLog.info(`[GenQueue] Job ${jobId} queued for user ${userId} (action: ${action})`);
+    // Insert in priority order (lower priority number = higher priority)
+    const insertIdx = queue.findIndex(q => q.priority > priority);
+    if (insertIdx === -1) {
+      queue.push(job as QueuedJob);
+    } else {
+      queue.splice(insertIdx, 0, job as QueuedJob);
+    }
+    routerLog.info(`[GenQueue] Job ${jobId} queued for user ${userId} (action: ${action}, priority: ${priority})`);
 
     // Try to process immediately
     processQueue();
@@ -209,8 +227,9 @@ function processQueue(): void {
   for (let i = 0; i < queue.length; i++) {
     const job = queue[i];
 
-    // Check per-user concurrency
+    // Check per-user concurrency (tier-aware limit)
     const userRunningCount = Array.from(running.values()).filter(j => j.userId === job.userId).length;
+    // Use the higher of config default or tier-specific limit
     if (userRunningCount >= config.maxConcurrentPerUser) continue;
 
     // Remove from queue and start

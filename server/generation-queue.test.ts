@@ -24,6 +24,10 @@ vi.mock("./observability/logger", () => ({
   },
 }));
 
+vi.mock("./db", () => ({
+  getUserSubscriptionTier: vi.fn().mockResolvedValue("free_trial"),
+}));
+
 import {
   submitJob,
   getQueueStatus,
@@ -76,24 +80,21 @@ describe("Generation Queue", () => {
     });
 
     it("rejects when user queue limit is reached", async () => {
-      configureQueue({ maxQueuePerUser: 2, maxConcurrentPerUser: 0 });
-
-      // These will queue but not run (concurrency = 0 won't start them)
-      // Actually with concurrency 0, nothing starts, so they stay queued
-      // Let's use a different approach: fill with slow jobs
       configureQueue({ maxQueuePerUser: 2, maxConcurrentPerUser: 1 });
 
-      // Start a slow job that blocks
-      const slowJob = submitJob(1, "panel_generation", () => new Promise(() => {})); // never resolves
+      // Start a slow job that blocks (never resolves)
+      const slowJob = submitJob(1, "panel_generation", () => new Promise(() => {}));
 
-      // Wait a tick for the slow job to start running
+      // Wait for the async tier lookup + processQueue to move it to running
+      await new Promise(r => setTimeout(r, 50));
+
+      // Queue 2 more (should fill the queue) — must await each to let async tier lookup complete
+      const q1 = submitJob(1, "panel_generation", async () => "q1");
+      await new Promise(r => setTimeout(r, 10));
+      const q2 = submitJob(1, "panel_generation", async () => "q2");
       await new Promise(r => setTimeout(r, 10));
 
-      // Queue 2 more (should fill the queue)
-      const q1 = submitJob(1, "panel_generation", async () => "q1");
-      const q2 = submitJob(1, "panel_generation", async () => "q2");
-
-      // Third should be rejected
+      // Third should be rejected — queue is full
       await expect(
         submitJob(1, "panel_generation", async () => "q3")
       ).rejects.toThrow(/Queue limit reached/);
@@ -105,6 +106,8 @@ describe("Generation Queue", () => {
       // Fill the global queue
       // With concurrency 0, the first job stays queued
       const p1 = submitJob(1, "panel_generation", async () => "first");
+      // Wait for async tier lookup to complete so job enters queue
+      await new Promise(r => setTimeout(r, 50));
 
       await expect(
         submitJob(2, "panel_generation", async () => "second")

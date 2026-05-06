@@ -102,11 +102,11 @@ describe("4.1: Comparative Quality Test Matrix", () => {
       expect(kling.nativeAudioQuality).toBeGreaterThan(0);
     });
 
-    it("Seedance is the fastest generator", () => {
-      const seedance = PREMIUM_VIDEO_QUALITY_MATRIX.find(m => m.providerId === "seedance_20_fast")!;
+    it("PixVerse is the fastest generator (empirical: 42s avg)", () => {
+      const pixverse = PREMIUM_VIDEO_QUALITY_MATRIX.find(m => m.providerId === "pixverse_v45")!;
       for (const other of PREMIUM_VIDEO_QUALITY_MATRIX) {
-        if (other.providerId !== "seedance_20_fast") {
-          expect(seedance.generationSpeedSec).toBeLessThanOrEqual(other.generationSpeedSec);
+        if (other.providerId !== "pixverse_v45") {
+          expect(pixverse.generationSpeedSec).toBeLessThanOrEqual(other.generationSpeedSec);
         }
       }
     });
@@ -202,10 +202,10 @@ describe("4.1: Comparative Quality Test Matrix", () => {
 
     it("returns fastest provider when speed constraint is tight", () => {
       const result = getRecommendedProvider({
-        maxGenerationTimeSec: 30,
+        maxGenerationTimeSec: 50,
       });
       expect(result).not.toBeNull();
-      expect(result!.providerId).toBe("seedance_20_fast"); // 25s
+      expect(result!.providerId).toBe("pixverse_v45"); // 42s (fastest after empirical test)
     });
 
     it("returns highest-scoring provider among candidates", () => {
@@ -274,10 +274,10 @@ describe("4.2: Provider Adapter Registration", () => {
     const result = adapter.validateParams({
       prompt: "test",
       imageUrl: "https://example.com/img.png",
-      durationSeconds: 12,
+      durationSeconds: 16,
     } as VideoParams);
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain("max 10s for Seedance 2.0 Fast");
+    expect(result.errors).toContain("max 15s for Seedance 2.0");
   });
 
   it("Veo 3.1 validates max duration (8s)", async () => {

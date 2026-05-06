@@ -56,6 +56,9 @@ import { pipelineLog } from "./observability/logger";
 import { runD5_5QualityGate, deriveStyleLock, buildCharacterBiblesMap, type D5_5PipelineContext, type ClipAssetInfo, type PanelInfo as D5_5PanelInfo } from "./benchmarks/d5-5/pipeline-integration";
 import { injectSakufuuBias, recordSakufuuMemory } from "./benchmarks/d9-sakufuu/sakufuu-pipeline";
 import type { SakufuuBias } from "./benchmarks/d9-sakufuu/sakufuu-tracker";
+import { augmentPromptForGeneration, convertSakufuuBias, buildMinimalContext, type PromptStyleContext, type CharacterPromptInfo } from "./prompt-style-adapter";
+import type { GenreTag } from "./benchmarks/d10/genre-retrieval-pool";
+import { resolveEffectiveProviderTier, isModelTierAllowed } from "./premium-tier-features";
 
 type NodeName = "video_gen" | "voice_gen" | "lip_sync" | "music_gen" | "foley_gen" | "ambient_gen" | "assembly";
 
@@ -191,7 +194,7 @@ async function runHarnessGate(
  *   Strategy 2 (optional): Post-sync via Sync.so for lip_sync_beneficial panels
  *   Strategy 3: User override — Force V3 Omni per panel (Studio tier)
  */
-async function videoGenAgent(runId: number, episodeId: number, projectId: number, nodeStatuses: NodeStatuses, nodeCosts: Record<string, number>) {
+async function videoGenAgent(runId: number, episodeId: number, projectId: number, nodeStatuses: NodeStatuses, nodeCosts: Record<string, number>, sakufuuBiasInput?: SakufuuBias | null) {
   const panels = await getPanelsByEpisode(episodeId);
   const approvedPanels = panels.filter(p => p.imageUrl);
   let totalCost = Object.values(nodeCosts).reduce((a, b) => a + b, 0);
@@ -221,9 +224,21 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
 
   // Get the production bible's animation style for Sakuga override
   let projectAnimationStyle = "default";
+  let projectGenre: GenreTag = "default";
+  let projectCharacters: CharacterPromptInfo[] = [];
   try {
     const bible = await getOrCompileProductionBible(projectId);
     projectAnimationStyle = bible.animationStyle || "default";
+    // Resolve genre from bible or project
+    const bibleGenre = Array.isArray(bible.genre) ? bible.genre[0] : bible.genre;
+    projectGenre = (bibleGenre || "default") as GenreTag;
+    // Build character prompt info from bible characters
+    projectCharacters = (bible.characters || []).map(c => ({
+      name: c.name,
+      role: (c.role as CharacterPromptInfo["role"]) || "supporting",
+      visualTraits: c.visualTraits || {},
+      loraTriggerWord: c.loraTriggerWord || undefined,
+    }));
   } catch { /* use default */ }
 
   const classifications: Map<number, SceneClassification> = new Map();
@@ -238,7 +253,9 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
   let hasAppearanceLora = false;
   let hasStyleLora = false;
   // H-8: Wire to actual tier check — motion LoRA requires creator_pro or higher
+  // Also resolve user's max provider tier for model clamping (Gap 2 enforcement)
   let userTierAllowsMotionLora = false;
+  let userSubscriptionTier = "free_trial";
   try {
     const dbMod = await import("./db");
     const db = await dbMod.getDb();
@@ -247,9 +264,9 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
       const { eq } = await import("drizzle-orm");
       const [project] = await db.select({ userId: projects.userId }).from(projects).where(eq(projects.id, projectId)).limit(1);
       if (project?.userId) {
-        const userTier = await dbMod.getUserSubscriptionTier(project.userId);
+        userSubscriptionTier = await dbMod.getUserSubscriptionTier(project.userId);
         const TIER_LEVEL: Record<string, number> = { free_trial: 0, creator: 1, creator_pro: 2, studio: 3, enterprise: 4 };
-        userTierAllowsMotionLora = (TIER_LEVEL[userTier] ?? 0) >= (TIER_LEVEL["creator_pro"] ?? 2);
+        userTierAllowsMotionLora = (TIER_LEVEL[userSubscriptionTier] ?? 0) >= (TIER_LEVEL["creator_pro"] ?? 2);
       }
     }
   } catch {
@@ -306,6 +323,25 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
     };
 
     const classification = await classifyScene(panelData);
+
+    // ─── TIER GATE: Clamp model tier to user's subscription allowance ───
+    // Map internal routing tier (1=ultra, 2=premium, 3=standard, 4=budget) to provider tier names
+    const ROUTING_TO_PROVIDER: Record<number, "flagship" | "premium" | "standard" | "budget"> = {
+      1: "flagship", 2: "premium", 3: "standard", 4: "budget"
+    };
+    const requestedProviderTier = ROUTING_TO_PROVIDER[classification.tier] || "standard";
+    const effectiveTier = resolveEffectiveProviderTier(userSubscriptionTier, requestedProviderTier);
+    // If clamped, downgrade classification tier
+    if (effectiveTier !== requestedProviderTier) {
+      const PROVIDER_TO_ROUTING: Record<string, number> = { flagship: 1, premium: 2, standard: 3, budget: 4 };
+      const clampedTier = PROVIDER_TO_ROUTING[effectiveTier] || 3;
+      if (clampedTier > classification.tier) {
+        pipelineLog.info(`[Router] Panel ${panel.id}: Tier ${classification.tier} clamped to ${clampedTier} (user tier: ${userSubscriptionTier}, max: ${effectiveTier})`);
+        (classification as any).tier = clampedTier;
+        (classification as any).model = MODEL_MAP[clampedTier]?.model || classification.model;
+      }
+    }
+
     classifications.set(panel.id, classification);
     classificationCost += classification.classificationCostUsd;
     tierCounts[classification.tier]++;
@@ -385,16 +421,33 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
         let omniPrompt: string;
         let omniElementList: Array<{ element_id: number }> | undefined;
 
+        // ─── Prompt-Style Adapter: augment Omni base prompt ───
+        const omniStyleCtx: PromptStyleContext = {
+          genre: projectGenre,
+          artStyle: projectAnimationStyle !== "default" ? projectAnimationStyle : undefined,
+          cameraAngle: panel.cameraAngle || undefined,
+          characters: projectCharacters.length > 0 ? projectCharacters : undefined,
+          sakufuuBias: sakufuuBiasInput?.active ? convertSakufuuBias({
+            ...sakufuuBiasInput,
+            suggestedPalette: (sakufuuBiasInput.suggestedPalette || []).map((c: any) => ({ name: c.hex || "color", hex: c.hex })),
+          }) : undefined,
+          frameType: "key",
+        };
+        const omniAugmented = augmentPromptForGeneration(
+          String(panel.visualDescription || "dramatic scene"),
+          omniStyleCtx
+        );
+
         if (hasMatchingElements) {
           omniPrompt = buildLipSyncPrompt(
-            `Cinematic anime scene, ${String(panel.visualDescription || "dramatic scene")}. Anime style, high quality animation, fluid movement, expressive character performance.`,
+            `${omniAugmented.prompt}. Expressive character performance.`,
             dialogueLines,
             elementOrder
           );
           omniElementList = elementList;
           pipelineLog.info(`[Pipeline] Panel ${panel.id}: Tier 1 + Subject Library lip sync (${panelCharNames.filter(n => elementMap.has(n)).join(", ")})`);
         } else {
-          omniPrompt = `Cinematic anime scene, ${String(panel.visualDescription || "dramatic scene")}. The character says: "${dialogueText.slice(0, 500)}". Anime style, high quality animation, fluid movement, expressive character performance.`;
+          omniPrompt = `${omniAugmented.prompt}. The character says: "${dialogueText.slice(0, 500)}". Expressive character performance.`;
           omniElementList = undefined;
         }
 
@@ -464,7 +517,24 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
       } else {
         // ─── TIER 2/3/4: Use appropriate model via image2video ───
         const modelName = classification.modelName;
-        const prompt = `Cinematic anime scene, smooth camera motion, ${String(panel.visualDescription || "dramatic scene")}, anime style, high quality animation, fluid movement`;
+
+        // ─── Prompt-Style Adapter: augment prompt with genre/character/sakufuu context ───
+        const styleContext: PromptStyleContext = {
+          genre: projectGenre,
+          artStyle: projectAnimationStyle !== "default" ? projectAnimationStyle : undefined,
+          cameraAngle: panel.cameraAngle || undefined,
+          characters: projectCharacters.length > 0 ? projectCharacters : undefined,
+          sakufuuBias: sakufuuBiasInput?.active ? convertSakufuuBias({
+            ...sakufuuBiasInput,
+            suggestedPalette: (sakufuuBiasInput.suggestedPalette || []).map((c: any) => ({ name: c.hex || "color", hex: c.hex })),
+          }) : undefined,
+          frameType: "key",
+        };
+        const augmentation = augmentPromptForGeneration(
+          String(panel.visualDescription || "dramatic scene"),
+          styleContext
+        );
+        const prompt = augmentation.prompt;
 
         // ─── fal.ai primary, Kling direct fallback (via video-provider) ───
         try {
@@ -1162,7 +1232,7 @@ export async function runPipeline(runId: number) {
 
     // Node 1: Video Generation (with native lip sync via Kling V3 Omni for dialogue panels)
     await updateNodeProgress(runId, "video_gen", "running", nodeStatuses, 5, totalCost, nodeCosts);
-    totalCost = await videoGenAgent(runId, run.episodeId, run.projectId, nodeStatuses, nodeCosts);
+    totalCost = await videoGenAgent(runId, run.episodeId, run.projectId, nodeStatuses, nodeCosts, sakufuuBias);
     nodeStatuses.video_gen = "complete";
     nodeCosts.video_gen = NODE_COSTS.video_gen;
     await updateNodeProgress(runId, "video_gen", "complete", nodeStatuses, 22, totalCost, nodeCosts);
@@ -1305,9 +1375,15 @@ export async function runPipeline(runId: number) {
           if (!panel || !panel.imageUrl) {
             throw new Error(`Cannot regenerate: panel ${panelId} not found or has no image`);
           }
+          // Prompt-Style Adapter: augment D5.5 regen prompt (D7 FX pass)
+          const regenGenre = (Array.isArray(bible.genre) ? bible.genre[0] : bible.genre) as GenreTag || "default";
+          const regenAugmented = augmentPromptForGeneration(
+            String(panel.visualDescription || "dramatic scene"),
+            buildMinimalContext(regenGenre, bible.artStyle, panel.cameraAngle || undefined)
+          );
           const vidResult = await generateImageToVideo({
             imageUrl: panel.imageUrl,
-            prompt: `Cinematic anime scene, ${String(panel.visualDescription || "dramatic scene")}. Anime style, high quality animation, fluid movement.`,
+            prompt: `${regenAugmented.prompt}. Fluid movement.`,
             duration: "10",
             mode: "pro",
           });

@@ -20,6 +20,7 @@ import {
   getPublicProjects, getFeaturedProjects, searchProjects, getProjectBySlug,
   getEpisodeCountForProject,
   getUserById, getProjectsByUserIdPublic,
+  getUserSubscriptionTier,
 } from "./db";
 import { storagePut } from "./storage";
 import { runMangaToAnimeJob } from "./pipeline";
@@ -109,6 +110,16 @@ import {
   gateConfigRouter, qualityAnalyticsRouter, cascadeRewindRouter,
 } from "./routers-hitl";
 import { authorizeAndHold, commitTicket, releaseTicket, canAfford, canAffordBatch, getCreditCost, getAllCreditCosts, type GenerationAction } from "./credit-gateway";
+import {
+  canCreatePanel,
+  canGenerateEpisode,
+  isEpisodeDurationAllowed,
+  isModelTierAllowed,
+  getQueuePriority,
+  getConcurrentGenerationLimit,
+  resolveEffectiveProviderTier,
+  getPremiumTierStatus,
+} from "./premium-tier-features";
 import { routerLog } from "./observability/logger";
 import { submitJob, getQueueStatus, cancelUserJobs, getQueueMetrics } from "./generation-queue";
 
@@ -778,6 +789,23 @@ const episodesRouter = router({
       const project = await getProjectById(input.projectId, ctx.user.id);
       if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
 
+      // ─── TIER GATE: Episode generation limit ───
+      const userTier = await getUserSubscriptionTier(ctx.user.id);
+      const existingEpisodes = await getEpisodesByProject(input.projectId);
+      const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+      const monthlyEpisodeCount = existingEpisodes.filter(e => e.createdAt && new Date(e.createdAt) >= monthStart).length;
+      const episodeCheck = canGenerateEpisode(userTier, monthlyEpisodeCount);
+      if (!episodeCheck.allowed) {
+        throw new TRPCError({ code: "FORBIDDEN", message: episodeCheck.reason! });
+      }
+      // Check if requested batch exceeds remaining
+      if (input.episodeNumbers.length > episodeCheck.remaining) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `Cannot generate ${input.episodeNumbers.length} episodes. Remaining this month: ${episodeCheck.remaining}.`,
+        });
+      }
+
       const results: { episodeId: number; episodeNumber: number }[] = [];
 
       for (const epNum of input.episodeNumbers) {
@@ -819,10 +847,18 @@ const episodesRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "No panels to generate" });
       }
 
-      // Check queue status before submitting
+      // ─── TIER GATE: Panel creation limit ───
+      const userTier = await getUserSubscriptionTier(ctx.user.id);
+      const panelCheck = canCreatePanel(userTier, existingPanels.length);
+      if (!panelCheck.allowed) {
+        throw new TRPCError({ code: "FORBIDDEN", message: panelCheck.reason! });
+      }
+
+      // ─── TIER GATE: Concurrent generation limit ───
+      const concurrentLimit = getConcurrentGenerationLimit(userTier);
       const queueStatus = getQueueStatus(ctx.user.id);
-      if (queueStatus.userRunning >= 3) {
-        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `You have ${queueStatus.userRunning} generation jobs running. Please wait for them to complete.` });
+      if (queueStatus.userRunning >= concurrentLimit) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `You have ${queueStatus.userRunning} generation jobs running. Your plan allows ${concurrentLimit} concurrent jobs.` });
       }
 
       // Submit to generation queue (handles concurrency + auto-refund on failure)
@@ -1904,6 +1940,23 @@ const pipelineRouter = router({
       }
       if (episode.status !== "locked" && episode.status !== "approved") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Episode must be locked/approved to start pipeline" });
+      }
+
+      // ─── TIER GATE: Episode generation limit (anime pipeline) ───
+      const userTier = await getUserSubscriptionTier(ctx.user.id);
+      const allEpisodes = await getEpisodesByProject(input.projectId);
+      const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+      const monthlyCount = allEpisodes.filter(e => e.createdAt && new Date(e.createdAt) >= monthStart).length;
+      const epCheck = canGenerateEpisode(userTier, monthlyCount);
+      if (!epCheck.allowed) {
+        throw new TRPCError({ code: "FORBIDDEN", message: epCheck.reason! });
+      }
+
+      // ─── TIER GATE: Concurrent generation limit ───
+      const concurrentLimit = getConcurrentGenerationLimit(userTier);
+      const queueStatus = getQueueStatus(ctx.user.id);
+      if (queueStatus.userRunning >= concurrentLimit) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `Concurrent limit reached: ${queueStatus.userRunning}/${concurrentLimit} jobs running.` });
       }
 
       const runId = await createPipelineRun({

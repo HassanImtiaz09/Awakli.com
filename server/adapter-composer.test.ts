@@ -14,6 +14,11 @@
  * - Executor factory
  */
 
+// Mock DB to prevent real database calls in unit tests
+vi.mock("./db", () => ({
+  getUserSubscriptionTier: vi.fn().mockResolvedValue("creator_pro"),
+}));
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   resolveBlendWeights,

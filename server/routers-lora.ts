@@ -11,9 +11,10 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
-import { getDb } from "./db";
+import { getDb, getUserSubscriptionTier } from "./db";
 import { sakufuuLoraJobs, sakufuuStyleSamples } from "../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
+import { canTrainLoraCharacter } from "./premium-tier-features";
 import {
   extractStyleSamples,
   runTrainingPipeline,
@@ -72,6 +73,23 @@ export const loraRouter = router({
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // ─── TIER GATE: LoRA character training limit ───
+      const userTier = await getUserSubscriptionTier(ctx.user.id);
+      {
+        const dbCheck = await getDb();
+        if (dbCheck) {
+          const existingLoraJobs = await dbCheck.select().from(sakufuuLoraJobs)
+            .where(and(
+              eq(sakufuuLoraJobs.creatorId, ctx.user.id),
+              sql`${sakufuuLoraJobs.status} != 'failed'`
+            ));
+          const loraCheck = canTrainLoraCharacter(userTier, existingLoraJobs.length);
+          if (!loraCheck.allowed) {
+            throw new TRPCError({ code: "FORBIDDEN", message: loraCheck.reason! });
+          }
+        }
+      }
+
       // Extract style samples (validation only — no provider call)
       const samples = extractStyleSamples(
         input.panelUrls.map(p => ({ url: p.url, sourceType: p.sourceType })),
