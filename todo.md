@@ -6325,3 +6325,57 @@
 - [x] Founder dashboard UI: client/src/pages/AdminFoundersDashboard.tsx, route /admin/founders (App.tsx:164)
 - [x] All routers wired: foundersIntegrations + foundersOutbound in server/routers.ts:2438-2440
 - [x] Self-verified: file paths + line excerpts confirmed for all pieces
+
+## Wave 6A: Architectural Foundation (10-15 days)
+
+### Pre-Item: fal.ai Multi-DoRA Technical Spike (0.5 days)
+- [x] Research fal.ai docs for custom model endpoints and multi-adapter stacking — flux-general supports unlimited LoRAs + IP-Adapter in single pass
+- [x] Check fal.ai community/Discord for multi-DoRA usage patterns — DoRA adapters use standard .safetensors format, load identically to LoRA at inference
+- [x] Write finding document (docs/fal-ai-dora-spike.md) with go/no-go recommendation — GO
+- [x] If no-go: N/A — fal.ai natively supports multi-adapter composition, no fallback needed
+
+### Item 5: D10 RAG Retrieval Pool Seeding (1-2 days)
+- [x] Genre taxonomy enum (GENRE_TAXONOMY, 10 genres aligned with styleBundles.genreKey + projects.animeStyle)
+- [x] Auto-tagger: classifyPanelGenre() + batchClassifyGenre() via LLM with structured JSON output
+- [x] Embedding generation: seedGenrePool() via IVectorStore.upsert() with genre metadata
+- [x] Genre-filtered retrieval: getGenreReferences() for IP-Adapter conditioning
+- [x] Cold-start confidence threshold: getGenrePoolConfidence() + getRecommendedIpAdapterWeight()
+- [x] Tests for retrieval pool seeding (24 tests passing)
+
+### Item 1: Three-Adapter Composition Runtime + RAG Hybrid (7-10 days)
+- [x] 1.1: AdapterComposer interface design (provider-agnostic compose()) — adapter-composer.ts
+- [x] 1.2: DoRA adapter type + PiSSA initialization wiring into TrainingProvider — DEFAULT_DORA_TRAINING_CONFIG + ROLE_TRAINING_OVERRIDES
+- [x] 1.3: Per-stage blend weight defaults (D0/D1.5/D7 tunable config) — STAGE_BLEND_WEIGHTS + STAGE_IP_ADAPTER_WEIGHTS
+- [x] 1.4: fal.ai composition executor (FalCompositionExecutor) — adapter-composer-executors.ts
+- [x] 1.5: RunPod composition executor (RunPodCompositionExecutor) — adapter-composer-executors.ts
+- [x] 1.6: RAG retrieval integration in composition path (D10 vector store query → IP-Adapter) — adapter-composer-rag.ts
+- [x] 1.7: IP-Adapter conditioning weight management (cold-start fallback) — adapter-composer-rag.ts:buildIPAdapterConditioning
+- [x] 1.8: Pipeline integration: wire AdapterComposer into D0/D1.5/D7 stages — adapter-composer-pipeline.ts:composeAndGenerate
+- [x] 1.9: Migration path for existing LoRA training jobs (migrateLoraToDoraConfig) — adapter-composer-pipeline.ts:generateMigrationPlan
+- [x] 1.10: E2E verification test — 75 tests in adapter-composer.test.ts
+- [x] 1.11: Unit + integration tests — 75 tests passing
+
+### Item 6: TTS Migration to Inworld + Kokoro (1-2 days)
+- [x] 6.1: Inworld TTS-1.5-Max adapter (voice cloning support) — tts-migration.ts:INWORLD_CONFIG + buildInworldAdapterConfig()
+- [x] 6.2: Kokoro Free-tier adapter (no voice cloning) — tts-migration.ts:KOKORO_CONFIG + buildKokoroAdapterConfig()
+- [x] 6.3: Tier-routing update (Free→Kokoro, Creator+→Inworld, ElevenLabs→fallback) — TTS_TIER_ROUTING + resolveTTSProvider()
+- [x] 6.4: D8 retry budget update (2→3 retries per dialogue line) — D8_RETRY_BUDGET + isRetryWithinBudget()
+- [x] 6.5: Tests (adapter validation, tier routing, retry budget, fallback path) — 45 tests passing
+
+### Wave 6A Verification Checkpoint
+- [x] Self-verify all items with file paths + line excerpts (all confirmed)
+- [x] Explicit shipped vs deferred separation (see below)
+
+### Wave 6A Shipped vs Deferred
+**SHIPPED (Wave 6A):**
+- fal.ai multi-DoRA spike: GO (docs/fal-ai-dora-spike.md)
+- Item 5: D10 RAG Retrieval Pool Seeding (genre-retrieval-pool.ts, 24 tests)
+- Item 1: Three-Adapter Composition Runtime (adapter-composer*.ts, 75 tests)
+- Item 6: TTS Migration to Inworld + Kokoro (tts-migration.ts, 45 tests)
+
+**DEFERRED TO WAVE 6B (by design):**
+- Item 2: Prompt-Style Adapter (depends on Item 1 verification)
+- Item 3: Premium Tier Features (depends on Item 2)
+- Item 4: Premium Video Model Integration (depends on Items 2+3)
+- [x] Test count per item: Spike (doc), Item 5 (24), Item 1 (75), Item 6 (45) = 144 total new tests
+- [x] Self-verification script: full grep output confirms all exports exist at documented line numbers
