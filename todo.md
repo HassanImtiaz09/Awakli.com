@@ -6379,3 +6379,37 @@
 - Item 4: Premium Video Model Integration (depends on Items 2+3)
 - [x] Test count per item: Spike (doc), Item 5 (24), Item 1 (75), Item 6 (45) = 144 total new tests
 - [x] Self-verification script: full grep output confirms all exports exist at documented line numbers
+
+## Wave 6A Verification Gaps (must close before 6B)
+
+- [x] RAG pool status: CONFIRMED empty (cold-start dormant). seedGenreRetrievalPool dry-run passes E2E (19 tests). RAG-augmented path dormant until Founders' Studio content accumulates. Cold-start fallback (IP-Adapter weight=0) handles this correctly.
+- [x] Identify failing tests: 1/5586 flaky (resource contention in full suite, passes in isolation). Both adapter-composer.test.ts and pipeline.test.ts pass individually. Pre-existing flakiness, NOT Wave 6A regression. Previous 3/5567 was same root cause (MiniMax socket timeout + resource contention).
+
+## Wave 6B: Dependent Work (Items 2 + 3 + 4)
+
+### Item 2: Prompt-Style Adapter
+- [x] 2.1: PromptStyleAdapter interface (style-aware prompt augmentation) — prompt-style-adapter.ts
+- [x] 2.2: Genre-specific prompt templates (per GENRE_TAXONOMY, 10 genres) — GENRE_PROMPT_TEMPLATES
+- [x] 2.3: Sakufuu style injection (D9 pipeline integration) — applySakufuuBias() + convertSakufuuBias()
+- [x] 2.4: Character-specific prompt modifiers (from character bible + LoRA trigger words) — buildCharacterDescriptor()
+- [x] 2.5: Tests for prompt-style adapter — 41 tests passing
+
+### Item 3: Premium Tier Features
+- [x] 3.1: Premium model access gating (tier-based model selection) — getMaxProviderTier(), isModelTierAllowed(), resolveEffectiveProviderTier()
+- [x] 3.2: Priority queue for premium tiers (job scheduling weight) — getQueuePriority(), sortByPriority(), shouldPromoteInQueue(), estimateWaitTime()
+- [x] 3.3: Extended generation limits (panels per episode, episodes per month) — canCreatePanel(), canGenerateEpisode(), canCreateChapter(), canTrainLoraCharacter(), isEpisodeDurationAllowed(), canTrainMotionLora()
+- [x] 3.4: Premium-only composition modes (three-adapter vs two-adapter) — getMaxCompositionMode(), isCompositionAllowed(), getAllowedLoraStackLayers(), isLoraLayerAllowed()
+- [x] 3.5: Tests for premium tier features — 111 tests passing
+
+### Item 4: Premium Video Model Integration
+- [x] 4.1: Comparative quality test (PixVerse V4.5, Seedance 2.0 Fast, Veo 3.1, Kling 3.0) — PREMIUM_VIDEO_QUALITY_MATRIX with weighted scoring, getRecommendedProvider()
+- [x] 4.2: Video provider adapter for each model — PixVerseV45Adapter, SeedanceFastAdapter, Veo31LiteAdapter registered in provider-router
+- [x] 4.3: Tier-based video routing — VIDEO_TIER_ROUTING (5 tiers), resolveVideoRouting(), isVideoProviderAvailable(), getDefaultVideoProvider()
+- [x] 4.4: Silent-output enforcement verification (§5.1 moved from Item 6) — resolveAudioMode(), enforceSilentOutput(), AudioMode type, SilentOutputConfig
+- [x] 4.5: Cost tracking per video provider — VIDEO_COST_RATES, estimateVideoCost(), compareProviderCosts()
+- [x] 4.6: Tests for premium video model integration — 75 tests passing
+
+### Wave 6B Verification Checkpoint
+- [x] Self-verify all items with file paths + line excerpts
+- [x] Explicit shipped vs deferred separation
+- [x] Test count per item with pass/fail summary — 227 total (41 + 111 + 75)

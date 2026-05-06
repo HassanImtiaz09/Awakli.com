@@ -176,7 +176,7 @@ export class JsonArrayVectorStore implements IVectorStore {
       // Store embedding in the embeddingRef column (repurposed from Chroma doc ID to JSON array)
       await db.execute(
         sql.raw(
-          `UPDATE craft_library_chunks SET embeddingRef = '${embeddingJson.replace(/'/g, "''")}' WHERE id = '${doc.id}'`
+          `UPDATE craft_library_chunks SET embedding_ref = '${embeddingJson.replace(/'/g, "''")}' WHERE id = '${doc.id}'`
         )
       );
     }
@@ -195,7 +195,7 @@ export class JsonArrayVectorStore implements IVectorStore {
     // Load all chunks with embeddings
     const [rows] = await db.execute(
       sql.raw(
-        `SELECT id, content, embeddingRef, metadata FROM craft_library_chunks WHERE embeddingRef IS NOT NULL AND embeddingRef != '' AND embeddingRef LIKE '[%' LIMIT 5000`
+        `SELECT id, chunk_text as content, embedding_ref as embeddingRef, chunk_metadata as metadata FROM craft_library_chunks WHERE embedding_ref IS NOT NULL AND embedding_ref != '' AND embedding_ref LIKE '[%' LIMIT 5000`
       )
     ) as any;
 
@@ -244,7 +244,7 @@ export class JsonArrayVectorStore implements IVectorStore {
 
     for (const id of ids) {
       await db.execute(
-        sql.raw(`UPDATE craft_library_chunks SET embeddingRef = NULL WHERE id = '${id}'`)
+        sql.raw(`UPDATE craft_library_chunks SET embedding_ref = NULL WHERE id = '${id}'`)
       );
     }
   }
@@ -255,7 +255,7 @@ export class JsonArrayVectorStore implements IVectorStore {
 
     const [rows] = await db.execute(
       sql.raw(
-        `SELECT COUNT(*) as cnt FROM craft_library_chunks WHERE embeddingRef IS NOT NULL AND embeddingRef != '' AND embeddingRef LIKE '[%'`
+        `SELECT COUNT(*) as cnt FROM craft_library_chunks WHERE embedding_ref IS NOT NULL AND embedding_ref != '' AND embedding_ref LIKE '[%'`
       )
     ) as any;
 

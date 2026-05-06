@@ -214,6 +214,39 @@
       "perSecond": 0.05,
       "per10sClip": 0.5,
       "notes": "Veo 3.1 Lite via fal.ai. Native audio generation. 4s/6s/8s durations. Image-conditioned."
+    },
+    "veo31_lite_silent_fal": {
+      "provider": "fal.ai",
+      "model": "fal-ai/veo3.1/lite/image-to-video",
+      "mode": "standard",
+      "resolution": "720p",
+      "audio": false,
+      "lipsync": false,
+      "perSecond": 0.05,
+      "per10sClip": 0.5,
+      "notes": "Veo 3.1 Lite silent mode (§5.1 enforced). Same model, generate_audio=false."
+    },
+    "pixverse_v45_fal": {
+      "provider": "fal.ai",
+      "model": "fal-ai/pixverse/v4.5/image-to-video",
+      "mode": "standard",
+      "resolution": "1080p",
+      "audio": false,
+      "lipsync": false,
+      "perSecond": 0.06,
+      "per10sClip": 0.6,
+      "notes": "PixVerse V4.5 via fal.ai. Anime-optimized. Max 8s. Silent only (§5.1)."
+    },
+    "seedance_20_fast_fal": {
+      "provider": "fal.ai",
+      "model": "fal-ai/seedance/v2.0/fast/image-to-video",
+      "mode": "standard",
+      "resolution": "1080p",
+      "audio": false,
+      "lipsync": false,
+      "perSecond": 0.05,
+      "per10sClip": 0.5,
+      "notes": "Seedance 2.0 Fast via fal.ai. Fast generation (~25s). Max 10s. Silent only (§5.1)."
     }
   },
   "tts": {
