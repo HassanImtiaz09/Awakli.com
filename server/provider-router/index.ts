@@ -78,3 +78,4 @@ import "./adapters/image-providers";
 import "./adapters/local-providers";
 import "./adapters/fal-kling";
 import "./adapters/premium-video-models";
+import "./adapters/storymaker-adapter";

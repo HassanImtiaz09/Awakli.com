@@ -178,6 +178,7 @@ export async function getActiveApiKey(providerId: string): Promise<{
     runway_gen4: "RUNWAY_API_KEY",
     runway_act_two: "RUNWAY_API_KEY",  // Act-Two uses same Runway dev API key
     wan_26: "FAL_API_KEY",  // Wan 2.6 served via fal.ai ($0.10-0.15/sec)
+    storymaker_v1: "FAL_API_KEY",  // StoryMaker custom deployment (Wave 7, uses FAL_API_KEY for fal.ai custom inference)
   };
   const envVarName = ENV_KEY_MAP[providerId];
   if (envVarName) {

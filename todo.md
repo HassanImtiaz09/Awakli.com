@@ -6498,3 +6498,94 @@ For each new module/export, the following MUST be demonstrated before declaring 
 - [x] Updated drizzle/schema.ts: embeddingRef changed from varchar(128) to text()
 - [x] Removed runtime ALTER from seed-genre-retrieval-pool.mjs, replaced with type verification
 - [x] All tests still passing (163/163 in sanity check)
+
+## Wave 7: Character Identity & Master-Style Infrastructure (v2.0.0)
+
+### Locked Decisions
+- StoryMaker: TRUE StoryMaker custom deployment (NOT fal-ai/instant-character)
+- AdapterComposer: THREE slots maintained, third slot = creator-aesthetic toggle (sakufuu default | master-style opt-in)
+- Master-style availability: Pro+ tier (not Studio/Enterprise-only)
+
+### Item 1: StoryMaker Cold-Start Character Generation (5-7 days)
+- [x] 1a: Mitsua compatibility spike — deploy StoryMaker on fal.ai custom inference or RunPod
+  - [x] Verify StoryMaker architecture accepted by fal.ai custom inference
+  - [x] If rejected, deploy on RunPod serverless with cold-start optimization
+  - [x] Character identity rubric: face similarity, outfit consistency, multi-pose stability, hair-color stability
+  - [x] Persist spike results to test-results/storymaker-mitsua-compat-YYYY-MM-DD.json
+- [ ] 1b: Full identity scope confirmation (face + clothing + hairstyle + body — inherent to StoryMaker)
+- [x] 1c: StoryMakerAdapter implementation
+  - [x] StoryMakerProvider class with custom endpoint routing
+  - [x] Input preprocessing (reference image normalization, pose extraction)
+  - [x] Output postprocessing (anime-style conditioning, consistency scoring)
+  - [x] Cold-start fallback when StoryMaker endpoint unavailable
+- [ ] 1d: DoRA composition tuning (StoryMaker + genre adapter blend weights)
+  - [ ] Blend weight sweep: 0.3–0.7 StoryMaker vs genre adapter
+  - [ ] Persist tuning results to test-results/storymaker-dora-blend-YYYY-MM-DD.json
+- [x] 1e: Pipeline integration — wire into D0/D1.5 character generation stage
+  - [x] Production call site in D0 character-designer.ts (generateSingleView)
+- [x] 1f: Tests for StoryMaker adapter (unit + integration) — 71 tests passing
+
+### Item 2: StoryDiffusion Intra-Episode Genga Coherence (3-4 days)
+- [ ] 2a: Replicate StoryDiffusion endpoint validation
+  - [ ] Verify hvision-nku/storydiffusion API contract
+  - [ ] Test with 5-panel sequence, measure character consistency across panels
+  - [ ] Persist results to test-results/storydiffusion-coherence-YYYY-MM-DD.json
+- [ ] 2b: StoryDiffusionAdapter implementation
+  - [ ] Attention-sharing pattern for intra-episode consistency
+  - [ ] Panel sequence batching (groups of 4-6 for attention window)
+  - [ ] Fallback to per-panel generation when batch fails
+- [ ] 2c: DoRA composition (StoryDiffusion composes more cleanly with DoRA per §7.2)
+  - [ ] Validate attention pattern doesn't conflict with DoRA weight injection
+- [ ] 2d: Pipeline integration — wire into D1.5 genga generation stage
+  - [ ] Production call site in pipelineOrchestrator.ts or adapter-composer-pipeline.ts
+- [ ] 2e: Tests for StoryDiffusion adapter
+
+### Item 3: PuLID Pro+ Real-Photo-to-Anime (2-3 days)
+- [ ] 3a: fal-ai/flux-pulid endpoint validation
+  - [ ] Test with 3-5 real photos, measure anime style transfer quality
+  - [ ] Persist results to test-results/pulid-style-transfer-YYYY-MM-DD.json
+- [ ] 3b: PuLIDAdapter implementation
+  - [ ] Photo upload preprocessing (face detection, cropping, normalization)
+  - [ ] Style transfer with anime conditioning prompt
+  - [ ] Pro+ tier gating (isModelTierAllowed check)
+- [ ] 3c: DoRA composition (PuLID + genre adapter for style consistency)
+- [ ] 3d: Pipeline integration — wire into character creation flow
+  - [ ] Production call site in character generation procedure
+- [ ] 3e: Frontend component tests for photo upload flow
+  - [ ] File size validation test
+  - [ ] Format validation test (JPEG/PNG/WebP only)
+  - [ ] Error handling test (oversized file, invalid format, network failure)
+- [ ] 3f: Tests for PuLID adapter (unit + integration)
+
+### Item 4: Master-Style Adapter Infrastructure (3-5 days)
+- [ ] 4a: Master-style training data pipeline
+  - [ ] Frame extraction from reference anime (50 frames per master tag, configurable via env/admin)
+  - [ ] Style annotation (color palette, line weight, shading pattern, composition rules)
+  - [ ] Training dataset assembly with genre-appropriate augmentation
+- [ ] 4b: Master-style LoRA training trigger
+  - [ ] Training job submission via existing Replicate TrainingProvider
+  - [ ] 50 frames per master tag (confirm matches addendum §7.1, configurable via MASTER_STYLE_FRAMES_PER_TAG env)
+  - [ ] Progress tracking and completion webhook
+- [ ] 4c: MasterStyleAdapter class
+  - [ ] Adapter weight loading from trained LoRA checkpoint
+  - [ ] Style strength parameter (0.0–1.0) for blend control
+  - [ ] Fallback to sakufuu when master-style not yet trained
+- [ ] 4d: AdapterComposer creator-aesthetic slot toggle
+  - [ ] Third slot dynamically routes: sakufuu (default) | master-style (when opted in)
+  - [ ] Project/episode-level configuration for master-style opt-in
+  - [ ] Pro+ tier gating for master-style availability
+  - [ ] Backward compatibility: existing projects continue with sakufuu unchanged
+- [ ] 4e: Pipeline integration — wire slot toggle into adapter-composer-pipeline.ts
+  - [ ] Production call site showing dynamic third-slot resolution
+- [ ] 4f: Tests for master-style infrastructure
+
+### Operational Follow-ups (not Wave 7 scope)
+- [ ] Seedance reliability: re-test with 10-20 generations post-Wave-7 (50% failure in mini-sprint may be transient)
+- [ ] Post-Wave-7 addendum updates: §2 (slot-toggle documentation), §7.1 (Pro+ tier gating confirmation)
+
+### Wave 7 Verification Protocol
+- Production call site for each new export (from first-pass, not post-feedback)
+- Empirical fixtures for all measured claims (persisted JSON with raw API responses)
+- Schema changes in migration files only (no runtime ALTER)
+- Character identity rubric for Item 1a (face similarity, outfit consistency, multi-pose stability, hair-color stability)
+- Independent verification on Items 1, 3, and 4 specifically

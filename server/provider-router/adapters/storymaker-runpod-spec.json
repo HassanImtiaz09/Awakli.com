@@ -1,0 +1,209 @@
+{
+  "$schema": "https://docs.runpod.io/serverless/spec/v1",
+  "name": "awakli-storymaker-v1",
+  "description": "RED-AIGC StoryMaker — Identity-Preserved Character Generation for Awakli AI Manga-to-Anime Platform",
+  "version": "1.0.0",
+  "deployment": {
+    "provider": "runpod",
+    "type": "serverless",
+    "gpu": {
+      "recommended": "NVIDIA A100 80GB",
+      "minimum": "NVIDIA A40 48GB",
+      "alternatives": ["NVIDIA L40S 48GB", "NVIDIA A100 40GB"],
+      "vram_requirement_gb": 16,
+      "note": "SDXL fp16 + InsightFace requires ~16GB VRAM minimum"
+    },
+    "scaling": {
+      "min_workers": 0,
+      "max_workers": 5,
+      "idle_timeout_seconds": 300,
+      "scale_up_threshold": 2,
+      "note": "min_workers=0 for cost optimization; set to 1 for production latency SLA"
+    },
+    "cold_start": {
+      "estimated_seconds": 45,
+      "model_loading_seconds": 30,
+      "insightface_init_seconds": 5,
+      "note": "Pre-baked model weights in Docker image reduce cold start by ~50%"
+    }
+  },
+  "docker": {
+    "base_image": "runpod/pytorch:2.1.2-py3.10-cuda12.1.1-devel-ubuntu22.04",
+    "dockerfile_path": "Dockerfile.storymaker",
+    "build_args": {
+      "STORYMAKER_VERSION": "1.0.0",
+      "BASE_MODEL": "huaquan/YamerMIX_v11",
+      "INSIGHTFACE_MODEL": "buffalo_l"
+    },
+    "ports": [8000],
+    "healthcheck": {
+      "path": "/health",
+      "interval_seconds": 30,
+      "timeout_seconds": 10
+    }
+  },
+  "api": {
+    "input_schema": {
+      "face_image_url": {
+        "type": "string",
+        "required": true,
+        "description": "URL to face reference image (primary identity anchor)"
+      },
+      "outfit_image_url": {
+        "type": "string",
+        "required": false,
+        "description": "URL to outfit/clothing reference image (defaults to face_image_url)"
+      },
+      "prompt": {
+        "type": "string",
+        "required": true,
+        "description": "Text prompt for scene/pose description"
+      },
+      "negative_prompt": {
+        "type": "string",
+        "required": false,
+        "default": "low quality, blurry, deformed, ugly, bad anatomy",
+        "description": "Negative prompt for quality control"
+      },
+      "ip_adapter_scale": {
+        "type": "number",
+        "required": false,
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0,
+        "description": "Face identity preservation strength"
+      },
+      "lora_scale": {
+        "type": "number",
+        "required": false,
+        "default": 0.8,
+        "min": 0.0,
+        "max": 1.0,
+        "description": "Outfit/body identity preservation strength"
+      },
+      "width": {
+        "type": "integer",
+        "required": false,
+        "default": 1024,
+        "min": 512,
+        "max": 1536,
+        "description": "Output image width"
+      },
+      "height": {
+        "type": "integer",
+        "required": false,
+        "default": 1024,
+        "min": 512,
+        "max": 1536,
+        "description": "Output image height"
+      },
+      "num_inference_steps": {
+        "type": "integer",
+        "required": false,
+        "default": 25,
+        "min": 10,
+        "max": 50,
+        "description": "Number of denoising steps"
+      },
+      "guidance_scale": {
+        "type": "number",
+        "required": false,
+        "default": 7.5,
+        "min": 1.0,
+        "max": 20.0,
+        "description": "Classifier-free guidance scale"
+      },
+      "seed": {
+        "type": "integer",
+        "required": false,
+        "description": "Random seed for reproducibility"
+      },
+      "anime_conditioning": {
+        "type": "boolean",
+        "required": false,
+        "default": true,
+        "description": "Apply anime-style conditioning to output"
+      },
+      "target_pose": {
+        "type": "string",
+        "required": false,
+        "default": "front",
+        "enum": ["front", "three_quarter", "side", "back", "custom"],
+        "description": "Target pose/angle for generated image"
+      },
+      "character_id": {
+        "type": "string",
+        "required": false,
+        "description": "Character ID for tracking and consistency scoring"
+      }
+    },
+    "output_schema": {
+      "image_url": {
+        "type": "string",
+        "description": "URL to the generated image (S3 presigned, 1hr expiry)"
+      },
+      "seed": {
+        "type": "integer",
+        "description": "Seed used for this generation"
+      },
+      "face_analysis": {
+        "type": "object",
+        "description": "InsightFace analysis of the generated image",
+        "properties": {
+          "face_count": { "type": "integer" },
+          "bbox": { "type": "array", "items": { "type": "number" } },
+          "embedding": { "type": "array", "items": { "type": "number" } },
+          "confidence": { "type": "number" }
+        }
+      },
+      "inference_time_ms": {
+        "type": "number",
+        "description": "Total inference time in milliseconds"
+      }
+    }
+  },
+  "cost_estimate": {
+    "per_generation_usd": {
+      "cold_start": 0.15,
+      "warm": 0.08,
+      "high_res_1536": 0.12
+    },
+    "gpu_hourly_rate_usd": {
+      "a100_80gb": 1.89,
+      "a40_48gb": 1.14,
+      "l40s_48gb": 1.34
+    },
+    "monthly_estimate": {
+      "low_volume_100_gen_day": 240,
+      "medium_volume_500_gen_day": 1200,
+      "high_volume_2000_gen_day": 4800,
+      "note": "Assumes min_workers=0, average 60% warm hit rate"
+    }
+  },
+  "monitoring": {
+    "metrics": [
+      "generation_count",
+      "cold_start_count",
+      "inference_time_p50_ms",
+      "inference_time_p95_ms",
+      "face_detection_success_rate",
+      "error_rate",
+      "gpu_utilization_percent"
+    ],
+    "alerts": {
+      "error_rate_threshold": 0.05,
+      "p95_latency_threshold_ms": 30000,
+      "face_detection_failure_threshold": 0.10
+    }
+  },
+  "deployment_instructions": {
+    "step_1": "Build Docker image: docker build -f Dockerfile.storymaker -t awakli-storymaker:v1 .",
+    "step_2": "Push to RunPod registry: docker push runpod/awakli-storymaker:v1",
+    "step_3": "Create serverless endpoint at https://www.runpod.io/console/serverless",
+    "step_4": "Configure: GPU=A100, Min Workers=0, Max Workers=5, Idle Timeout=300s",
+    "step_5": "Note endpoint ID (e.g., 'abc123def456')",
+    "step_6": "Set STORYMAKER_ENDPOINT_URL=https://api.runpod.ai/v2/{endpoint_id} in Awakli env",
+    "step_7": "Set RUNPOD_API_KEY in Awakli env (if not already configured)",
+    "step_8": "Verify with: curl -X POST https://api.runpod.ai/v2/{endpoint_id}/run -H 'Authorization: Bearer $RUNPOD_API_KEY' -d '{\"input\": {\"face_image_url\": \"...\", \"prompt\": \"test\"}}'"
+  }
+}

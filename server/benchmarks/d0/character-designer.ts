@@ -22,6 +22,14 @@ import { generateImage } from "../../_core/imageGeneration";
 import { invokeLLM } from "../../_core/llm";
 import { storagePut } from "../../storage";
 import { serverLog } from "../../observability/logger";
+import {
+  StoryMakerAdapter,
+  resolveStoryMakerEndpoint,
+  computeIdentityRubric,
+  batchEvaluateIdentity,
+  type StoryMakerParams,
+  type CharacterIdentityRubric,
+} from "../../provider-router/adapters/storymaker-adapter";
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
@@ -188,13 +196,17 @@ Respond with ONLY a JSON object: {"score": 0.XX, "issues": ["issue1", "issue2"]}
  * Generate a single character view.
  * For front view (Pass 1): text-to-image from character description
  * For other views (Pass 2): image-to-image with front view as conditioning
+ *
+ * Wave 7 Enhancement: When StoryMaker endpoint is configured and a face
+ * reference is available, uses identity-preserved generation for superior
+ * cross-view consistency. Falls back to standard generation otherwise.
  */
 async function generateSingleView(
   character: Character,
   viewAngle: ViewAngle,
   styleBundleKey?: string,
   conditioningImageUrl?: string,
-): Promise<{ imageUrl: string; costUsd: number }> {
+): Promise<{ imageUrl: string; costUsd: number; identityRubric?: CharacterIdentityRubric }> {
   const { prompt, negativePrompt } = await buildViewPrompt(character, viewAngle, styleBundleKey);
 
   serverLog.info("Generating character view", {
@@ -203,7 +215,66 @@ async function generateSingleView(
     hasConditioning: !!conditioningImageUrl,
   });
 
-  // Use image-to-image for non-front views (Pass 2)
+  // ── Wave 7: StoryMaker identity-preserved generation path ──────────────
+  const storymakerEndpoint = resolveStoryMakerEndpoint();
+  const useStoryMaker = storymakerEndpoint.available && conditioningImageUrl && viewAngle !== "front";
+
+  if (useStoryMaker) {
+    try {
+      serverLog.info("Using StoryMaker for identity-preserved generation", {
+        characterId: character.id,
+        viewAngle,
+        provider: storymakerEndpoint.config!.provider,
+      });
+
+      const adapter = new StoryMakerAdapter();
+      const storymakerParams: StoryMakerParams = {
+        prompt,
+        negativePrompt,
+        faceImageUrl: conditioningImageUrl!,
+        characterId: character.id,
+        targetPose: viewAngle === "three_quarter" ? "three_quarter" : viewAngle as any,
+        faceScale: 0.8,
+        outfitScale: 0.8,
+        animeConditioning: true,
+        width: 1024,
+        height: 1024,
+      };
+
+      const result = await adapter.execute(storymakerParams, {
+        apiKey: "",
+        apiKeyId: -1,
+        endpointUrl: storymakerEndpoint.endpointUrl!,
+        timeout: storymakerEndpoint.config!.warmTimeoutMs,
+      });
+
+      if (result.storageUrl) {
+        // Upload to our S3 for consistent URL management
+        const timestamp = Date.now();
+        const fileKey = `characters/${character.id}/views/${viewAngle}_sm_${timestamp}.png`;
+        const imageResponse = await fetch(result.storageUrl);
+        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        const { url: s3Url } = await storagePut(fileKey, imageBuffer, "image/png");
+
+        serverLog.info("StoryMaker generation successful", {
+          characterId: character.id,
+          viewAngle,
+          inferenceTimeMs: result.metadata?.inferenceTimeMs,
+        });
+
+        return { imageUrl: s3Url, costUsd: adapter.estimateCostUsd(storymakerParams) };
+      }
+    } catch (err) {
+      serverLog.warn("StoryMaker generation failed, falling back to standard", {
+        characterId: character.id,
+        viewAngle,
+        error: String(err),
+      });
+      // Fall through to standard generation
+    }
+  }
+
+  // ── Standard generation path (original) ────────────────────────────────
   const generateParams: any = { prompt };
 
   if (conditioningImageUrl && viewAngle !== "front") {
