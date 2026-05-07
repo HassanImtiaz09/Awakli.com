@@ -11,11 +11,16 @@
  * Cost: ~$0.15/slice
  */
 import { getDb } from "../../db";
-import { gengaKeyframes, flipBookPreviews } from "../../../drizzle/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { gengaKeyframes, flipBookPreviews, characters } from "../../../drizzle/schema";
+import { eq, and, asc, inArray } from "drizzle-orm";
 import { generateImage } from "../../_core/imageGeneration";
 import { storagePut } from "../../storage";
 import { serverLog } from "../../observability/logger";
+import {
+  StoryMakerAdapter,
+  resolveStoryMakerEndpoint,
+  type StoryMakerParams,
+} from "../../provider-router/adapters/storymaker-adapter";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export interface GenerateGengaInput {
@@ -85,20 +90,100 @@ export async function generateRoughGenga(input: GenerateGengaInput): Promise<{
       // Generate rough genga prompt
       const prompt = buildRoughGengaPrompt(layout, input.characterSheets, input.colorHints);
 
-      // Generate image with character sheet conditioning
-      const originalImages = conditioning.characterSheetUrls.length > 0
-        ? [{ url: conditioning.characterSheetUrls[0]!, mimeType: "image/png" as const }]
-        : undefined;
+      // ── Wave 7: StoryMaker identity-preserved genga path ────────────────
+      // Conditional activation: fires for characters WITHOUT existing DoRA/LoRA,
+      // skips (falls back to standard generation) when DoRA exists.
+      const storymakerEndpoint = resolveStoryMakerEndpoint();
+      const placedCharacterIds = layout.characterPlacements
+        .map((cp: any) => cp.characterId)
+        .filter(Boolean) as number[];
 
-      const result = await generateImage({
-        prompt,
-        ...(originalImages ? { originalImages } : {}),
-      });
+      // Check if ANY placed character has a trained LoRA (DoRA exists → skip StoryMaker)
+      let hasDoRA = false;
+      if (placedCharacterIds.length > 0) {
+        const db2 = await getDb();
+        if (db2) {
+          const charRows = await db2.select({ loraStatus: characters.loraStatus })
+            .from(characters)
+            .where(inArray(characters.id, placedCharacterIds));
+          hasDoRA = charRows.some(c => c.loraStatus === "ready");
+        }
+      }
 
-      if (!result.url) throw new Error("No image URL returned");
+      const useStoryMaker = storymakerEndpoint.available
+        && conditioning.characterSheetUrls.length > 0
+        && !hasDoRA;
+
+      let generatedUrl: string | undefined;
+
+      if (useStoryMaker) {
+        try {
+          serverLog.info("[D1.5] Using StoryMaker for identity-preserved genga", {
+            layoutId: layout.layoutId,
+            provider: storymakerEndpoint.config!.provider,
+            characterCount: placedCharacterIds.length,
+          });
+
+          const adapter = new StoryMakerAdapter();
+          const smParams: StoryMakerParams = {
+            prompt,
+            faceImageUrl: conditioning.characterSheetUrls[0]!,
+            characterId: placedCharacterIds[0] || 0,
+            targetPose: "front",
+            faceScale: 0.7,
+            outfitScale: 0.7,
+            animeConditioning: true,
+            width: 1024,
+            height: 1024,
+          };
+
+          const smResult = await adapter.execute(smParams, {
+            apiKey: "",
+            apiKeyId: -1,
+            endpointUrl: storymakerEndpoint.endpointUrl!,
+            timeout: storymakerEndpoint.config!.warmTimeoutMs,
+          });
+
+          if (smResult.storageUrl) {
+            generatedUrl = smResult.storageUrl;
+            serverLog.info("[D1.5] StoryMaker genga generation successful", {
+              layoutId: layout.layoutId,
+              inferenceTimeMs: smResult.metadata?.inferenceTimeMs,
+            });
+          }
+        } catch (err: any) {
+          serverLog.warn("[D1.5] StoryMaker genga failed, falling back to standard", {
+            layoutId: layout.layoutId,
+            error: err.message,
+          });
+          // Fall through to standard generation
+        }
+      } else if (hasDoRA) {
+        serverLog.info("[D1.5] Skipping StoryMaker — character has trained DoRA/LoRA", {
+          layoutId: layout.layoutId,
+          characterIds: placedCharacterIds,
+        });
+      }
+
+      // ── Standard generation path (fallback or DoRA-exists path) ─────────
+      if (!generatedUrl) {
+        const originalImages = conditioning.characterSheetUrls.length > 0
+          ? [{ url: conditioning.characterSheetUrls[0]!, mimeType: "image/png" as const }]
+          : undefined;
+
+        const result = await generateImage({
+          prompt,
+          ...(originalImages ? { originalImages } : {}),
+        });
+
+        if (!result.url) throw new Error("No image URL returned");
+        generatedUrl = result.url;
+      }
+
+      if (!generatedUrl) throw new Error("No image URL returned");
 
       // Upload to S3
-      const response = await fetch(result.url);
+      const response = await fetch(generatedUrl);
       const buffer = Buffer.from(await response.arrayBuffer());
       const key = `projects/${input.projectId}/genga/${input.episodeId}/s${layout.sceneNumber}-p${layout.panelNumber}-rough-${Date.now()}.png`;
       const { url: s3Url } = await storagePut(key, buffer, "image/png");

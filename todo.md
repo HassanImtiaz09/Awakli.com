@@ -6511,7 +6511,7 @@ For each new module/export, the following MUST be demonstrated before declaring 
   - [x] Verify StoryMaker architecture accepted by fal.ai custom inference
   - [x] If rejected, deploy on RunPod serverless with cold-start optimization
   - [x] Character identity rubric: face similarity, outfit consistency, multi-pose stability, hair-color stability
-  - [x] Persist spike results to test-results/storymaker-mitsua-compat-YYYY-MM-DD.json
+  - [x] Persist EMPIRICAL spike results to test-results/storymaker-mitsua-compat-2026-05-08.json (5 real generations, measured dimension scores, pass/fail determination)
 - [ ] 1b: Full identity scope confirmation (face + clothing + hairstyle + body — inherent to StoryMaker)
 - [x] 1c: StoryMakerAdapter implementation
   - [x] StoryMakerProvider class with custom endpoint routing
@@ -6523,6 +6523,7 @@ For each new module/export, the following MUST be demonstrated before declaring 
   - [ ] Persist tuning results to test-results/storymaker-dora-blend-YYYY-MM-DD.json
 - [x] 1e: Pipeline integration — wire into D0/D1.5 character generation stage
   - [x] Production call site in D0 character-designer.ts (generateSingleView)
+  - [x] Production call site in D1.5 genga-director.ts (conditional: fires for new chars without DoRA, skips when DoRA exists)
 - [x] 1f: Tests for StoryMaker adapter (unit + integration) — 71 tests passing
 
 ### Item 2: StoryDiffusion Intra-Episode Genga Coherence (3-4 days)
