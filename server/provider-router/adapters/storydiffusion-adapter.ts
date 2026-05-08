@@ -55,6 +55,10 @@ export interface StoryDiffusionParams extends ImageParams {
   episodeId?: number;
   /** Scene numbers for this batch */
   sceneNumbers?: number[];
+  /** Attention-sharing strength (0.0–1.0). Controls how strongly character identity
+   *  is shared across panels in the batch. Default: 0.8. Lower values allow more
+   *  per-panel variation; higher values enforce stricter consistency. */
+  attentionStrength?: number;
 }
 
 /**
@@ -517,9 +521,9 @@ export class StoryDiffusionAdapter implements ProviderAdapter {
         height: params.height ?? 768,
         guidance_scale: params.guidanceScale ?? 7.5,
         seed: params.seed ?? Math.floor(Math.random() * 2147483647),
-        // Attention-sharing configuration
-        sa_mid_strength: 0.8,  // Self-attention sharing strength
-        sa_out_strength: 0.8,
+        // Attention-sharing configuration (tunable via attentionStrength param)
+        sa_mid_strength: params.attentionStrength ?? 0.8,
+        sa_out_strength: params.attentionStrength ?? 0.8,
         // PhotoMaker mode (optional)
         use_photomaker: params.usePhotomaker ?? false,
         reference_image: params.referenceImageUrl || undefined,

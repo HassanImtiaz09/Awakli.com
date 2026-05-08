@@ -168,6 +168,7 @@ describe("AdapterComposer — Blend Weight Resolution", () => {
       expect(defaults.character).toBeGreaterThanOrEqual(0);
       expect(defaults.genre).toBeGreaterThanOrEqual(0);
       expect(defaults.sakufuu).toBeGreaterThanOrEqual(0);
+      expect(defaults.master_style).toBeGreaterThanOrEqual(0);
     }
   });
 });
@@ -395,14 +396,17 @@ describe("AdapterComposer — DoRA Training Config", () => {
     expect(DEFAULT_DORA_TRAINING_CONFIG.initialization).toBe("pissa");
   });
 
-  it("role overrides have increasing rank: character < sakufuu < genre", () => {
+  it("role overrides have increasing rank: character < sakufuu/master_style < genre", () => {
     expect(ROLE_TRAINING_OVERRIDES.character.rank!).toBeLessThan(ROLE_TRAINING_OVERRIDES.sakufuu.rank!);
     expect(ROLE_TRAINING_OVERRIDES.sakufuu.rank!).toBeLessThan(ROLE_TRAINING_OVERRIDES.genre.rank!);
+    // master_style has same rank as sakufuu (both slot-3)
+    expect(ROLE_TRAINING_OVERRIDES.master_style.rank!).toBe(ROLE_TRAINING_OVERRIDES.sakufuu.rank!);
   });
 
-  it("role overrides have increasing steps: character < sakufuu < genre", () => {
+  it("role overrides have increasing steps: character < sakufuu < master_style < genre", () => {
     expect(ROLE_TRAINING_OVERRIDES.character.steps!).toBeLessThan(ROLE_TRAINING_OVERRIDES.sakufuu.steps!);
-    expect(ROLE_TRAINING_OVERRIDES.sakufuu.steps!).toBeLessThan(ROLE_TRAINING_OVERRIDES.genre.steps!);
+    expect(ROLE_TRAINING_OVERRIDES.sakufuu.steps!).toBeLessThan(ROLE_TRAINING_OVERRIDES.master_style.steps!);
+    expect(ROLE_TRAINING_OVERRIDES.master_style.steps!).toBeLessThan(ROLE_TRAINING_OVERRIDES.genre.steps!);
   });
 
   it("migrateLoraToDoraConfig converts legacy config correctly", () => {

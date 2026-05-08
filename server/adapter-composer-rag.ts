@@ -209,7 +209,7 @@ export async function buildIPAdapterConditioning(
  * Usage in D0/D1.5/D7 stage handlers:
  * ```ts
  * const compositionInput = await buildCompositionWithRAG({
- *   adapters: [genreAdapter, characterAdapter, sakufuuAdapter],
+ *   adapters: [genreAdapter, characterAdapter, sakufuuAdapter], // or masterStyleAdapter
  *   genre: "shonen",
  *   sceneDescription: "intense battle scene with energy blasts",
  *   stage: "d1_5_genga",
@@ -221,7 +221,7 @@ export async function buildIPAdapterConditioning(
  * ```
  */
 export interface BuildCompositionWithRAGInput {
-  /** Adapters to compose (genre + character + sakufuu) */
+  /** Adapters to compose (genre + character + sakufuu/master_style) */
   adapters: DoRAAdapter[];
   /** Genre for RAG retrieval */
   genre: GenreTag;

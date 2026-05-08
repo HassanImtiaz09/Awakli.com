@@ -29,8 +29,11 @@ export type AdapterInitialization = "pissa" | "random";
 
 /**
  * Role of an adapter in the three-adapter composition stack.
+ * `sakufuu` = legacy default aesthetic adapter (backward compat).
+ * `master_style` = creator-trained replacement for sakufuu (Wave 7 three-slot toggle).
+ * At runtime, only ONE of sakufuu/master_style occupies slot 3 per project.
  */
-export type AdapterRole = "genre" | "character" | "sakufuu";
+export type AdapterRole = "genre" | "character" | "sakufuu" | "master_style";
 
 /**
  * A single DoRA/LoRA adapter to be composed at inference time.
@@ -228,26 +231,31 @@ export const STAGE_BLEND_WEIGHTS: Record<CompositionStage, Record<AdapterRole, n
     character: 0.8,
     genre: 0.3,
     sakufuu: 0.3,
+    master_style: 0.3,
   },
   d1_5_genga: {
     character: 1.0,
     genre: 1.0,
     sakufuu: 1.0,
+    master_style: 1.0,
   },
   d7_fx_pass: {
     character: 0.2,
     genre: 0.8,
     sakufuu: 0.7,
+    master_style: 0.7,
   },
   d10_reference_gen: {
     character: 0.0,
     genre: 0.9,
     sakufuu: 0.5,
+    master_style: 0.5,
   },
   custom: {
     character: 0.5,
     genre: 0.5,
     sakufuu: 0.5,
+    master_style: 0.5,
   },
 };
 
@@ -398,6 +406,13 @@ export const ROLE_TRAINING_OVERRIDES: Record<AdapterRole, Partial<DoRATrainingCo
     rank: 48,
     resolution: 768,
     // Sakufuu adapters train every 3-5 episodes, need higher capacity
+  },
+  master_style: {
+    steps: 2500,
+    rank: 48,
+    resolution: 768,
+    // Master-style adapters: creator-trained replacement for sakufuu
+    // Higher step count for style convergence from creator's curated samples
   },
   genre: {
     steps: 3000,

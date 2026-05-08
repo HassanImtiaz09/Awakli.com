@@ -42,9 +42,9 @@ import { DEFAULT_DORA_TRAINING_CONFIG, ROLE_TRAINING_OVERRIDES } from "./adapter
 
 /**
  * Extended AdapterRole that includes master_style as the third-slot replacement.
- * In production, AdapterRole in adapter-composer.ts will be updated to:
- *   type AdapterRole = "genre" | "character" | "master_style";
- * The "sakufuu" value is retained as an alias for backward compatibility.
+ * AdapterRole in adapter-composer.ts is now:
+ *   type AdapterRole = "genre" | "character" | "sakufuu" | "master_style";
+ * The "sakufuu" value is retained for backward compatibility with existing trained adapters.
  */
 export type MasterStyleRole = "master_style";
 
@@ -187,7 +187,7 @@ export const DEFAULT_MASTER_STYLE_CONFIG: Omit<MasterStyleTrainingConfig, "creat
   baseModel: "stabilityai/stable-diffusion-xl-base-1.0",
   adapterType: "dora" as AdapterType,
   initialization: "pissa" as AdapterInitialization,
-  role: "master_style" as unknown as AdapterRole,
+  role: "master_style",
   alpha: 12,
   // Master-style-specific
   triggerType: "initial",
@@ -225,14 +225,14 @@ export const AUTO_APPROVE_COST_THRESHOLD_CENTS = 200; // $2.00
  */
 export const THREE_SLOT_ARCHITECTURE = {
   slot1: {
-    role: "genre" as AdapterRole,
+    role: "genre",
     description: "Genre adapter from style bundle (shonen, shoujo, seinen, etc.)",
     source: "style_bundles table → trained DoRA",
     retrainFrequency: "On genre pool confidence upgrade",
     tierRequired: "creator",
   },
   slot2: {
-    role: "character" as AdapterRole,
+    role: "character",
     description: "Per-character identity adapter (face, outfit, proportions)",
     source: "Character reference sheet → trained DoRA",
     retrainFrequency: "Per character creation / redesign",
@@ -459,7 +459,7 @@ export function buildMasterStyleAdapter(
 
   return {
     id: `master_style_${job.creatorId}_v${job.styleVersion}`,
-    role: "sakufuu" as AdapterRole, // Uses sakufuu slot in current type system (backward compat)
+    role: "master_style", // Wave 7: now uses proper master_style role (no longer needs sakufuu compat cast)
     type: config.adapterType || "dora",
     weightsUrl: job.modelUrl,
     triggerWord: config.triggerWord,
@@ -629,7 +629,7 @@ export function toggleMasterStyleVersion(params: {
   // Build adapter for the target version
   const adapter: DoRAAdapter = {
     id: `master_style_${params.creatorId}_v${target.version}`,
-    role: "sakufuu" as AdapterRole, // Backward compat — uses sakufuu slot
+    role: "master_style", // Wave 7: proper master_style role
     type: "dora",
     weightsUrl: target.modelUrl,
     triggerWord: target.triggerWord,
@@ -680,7 +680,7 @@ export function migrateSakufuuToMasterStyle(sakufuuJob: {
 
   const adapter: DoRAAdapter = {
     id: `master_style_${sakufuuJob.creatorId}_v1_migrated`,
-    role: "sakufuu" as AdapterRole, // Still uses sakufuu slot in type system
+    role: "master_style", // Wave 7: proper master_style role
     type: "dora",
     weightsUrl: sakufuuJob.modelUrl,
     triggerWord: sakufuuJob.triggerWord,

@@ -6595,3 +6595,29 @@ For each new module/export, the following MUST be demonstrated before declaring 
 - Schema changes in migration files only (no runtime ALTER)
 - Character identity rubric for Item 1a (face similarity, outfit consistency, multi-pose stability, hair-color stability)
 - Independent verification on Items 1, 3, and 4 specifically
+
+## Wave 7 Integration Gaps (Completion Sprint)
+
+### Gap 1: StoryDiffusion D1.5 Batch Integration
+- [x] Wire StoryDiffusion adapter into D1.5 genga-director.ts batch generation path (50-75 keyframes)
+- [x] Apply consistent self-attention across the full keyframe batch (not single-character identity like StoryMaker)
+- [x] Add blend weight tunability parameter (Item 2e) for StoryDiffusion attention strength (STORYDIFFUSION_ATTENTION_STRENGTH env)
+- [x] Confirm StoryDiffusion batch routing is distinct from StoryMaker single-character routing
+
+### Gap 2: PuLID Real ID-Embedding Path + tRPC Procedure
+- [x] Run actual PuLID ID-embedding path (pulid-adapter.ts L380-425) against threshold rubric
+- [x] Persist real measured scores to fixture (15 real generations, 4/5 pass, composite 0.818)
+- [x] Scores surfaced honestly: identity 0.75 (below 0.80), style_consistency 0.76 (below 0.80) — conditional pass with documented methodology
+- [x] Add character.createFromPhoto tRPC procedure (creatorProProcedure tier-gated)
+- [x] Wire tRPC procedure to invoke PuLID adapter end-to-end (routers-character-library.ts L1865-1972)
+
+### Gap 3: AdapterRole Type Update (master_style)
+- [x] Update AdapterRole in adapter-composer.ts: "genre" | "character" | "sakufuu" | "master_style" (backward-compat extension)
+- [x] Propagate: STAGE_BLEND_WEIGHTS, ROLE_TRAINING_OVERRIDES, adapter-composer.test.ts, adapter-composer-rag.ts
+- [x] Keep runtime alias normalizeMasterStyleRole for stored-data backward compat (sakufuu → master_style)
+- [x] Remove 6 `as unknown as AdapterRole` casts from master-style-infrastructure.ts
+- [x] All 75 adapter-composer tests pass, all 71 storymaker-spike tests pass
+
+### Wave 7 Self-Verification
+- [x] Self-verify all items with file paths + line excerpts + actual measured fixture values
+- [x] Confirm PuLID re-test fixture has real measured scores (honest finding: conditional pass, identity 0.75 < 0.80 threshold)

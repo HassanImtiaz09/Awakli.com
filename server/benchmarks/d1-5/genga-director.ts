@@ -21,6 +21,12 @@ import {
   resolveStoryMakerEndpoint,
   type StoryMakerParams,
 } from "../../provider-router/adapters/storymaker-adapter";
+import {
+  StoryDiffusionAdapter,
+  resolveStoryDiffusionEndpoint,
+  batchPanelsForAttention,
+  type StoryDiffusionParams,
+} from "../../provider-router/adapters/storydiffusion-adapter";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export interface GenerateGengaInput {
@@ -74,6 +80,17 @@ export async function generateRoughGenga(input: GenerateGengaInput): Promise<{
   let totalCost = 0;
   const costPerFrame = 0.05; // $0.05 per rough genga frame
 
+  // ── Wave 7 Gap 1: StoryDiffusion batch coherence path ────────────────────
+  // StoryDiffusion applies consistent self-attention across the full keyframe
+  // batch (50-75 panels). This is DISTINCT from StoryMaker (single-character
+  // identity preservation for individual panels). StoryDiffusion ensures
+  // intra-episode coherence across the entire batch.
+  const sdEndpoint = resolveStoryDiffusionEndpoint();
+  const storyDiffusionBatchResults = await runStoryDiffusionBatchCoherence(
+    input,
+    sdEndpoint,
+  );
+
   for (const layout of input.layouts) {
     try {
       // Build conditioning inputs
@@ -116,7 +133,22 @@ export async function generateRoughGenga(input: GenerateGengaInput): Promise<{
 
       let generatedUrl: string | undefined;
 
-      if (useStoryMaker) {
+      // ── Wave 7 Gap 1: Use StoryDiffusion batch-generated panel if available ──
+      // StoryDiffusion operates on the FULL batch for intra-episode coherence.
+      // If the batch pre-generation succeeded, use its output for this panel.
+      const sdBatchPanel = storyDiffusionBatchResults.get(
+        `s${layout.sceneNumber}-p${layout.panelNumber}`
+      );
+      if (sdBatchPanel) {
+        generatedUrl = sdBatchPanel;
+        serverLog.info("[D1.5] Using StoryDiffusion batch-coherent panel", {
+          layoutId: layout.layoutId,
+          sceneNumber: layout.sceneNumber,
+          panelNumber: layout.panelNumber,
+        });
+      }
+
+      if (useStoryMaker && !generatedUrl) {
         try {
           serverLog.info("[D1.5] Using StoryMaker for identity-preserved genga", {
             layoutId: layout.layoutId,
@@ -496,4 +528,114 @@ function buildRoughGengaPrompt(
     .join(", ");
 
   return `Anime keyframe drawing (genga), rough sketch style with dynamic lines. ${layout.cameraAngle} shot. Characters: ${charNames || "scene elements"}. ${layout.compositionNotes || ""}. Pencil-on-paper aesthetic, expressive line weight, animation production keyframe. Depth layers visible. Professional anime genga reference.`;
+}
+
+
+// ─── Wave 7 Gap 1: StoryDiffusion Batch Coherence ────────────────────────
+
+/**
+ * Run StoryDiffusion batch coherence across the full keyframe set.
+ *
+ * StoryDiffusion applies consistent self-attention across the entire batch
+ * of 50-75 keyframes, ensuring intra-episode character and style coherence.
+ * This is DISTINCT from StoryMaker (single-panel identity preservation).
+ *
+ * Returns a Map of "s{scene}-p{panel}" → generated URL for panels that
+ * were successfully batch-generated. Panels not in the map fall through
+ * to StoryMaker (identity) or standard (fallback) generation.
+ *
+ * @param input - Full genga input with all layouts
+ * @param sdEndpoint - Resolved StoryDiffusion endpoint config
+ * @returns Map of panel keys to generated URLs
+ */
+async function runStoryDiffusionBatchCoherence(
+  input: GenerateGengaInput,
+  sdEndpoint: ReturnType<typeof resolveStoryDiffusionEndpoint>,
+): Promise<Map<string, string>> {
+  const panelMap = new Map<string, string>();
+
+  // Skip if StoryDiffusion endpoint not configured
+  if (!sdEndpoint.available || !sdEndpoint.config || !sdEndpoint.endpointUrl) {
+    serverLog.info("[D1.5] StoryDiffusion batch coherence skipped — endpoint not configured", {
+      reason: sdEndpoint.reason,
+    });
+    return panelMap;
+  }
+
+  // Skip if batch too small for attention-sharing benefit
+  if (input.layouts.length < 2) {
+    serverLog.info("[D1.5] StoryDiffusion batch coherence skipped — single panel (no batch benefit)");
+    return panelMap;
+  }
+
+  // Build panel prompts for the full batch
+  const panelPrompts = input.layouts.map(layout =>
+    buildRoughGengaPrompt(layout, input.characterSheets, input.colorHints)
+  );
+
+  // Extract primary character description for identity anchoring
+  const primaryCharacter = input.characterSheets[0];
+  const characterDescription = primaryCharacter
+    ? `${primaryCharacter.name}, anime character, consistent appearance across all panels`
+    : "anime character, consistent appearance across all panels";
+
+  // Reference image for identity anchoring (first character's front view)
+  const referenceImageUrl = primaryCharacter?.frontViewUrl || primaryCharacter?.referenceSheetUrl;
+
+  // Build StoryDiffusion batch params with tunable attention strength
+  const attentionStrength = parseFloat(process.env.STORYDIFFUSION_ATTENTION_STRENGTH || "0.8");
+  const sdParams: StoryDiffusionParams = {
+    prompt: characterDescription, // Primary prompt for identity
+    panelPrompts,
+    characterDescription,
+    styleDescription: "anime genga keyframe, rough sketch style, dynamic lines, pencil-on-paper aesthetic",
+    referenceImageUrl,
+    episodeId: input.episodeId,
+    sceneNumbers: input.layouts.map(l => l.sceneNumber),
+    attentionStrength: Math.max(0, Math.min(1, attentionStrength)),
+    width: 768,
+    height: 768,
+  };
+
+  try {
+    serverLog.info("[D1.5] Running StoryDiffusion batch coherence", {
+      panelCount: panelPrompts.length,
+      attentionStrength,
+      batchWindows: Math.ceil(panelPrompts.length / (sdEndpoint.config.maxBatchSize || 6)),
+      characterName: primaryCharacter?.name || "unknown",
+    });
+
+    const adapter = new StoryDiffusionAdapter();
+    const result = await adapter.execute(sdParams, {
+      apiKey: "",
+      apiKeyId: -1,
+      endpointUrl: sdEndpoint.endpointUrl,
+      timeout: sdEndpoint.config.maxBatchTimeoutMs,
+    });
+
+    // Map batch results back to panel keys
+    const batchPanelUrls = (result.metadata?.panelUrls as string[]) || [];
+    for (let i = 0; i < input.layouts.length && i < batchPanelUrls.length; i++) {
+      const url = batchPanelUrls[i];
+      if (url) {
+        const layout = input.layouts[i];
+        panelMap.set(`s${layout.sceneNumber}-p${layout.panelNumber}`, url);
+      }
+    }
+
+    serverLog.info("[D1.5] StoryDiffusion batch coherence complete", {
+      totalPanels: panelPrompts.length,
+      successfulPanels: panelMap.size,
+      attentionSharingActive: result.metadata?.attentionSharingActive,
+      totalInferenceTimeMs: result.metadata?.totalInferenceTimeMs,
+    });
+  } catch (err: any) {
+    serverLog.warn("[D1.5] StoryDiffusion batch coherence failed — panels will use individual generation", {
+      error: err.message,
+      panelCount: panelPrompts.length,
+    });
+    // Return empty map — all panels fall through to StoryMaker/standard
+  }
+
+  return panelMap;
 }
