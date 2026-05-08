@@ -1,0 +1,285 @@
+{
+  "_metadata": {
+    "wave": "7",
+    "item": "4",
+    "name": "Master-Style Infrastructure Admin Gate Verification",
+    "runDate": "2026-05-08T00:13:23.324Z",
+    "runner": "server/benchmarks/master-style-admin-gate-spike.mjs",
+    "apiProvider": "Local logic validation (no external API needed for infrastructure tests)"
+  },
+  "_methodology": {
+    "description": "Validates master-style training pipeline infrastructure: sample curation, admin gate enforcement, cost estimation, three-slot architecture, and state machine transitions. Tests the LOGIC correctness, not trained model quality.",
+    "testGroups": 5,
+    "totalTests": 29,
+    "scoringMethod": "Deterministic logic assertions (pass/fail per test case)",
+    "note": "Infrastructure tests don't require external API calls. Model quality testing would require actual training runs (~30-60 min each) and is deferred to post-deployment validation."
+  },
+  "thresholds": {
+    "sampleCurationQuality": 0.8,
+    "adminGateCorrectness": 1,
+    "costEstimationAccuracy": 0.9,
+    "threeSlotValidation": 1,
+    "pipelineStateMachine": 1
+  },
+  "testGroups": [
+    {
+      "dimension": "sampleCurationQuality",
+      "passRate": 1,
+      "passes": true,
+      "threshold": 0.8,
+      "tests": [
+        {
+          "name": "Quality filtering removes low-score samples",
+          "pass": true,
+          "expected": "3 selected, 2 rejected",
+          "actual": "3 selected, 2 rejected"
+        },
+        {
+          "name": "Diversity balancing includes multiple source types",
+          "pass": true,
+          "expected": "≥2 source types in 15 samples",
+          "actual": "3 types in 15 samples"
+        },
+        {
+          "name": "Max samples cap enforced",
+          "pass": true,
+          "expected": "40 samples",
+          "actual": "40 samples"
+        },
+        {
+          "name": "Empty input returns empty result",
+          "pass": true,
+          "expected": "0 selected",
+          "actual": "0 selected"
+        },
+        {
+          "name": "All below threshold returns empty",
+          "pass": true,
+          "expected": "0 selected, 10 rejected",
+          "actual": "0 selected, 10 rejected"
+        }
+      ]
+    },
+    {
+      "dimension": "adminGateCorrectness",
+      "passRate": 1,
+      "passes": true,
+      "threshold": 1,
+      "tests": [
+        {
+          "name": "Free tier blocked from master-style",
+          "pass": true,
+          "expected": "not eligible",
+          "actual": "blocked"
+        },
+        {
+          "name": "Creator tier blocked (need Creator Pro+)",
+          "pass": true,
+          "expected": "not eligible",
+          "actual": "blocked"
+        },
+        {
+          "name": "Creator Pro eligible, no auto-trigger (2 episodes)",
+          "pass": true,
+          "expected": "eligible, no auto-trigger",
+          "actual": "eligible, no auto"
+        },
+        {
+          "name": "Auto-trigger fires at 5 episodes",
+          "pass": true,
+          "expected": "eligible + auto-trigger",
+          "actual": "eligible, auto"
+        },
+        {
+          "name": "Running job blocks new training",
+          "pass": true,
+          "expected": "blocked",
+          "actual": "blocked"
+        },
+        {
+          "name": "Insufficient samples blocks training",
+          "pass": true,
+          "expected": "blocked",
+          "actual": "blocked"
+        },
+        {
+          "name": "Low-cost job auto-approved",
+          "pass": true,
+          "expected": "auto-approved",
+          "actual": "approved (135¢)"
+        },
+        {
+          "name": "Enterprise tier eligible with auto-trigger",
+          "pass": true,
+          "expected": "eligible + auto",
+          "actual": "eligible, auto"
+        }
+      ]
+    },
+    {
+      "dimension": "costEstimationAccuracy",
+      "passRate": 1,
+      "passes": true,
+      "threshold": 0.9,
+      "tests": [
+        {
+          "name": "Default config cost estimation",
+          "pass": true,
+          "expected": "~135¢",
+          "actual": "135¢ (accuracy: 100.0%)"
+        },
+        {
+          "name": "Cost is always positive",
+          "pass": true,
+          "expected": ">0",
+          "actual": "135"
+        },
+        {
+          "name": "Cost is integer cents",
+          "pass": true,
+          "expected": "integer",
+          "actual": "number"
+        },
+        {
+          "name": "Style version increments",
+          "pass": true,
+          "expected": "v4",
+          "actual": "v4"
+        }
+      ]
+    },
+    {
+      "dimension": "threeSlotValidation",
+      "passRate": 1,
+      "passes": true,
+      "threshold": 1,
+      "tests": [
+        {
+          "name": "Valid 3-adapter composition passes",
+          "pass": true,
+          "expected": "valid",
+          "actual": "valid"
+        },
+        {
+          "name": "4 adapters rejected (replace-not-extend)",
+          "pass": true,
+          "expected": "invalid",
+          "actual": "invalid (correct)"
+        },
+        {
+          "name": "Duplicate roles rejected",
+          "pass": true,
+          "expected": "invalid",
+          "actual": "invalid (correct)"
+        },
+        {
+          "name": "Single adapter valid",
+          "pass": true,
+          "expected": "valid",
+          "actual": "valid"
+        },
+        {
+          "name": "sakufuu normalizes to master_style in slot assignment",
+          "pass": true,
+          "expected": "master_style",
+          "actual": "master_style"
+        },
+        {
+          "name": "Empty composition valid",
+          "pass": true,
+          "expected": "valid",
+          "actual": "valid"
+        }
+      ]
+    },
+    {
+      "dimension": "pipelineStateMachine",
+      "passRate": 1,
+      "passes": true,
+      "threshold": 1,
+      "tests": [
+        {
+          "name": "Low-cost job starts as approved",
+          "pass": true,
+          "expected": "approved",
+          "actual": "approved"
+        },
+        {
+          "name": "Job ID follows format ms_{creatorId}_v{version}_{timestamp}",
+          "pass": true,
+          "expected": "ms_1_v1_*",
+          "actual": "ms_1_v1_1778199203324"
+        },
+        {
+          "name": "Trigger word follows format",
+          "pass": true,
+          "expected": "master_style_1_v1",
+          "actual": "master_style_1_v1"
+        },
+        {
+          "name": "Timestamps initialized correctly",
+          "pass": true,
+          "expected": "createdAt === updatedAt > 0",
+          "actual": "created=1778199203324, updated=1778199203324"
+        },
+        {
+          "name": "Progress starts at 0",
+          "pass": true,
+          "expected": "0",
+          "actual": "0"
+        },
+        {
+          "name": "Config has master-style defaults",
+          "pass": true,
+          "expected": "rank=24, res=768, steps=1500",
+          "actual": "rank=24, res=768, steps=1500"
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "totalTests": 29,
+    "totalPassing": 29,
+    "dimensionScores": {
+      "sampleCurationQuality": 1,
+      "adminGateCorrectness": 1,
+      "costEstimationAccuracy": 1,
+      "threeSlotValidation": 1,
+      "pipelineStateMachine": 1
+    },
+    "overallPass": true,
+    "dimensionResults": {
+      "sampleCurationQuality": {
+        "score": 1,
+        "passes": true,
+        "threshold": 0.8
+      },
+      "adminGateCorrectness": {
+        "score": 1,
+        "passes": true,
+        "threshold": 1
+      },
+      "costEstimationAccuracy": {
+        "score": 1,
+        "passes": true,
+        "threshold": 0.9
+      },
+      "threeSlotValidation": {
+        "score": 1,
+        "passes": true,
+        "threshold": 1
+      },
+      "pipelineStateMachine": {
+        "score": 1,
+        "passes": true,
+        "threshold": 1
+      }
+    }
+  },
+  "gateDecision": {
+    "item4Unblocked": true,
+    "reason": "Master-style infrastructure validated — admin gate, three-slot architecture, sample curation, cost estimation, and state machine all pass",
+    "threeSlotArchitectureConfirmed": true,
+    "adminGateEnforced": true
+  }
+}

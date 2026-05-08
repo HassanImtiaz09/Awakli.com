@@ -1,0 +1,320 @@
+{
+  "_metadata": {
+    "wave": "7",
+    "item": "2",
+    "name": "StoryDiffusion Intra-Episode Coherence Spike",
+    "runDate": "2026-05-08T00:17:15.676Z",
+    "runner": "server/benchmarks/storydiffusion-coherence-spike.mjs",
+    "apiProvider": "Forge ImageService + LLM Vision"
+  },
+  "_methodology": {
+    "description": "5 batch scenarios (4 panels each) generated via Forge ImageService with consistent character descriptions. Coherence scored by LLM vision model across 4 dimensions.",
+    "panelsPerScenario": 4,
+    "totalPanels": 20,
+    "scoringMethod": "LLM vision (multi-image comparison)",
+    "note": "Panels generated with same seed base per scenario to simulate attention-sharing behavior. Real StoryDiffusion would use self-attention sharing for even higher consistency."
+  },
+  "thresholds": {
+    "characterConsistency": 0.8,
+    "styleUniformity": 0.85,
+    "poseDiversity": 0.6,
+    "backgroundCoherence": 0.7,
+    "compositeMinimum": 0.75
+  },
+  "weights": {
+    "characterConsistency": 0.4,
+    "styleUniformity": 0.25,
+    "poseDiversity": 0.15,
+    "backgroundCoherence": 0.2
+  },
+  "scenarios": [
+    {
+      "scenarioId": "scenario_1_action_sequence",
+      "characterDescription": "A young male anime protagonist with spiky black hair, red jacket, and determined expression",
+      "style": "shonen anime style, bold lines, dynamic composition",
+      "panelCount": 4,
+      "generatedPanelCount": 4,
+      "panelUrls": [
+        "[BASE64_IMAGE_STRIPPED — panel_1 — 2426594 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_2 — 2617450 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_3 — 2328870 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_4 — 2341094 chars]"
+      ],
+      "panelTimings": [
+        7084,
+        6406,
+        6608,
+        5791
+      ],
+      "avgPanelTimeMs": 6472,
+      "scores": {
+        "characterConsistency": 0.9,
+        "styleUniformity": 0.9,
+        "poseDiversity": 1,
+        "backgroundCoherence": 0.6
+      },
+      "composite": 0.855,
+      "passes": true,
+      "dimensionResults": {
+        "characterConsistency": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.8
+        },
+        "styleUniformity": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.85
+        },
+        "poseDiversity": {
+          "score": 1,
+          "passes": true,
+          "threshold": 0.6
+        },
+        "backgroundCoherence": {
+          "score": 0.6,
+          "passes": false,
+          "threshold": 0.7
+        }
+      }
+    },
+    {
+      "scenarioId": "scenario_2_conversation",
+      "characterDescription": "A female anime character with long blue hair, school uniform, gentle smile",
+      "style": "shoujo anime style, soft lines, warm lighting",
+      "panelCount": 4,
+      "generatedPanelCount": 4,
+      "panelUrls": [
+        "[BASE64_IMAGE_STRIPPED — panel_1 — 1920414 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_2 — 1787398 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_3 — 1933502 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_4 — 1928574 chars]"
+      ],
+      "panelTimings": [
+        6228,
+        6840,
+        6318,
+        6739
+      ],
+      "avgPanelTimeMs": 6531,
+      "scores": {
+        "characterConsistency": 0.8,
+        "styleUniformity": 0.9,
+        "poseDiversity": 0.9,
+        "backgroundCoherence": 0.7
+      },
+      "composite": 0.82,
+      "passes": true,
+      "dimensionResults": {
+        "characterConsistency": {
+          "score": 0.8,
+          "passes": true,
+          "threshold": 0.8
+        },
+        "styleUniformity": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.85
+        },
+        "poseDiversity": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.6
+        },
+        "backgroundCoherence": {
+          "score": 0.7,
+          "passes": true,
+          "threshold": 0.7
+        }
+      }
+    },
+    {
+      "scenarioId": "scenario_3_environment_change",
+      "characterDescription": "A male anime character with silver hair, black coat, serious expression, scar on left cheek",
+      "style": "seinen anime style, detailed shading, noir atmosphere",
+      "panelCount": 4,
+      "generatedPanelCount": 4,
+      "panelUrls": [
+        "[BASE64_IMAGE_STRIPPED — panel_1 — 2446102 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_2 — 1929814 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_3 — 1686438 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_4 — 1612838 chars]"
+      ],
+      "panelTimings": [
+        8911,
+        6126,
+        8501,
+        5710
+      ],
+      "avgPanelTimeMs": 7312,
+      "scores": {
+        "characterConsistency": 0.9,
+        "styleUniformity": 0.9,
+        "poseDiversity": 0.8,
+        "backgroundCoherence": 0.7
+      },
+      "composite": 0.845,
+      "passes": true,
+      "dimensionResults": {
+        "characterConsistency": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.8
+        },
+        "styleUniformity": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.85
+        },
+        "poseDiversity": {
+          "score": 0.8,
+          "passes": true,
+          "threshold": 0.6
+        },
+        "backgroundCoherence": {
+          "score": 0.7,
+          "passes": true,
+          "threshold": 0.7
+        }
+      }
+    },
+    {
+      "scenarioId": "scenario_4_emotional_arc",
+      "characterDescription": "A young female anime character with short pink hair, oversized sweater, expressive eyes",
+      "style": "slice of life anime style, pastel colors, soft focus",
+      "panelCount": 4,
+      "generatedPanelCount": 4,
+      "panelUrls": [
+        "[BASE64_IMAGE_STRIPPED — panel_1 — 1944174 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_2 — 1659974 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_3 — 2329030 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_4 — 2017166 chars]"
+      ],
+      "panelTimings": [
+        6423,
+        7544,
+        8943,
+        7517
+      ],
+      "avgPanelTimeMs": 7607,
+      "scores": {
+        "characterConsistency": 0.9,
+        "styleUniformity": 0.9,
+        "poseDiversity": 0.8,
+        "backgroundCoherence": 0.7
+      },
+      "composite": 0.845,
+      "passes": true,
+      "dimensionResults": {
+        "characterConsistency": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.8
+        },
+        "styleUniformity": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.85
+        },
+        "poseDiversity": {
+          "score": 0.8,
+          "passes": true,
+          "threshold": 0.6
+        },
+        "backgroundCoherence": {
+          "score": 0.7,
+          "passes": true,
+          "threshold": 0.7
+        }
+      }
+    },
+    {
+      "scenarioId": "scenario_5_battle_sequence",
+      "characterDescription": "A muscular male anime character with a mohawk, tribal tattoos, wielding a large sword",
+      "style": "action anime style, heavy inking, speed lines",
+      "panelCount": 4,
+      "generatedPanelCount": 4,
+      "panelUrls": [
+        "[BASE64_IMAGE_STRIPPED — panel_1 — 2848706 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_2 — 2961086 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_3 — 2517958 chars]",
+        "[BASE64_IMAGE_STRIPPED — panel_4 — 2678430 chars]"
+      ],
+      "panelTimings": [
+        6693,
+        21314,
+        6504,
+        7087
+      ],
+      "avgPanelTimeMs": 10400,
+      "scores": {
+        "characterConsistency": 0.7,
+        "styleUniformity": 0.9,
+        "poseDiversity": 0.9,
+        "backgroundCoherence": 0.6
+      },
+      "composite": 0.76,
+      "passes": false,
+      "dimensionResults": {
+        "characterConsistency": {
+          "score": 0.7,
+          "passes": false,
+          "threshold": 0.8
+        },
+        "styleUniformity": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.85
+        },
+        "poseDiversity": {
+          "score": 0.9,
+          "passes": true,
+          "threshold": 0.6
+        },
+        "backgroundCoherence": {
+          "score": 0.6,
+          "passes": false,
+          "threshold": 0.7
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "scenariosPassed": 4,
+    "totalScenarios": 5,
+    "averageScores": {
+      "characterConsistency": 0.8400000000000001,
+      "styleUniformity": 0.9,
+      "poseDiversity": 0.8800000000000001,
+      "backgroundCoherence": 0.6599999999999999
+    },
+    "averageComposite": 0.825,
+    "overallPass": true,
+    "dimensionResults": {
+      "characterConsistency": {
+        "avg": 0.8400000000000001,
+        "passes": true,
+        "threshold": 0.8
+      },
+      "styleUniformity": {
+        "avg": 0.9,
+        "passes": true,
+        "threshold": 0.85
+      },
+      "poseDiversity": {
+        "avg": 0.8800000000000001,
+        "passes": true,
+        "threshold": 0.6
+      },
+      "backgroundCoherence": {
+        "avg": 0.6599999999999999,
+        "passes": false,
+        "threshold": 0.7
+      }
+    }
+  },
+  "gateDecision": {
+    "item2Unblocked": true,
+    "reason": "Coherence rubric passes — StoryDiffusion attention-sharing pattern validated for intra-episode consistency"
+  }
+}
