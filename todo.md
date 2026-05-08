@@ -6633,3 +6633,28 @@ For each new module/export, the following MUST be demonstrated before declaring 
     - Model quality issue, not code issue — needs higher id_weight or alternative PuLID implementation
     - API contract discovery: fal-ai/flux-pulid uses reference_image_url (singular string), not reference_images (array)
     - Also discovered: fal-ai/pulid (SDXL-based) has cold-start issues (stuck IN_QUEUE indefinitely)
+
+## Wave 7 Close-Out Cleanup — PuLID Feature Removal (Strategic Drop)
+
+### (1) Remove user-facing feature
+- [x] Delete/rename characterLibrary.createFromPhoto tRPC procedure (make uncallable)
+- [x] Remove "Create from Photo" UI element from character creation flow (none existed in frontend)
+- [x] Drop any frontend Pro+ tier conditional rendering for photo upload feature (none existed)
+
+### (2) Archive PuLID adapter code
+- [x] Move pulid-adapter.ts to server/deprecated/ folder
+- [x] Add deprecation comment block: empirical fail Wave 7, identity 0.40 vs 0.75, model-quality issue
+- [x] Preserve API contract findings (reference_image_url singular, SDXL cold-start) in comments
+
+### (3) Remove empirical fixture files
+- [x] Delete test-results/pulid-anime-stylization-2026-05-*.json files
+- [x] Delete test-results/pulid-id-embedding-real-2026-05-08.json
+
+### (4) Update addendum references
+- [x] Update code comments referencing §7.2 Layer 4 to note PuLID is dropped (only comment-level refs remain, all correct)
+- [x] Remove pulid_v1 from provider-router registry (ENV_KEY_MAP, index.ts imports)
+
+### (5) Self-verification
+- [x] Verify zero accessibility paths from frontend to PuLID feature (grep confirms: 0 results in client/)
+- [x] Verify zero production router references to PuLID adapter (grep confirms: 0 imports/instantiations)
+- [x] Confirm archived code has deprecation rationale documented inline (server/deprecated/pulid-adapter.ts L1-22)

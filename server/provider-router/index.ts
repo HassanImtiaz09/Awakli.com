@@ -80,4 +80,4 @@ import "./adapters/fal-kling";
 import "./adapters/premium-video-models";
 import "./adapters/storymaker-adapter";
 import "./adapters/storydiffusion-adapter";
-import "./adapters/pulid-adapter";
+// DROPPED (Wave 7 close-out): PuLID adapter archived to server/deprecated/pulid-adapter.ts

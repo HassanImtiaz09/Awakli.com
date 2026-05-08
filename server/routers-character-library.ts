@@ -10,7 +10,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, adminProcedure, creatorProProcedure, router } from "./_core/trpc";
+import { protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { eq, and, desc, asc, sql, inArray } from "drizzle-orm";
 import {
@@ -1862,140 +1862,12 @@ export const characterLibraryRouter = router({
       };
     }),
 
-  // ── Wave 7 Gap 2: Create character from photo (PuLID ID-embedding path) ──
-  // Tier-gated: Creator Pro+ required.
-  // Takes a real photograph, runs PuLID adapter with actual ID-embedding extraction,
-  // generates anime-style character reference, creates character library entry + asset.
-  createFromPhoto: creatorProProcedure
-    .input(z.object({
-      name: z.string().min(1).max(255),
-      photoUrl: z.string().url().describe("URL to the uploaded source photograph"),
-      animeStyle: z.enum([
-        "shonen", "shoujo", "ghibli", "cyberpunk", "chibi", "realistic_anime", "vintage",
-      ]).default("shonen"),
-      idScale: z.number().min(0).max(1).default(0.8).describe("How strongly to preserve facial identity (0.0-1.0)"),
-      numVariations: z.number().min(1).max(4).default(2).describe("Number of anime variations to generate"),
-      useFluxBackend: z.boolean().default(true).describe("Use FLUX-based PuLID for higher quality"),
-      seriesId: z.number().optional(),
-      description: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-
-      // Import PuLID adapter
-      const { PuLIDAdapter } = await import("./provider-router/adapters/pulid-adapter");
-      const { storagePut } = await import("./storage");
-
-      // Run PuLID with real ID-embedding extraction
-      const adapter = new PuLIDAdapter();
-      const pulidParams = {
-        prompt: `anime character portrait, ${input.name}`,
-        photoUrl: input.photoUrl,
-        animeStyle: input.animeStyle,
-        idScale: input.idScale,
-        numVariations: input.numVariations,
-        useFluxBackend: input.useFluxBackend,
-        characterId: 0, // Will be set after insert
-        width: 768,
-        height: 768,
-      };
-
-      let generatedImageUrl: string;
-      let variationUrls: string[] = [];
-      try {
-        const result = await adapter.execute(pulidParams, {
-          apiKey: "",
-          apiKeyId: -1,
-          endpointUrl: "", // PuLID adapter resolves endpoint internally
-          timeout: 90_000,
-        });
-
-        generatedImageUrl = result.storageUrl;
-        variationUrls = (result.metadata?.variationUrls as string[]) || [generatedImageUrl];
-      } catch (err: any) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: `PuLID generation failed: ${err.message}`,
-        });
-      }
-
-      // Upload generated reference to S3
-      const response = await fetch(generatedImageUrl);
-      const buffer = Buffer.from(await response.arrayBuffer());
-      const fileKey = `character-library/${ctx.user.id}/${Date.now()}-pulid-ref.png`;
-      const { url: s3Url } = await storagePut(fileKey, buffer, "image/png");
-
-      // Upload variations to S3
-      const s3Variations: string[] = [];
-      for (let i = 0; i < variationUrls.length; i++) {
-        try {
-          const varResp = await fetch(variationUrls[i]);
-          const varBuf = Buffer.from(await varResp.arrayBuffer());
-          const varKey = `character-library/${ctx.user.id}/${Date.now()}-pulid-var-${i}.png`;
-          const { url: varS3Url } = await storagePut(varKey, varBuf, "image/png");
-          s3Variations.push(varS3Url);
-        } catch {
-          // Skip failed variation uploads
-        }
-      }
-
-      // Create character library entry
-      const values: InsertCharacterLibraryEntry = {
-        userId: ctx.user.id,
-        name: input.name,
-        seriesId: input.seriesId ?? null,
-        description: input.description ?? `Created from photo via PuLID (${input.animeStyle} style)`,
-        appearanceTags: { source: "photo", animeStyle: input.animeStyle, idScale: String(input.idScale) },
-        referenceSheetUrl: s3Url,
-        loraStatus: "untrained",
-      };
-
-      const [insertResult] = await db.insert(characterLibrary).values(values);
-      const characterId = (insertResult as any).insertId as number;
-
-      // Create primary reference asset
-      await db.insert(characterAssets).values({
-        characterId,
-        assetType: "reference_sheet",
-        storageUrl: s3Url,
-        version: 1,
-        metadata: {
-          source: "pulid",
-          photoUrl: input.photoUrl,
-          animeStyle: input.animeStyle,
-          idScale: input.idScale,
-          backend: input.useFluxBackend ? "flux" : "sdxl",
-        },
-        isActive: 1,
-      });
-
-      // Create variation assets
-      for (let i = 0; i < s3Variations.length; i++) {
-        await db.insert(characterAssets).values({
-          characterId,
-          assetType: "reference_sheet",
-          storageUrl: s3Variations[i],
-          version: 1,
-          metadata: {
-            source: "pulid_variation",
-            variationIndex: i,
-            animeStyle: input.animeStyle,
-          },
-          isActive: i === 0 ? 1 : 0, // Only first variation is active
-        });
-      }
-
-      return {
-        id: characterId,
-        name: input.name,
-        referenceSheetUrl: s3Url,
-        variationUrls: s3Variations,
-        variationCount: s3Variations.length,
-        source: "pulid",
-        animeStyle: input.animeStyle,
-      };
-    }),
+  // ── Wave 7 Item 3: PuLID Photo-to-Anime — PERMANENTLY DROPPED ────────────────
+  // Removed in Wave 7 close-out. Empirical finding: fal-ai/flux-pulid identity
+  // preservation 0.40 vs 0.75 threshold (1/7 scenarios pass). Model produces
+  // excellent anime art but is "style transfer with loose reference" not true
+  // identity-preserving generation. Strategic decision: drop feature entirely.
+  // See: server/deprecated/pulid-adapter.ts for archived code + rationale.
 });
 
 // ─── Simulated Completion Helper ──────────────────────────────────────────

@@ -1,4 +1,26 @@
 /**
+ * ███ DEPRECATED — PERMANENTLY DROPPED (Wave 7 Close-Out, 2026-05-08) ███
+ *
+ * REASON: Empirical fail in Wave 7 Item 3 validation.
+ *   - fal-ai/flux-pulid identity preservation: 0.40 (threshold: 0.75)
+ *   - Feature translation: 0.39 (threshold: 0.85)
+ *   - Pass rate: 1/7 scenarios
+ *   - Root cause: Model is "style transfer with loose reference" not true
+ *     identity-preserving generation. Produces excellent anime art (fidelity 0.90,
+ *     style consistency 0.95) but does NOT anchor to source photo's facial identity.
+ *   - This is a MODEL QUALITY issue, not an integration issue.
+ *     The code path is correct — all 14 test generations succeeded via real fal.ai endpoint.
+ *
+ * STRATEGIC DECISION: Drop Pro+ real-photo-to-anime feature entirely (not deferral).
+ * Other Pro+ features carry the value proposition without this one.
+ *
+ * API CONTRACT FINDINGS (useful for future provider investigations):
+ *   - fal-ai/flux-pulid uses: reference_image_url (singular string), id_weight, synchronous endpoint
+ *   - fal-ai/pulid (SDXL-based) uses: reference_images (array), id_scale, queue endpoint
+ *   - fal-ai/pulid (SDXL) has cold-start issues: stuck IN_QUEUE indefinitely (no active workers)
+ *   - If revisiting photo-to-anime: try PhotoMaker, Replicate's bytedance/flux-pulid, or InstantID variants
+ *
+ * ORIGINAL DESCRIPTION:
  * Wave 7 — Item 3: PuLID Anime Stylization Adapter
  *
  * Implements the ProviderAdapter interface for PuLID (Pure and Lightning ID Customization),
