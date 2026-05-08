@@ -130,10 +130,10 @@ export const ANIME_STYLIZATION_WEIGHTS = {
  * PuLID endpoint configurations.
  */
 export const PULID_ENDPOINTS = {
-  /** SDXL-based PuLID (faster, good quality) */
+  /** SDXL-based PuLID — WARNING: cold-start issues, stuck IN_QUEUE indefinitely */
   sdxl: "fal-ai/pulid",
-  /** FLUX-based PuLID (slower, higher quality, better identity) */
-  flux: "fal-ai/pulid/flux",
+  /** FLUX-based PuLID (reliable, active workers, ~20s per image) */
+  flux: "fal-ai/flux-pulid",
 } as const;
 
 /**
@@ -394,9 +394,14 @@ export class PuLIDAdapter implements ProviderAdapter {
     }
 
     // Determine backend and endpoint
-    const backend = p.useFluxBackend ? "flux" : "sdxl";
+    // EMPIRICAL FINDING (2026-05-08): fal-ai/pulid (SDXL) has cold-start issues (stuck IN_QUEUE).
+    // Default to flux backend which has active workers and ~20s latency.
+    const backend: "sdxl" | "flux" = p.useFluxBackend !== false ? "flux" : "sdxl";
     const modelId = backend === "flux" ? PULID_ENDPOINTS.flux : PULID_ENDPOINTS.sdxl;
-    const endpointUrl = `https://queue.fal.run/${modelId}`;
+    // flux-pulid uses synchronous endpoint (fal.run), sdxl uses queue endpoint (queue.fal.run)
+    const endpointUrl = backend === "flux"
+      ? `https://fal.run/${modelId}`
+      : `https://queue.fal.run/${modelId}`;
 
     // Resolve anime style
     const resolvedStyle = resolveAnimeStyle(p.animeStyle);
@@ -405,14 +410,27 @@ export class PuLIDAdapter implements ProviderAdapter {
       : `anime character portrait, ${resolvedStyle}`;
 
     // Build request body
-    const body = {
+    // API CONTRACT DISCOVERY (2026-05-08):
+    // - fal-ai/flux-pulid uses: reference_image_url (singular string), id_weight
+    // - fal-ai/pulid uses: reference_images (array), id_scale
+    const body = backend === "flux" ? {
+      prompt: fullPrompt,
+      reference_image_url: p.photoUrl,
+      id_weight: p.idScale ?? 0.8,
+      width: p.width ?? 768,
+      height: p.height ?? 768,
+      num_inference_steps: 25,
+      guidance_scale: p.guidanceScale ?? 4.0,
+      seed: p.seed ?? Math.floor(Math.random() * 2147483647),
+      num_images: p.numVariations ?? p.numImages ?? 1,
+    } : {
       prompt: fullPrompt,
       negative_prompt: p.negativePrompt || "low quality, blurry, deformed, ugly, realistic photo, not anime",
       reference_images: [{ url: p.photoUrl }],
       id_scale: p.idScale ?? 0.8,
       width: p.width ?? 768,
       height: p.height ?? 768,
-      num_inference_steps: backend === "flux" ? 28 : 25,
+      num_inference_steps: 25,
       guidance_scale: p.guidanceScale ?? 7.0,
       seed: p.seed ?? Math.floor(Math.random() * 2147483647),
       num_images: p.numVariations ?? p.numImages ?? 1,

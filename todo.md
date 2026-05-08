@@ -6621,3 +6621,15 @@ For each new module/export, the following MUST be demonstrated before declaring 
 ### Wave 7 Self-Verification
 - [x] Self-verify all items with file paths + line excerpts + actual measured fixture values
 - [x] Confirm PuLID re-test fixture has real measured scores (honest finding: conditional pass, identity 0.75 < 0.80 threshold)
+- [x] Re-run PuLID empirical fixture using ACTUAL ID-embedding extraction path (not prompt-based simulation)
+  - [x] Use 7 real photo uploads through fal-ai/flux-pulid with reference_image_url (14 total generations)
+  - [x] Measure against Item 3a thresholds: identity ≥0.75, style ≥0.80
+  - [x] Document methodology as "actual PuLID ID embedding extraction from photo"
+  - [x] Persist to test-results/pulid-id-embedding-real-2026-05-08.json
+  - [x] FINDING: FAIL — identity 0.40 (threshold 0.75), feature translation 0.39 (threshold 0.85)
+    - Anime fidelity 0.90 ✓, style consistency 0.95 ✓ — model produces excellent anime art
+    - But weak identity preservation — fal-ai/flux-pulid is "style transfer with loose reference" not true ID-preserving
+    - Integration code path is correct (all 14 generations succeeded via real fal.ai endpoint)
+    - Model quality issue, not code issue — needs higher id_weight or alternative PuLID implementation
+    - API contract discovery: fal-ai/flux-pulid uses reference_image_url (singular string), not reference_images (array)
+    - Also discovered: fal-ai/pulid (SDXL-based) has cold-start issues (stuck IN_QUEUE indefinitely)
