@@ -1,0 +1,9 @@
+{
+  "query": "SELECT g.id, g.stageNumber, g.gateType, g.confidenceScore, g.decision, g.decisionSource \nFROM gates g \nJOIN pipeline_stages ps ON ps.gateId = g.id \nWHERE ps.pipelineRunId = 120003 \nORDER BY g.stageNumber LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT g.id, g.stageNumber, g.gateType, g.confidenceScore, g.decision, g.decisionSource \nFROM gates g \nJOIN pipeline_stages ps ON ps.gateId = g.id \nWHERE ps.pipelineRunId = 120003 \nORDER BY g.stageNumber LIMIT 20;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 379
+}

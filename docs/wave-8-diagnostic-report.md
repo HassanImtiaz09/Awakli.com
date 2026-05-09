@@ -2,8 +2,8 @@
 
 **Date:** 2026-05-09  
 **Author:** Manus AI  
-**Status:** REJECTED — 7 failure surfaces identified, 3 critical, 2 high, 2 medium  
-**Verdict:** Pipeline traversal completed nominally but produced no usable video output. The "0.753 coherence score" was methodologically unsound (LLM self-assessment, not CLIP). Actual CLIP consistency: 0.709 (marginal). The run exposed systemic issues in error propagation, asset validation, and scoring methodology.
+**Status:** REJECTED — 11 failure surfaces identified, 3 critical, 4 high, 4 medium  
+**Verdict:** Pipeline traversal completed nominally but produced no usable video output. The "0.753 coherence score" was methodologically unsound (LLM self-assessment, not CLIP). Actual CLIP consistency: 0.709 (marginal). The run exposed systemic issues in error propagation, asset validation, scoring methodology, and revealed that multiple spec-mandated subsystems (TTS provider, video routing, X-Sheet timing, character-voice mapping, HITL gates) are either unimplemented or silently bypassed.
 
 ---
 
@@ -26,6 +26,10 @@ The coherence scoring methodology used in the initial report (LLM vision self-as
 | 5 | Character refs inaccessible | HIGH | S3 upload used wrong key prefix or failed silently | CLIP scoring required pseudo-references (panel_01, panel_09) |
 | 6 | Kling V3 clips orphaned | MEDIUM | DB connection timeout during batch upload; no storage list API | 18 generated clips ($3.60 cost) unrecoverable |
 | 7 | Adapter pipeline not wired | MEDIUM | StoryMaker/Mitsua/D0-D7 code exists but is never imported by orchestrator | No character-consistent image generation in production path |
+| 8 | TTS provider non-compliance | HIGH | ElevenLabs hardcoded; Inworld/Cartesia spec'd but never integrated into orchestrator | Wrong voice quality tier; no seiyū casting path |
+| 9 | Premium tier routing absent | HIGH | PixVerse V4.5 adapter exists in `provider-router/` but never called; all clips route to Kling V3 | Sakuga-tagged shots get same quality as standard shots |
+| 10 | X-Sheet timing not wired | MEDIUM | Duration hardcoded to "10" in all `generateImageToVideo` calls; `x_sheets` table unused | No per-slice timing; all clips are flat 5-10s regardless of pacing |
+| 11 | Character-voice mapping ignored | MEDIUM | `voiceGenAgent` loads characters but uses `voices[0]` for all panels; `voiceAssignments` always `{}` | All dialogue delivered in same voice (Roger) regardless of character |
 
 ---
 
@@ -419,11 +423,236 @@ Run pipeline with adapter-composer wired in. Compare CLIP consistency scores: ex
 
 ---
 
+## Failure Surface 8: TTS Provider Non-Compliance
+
+### Root Cause
+
+The production `voiceGenAgent` (L748-798) is hardcoded to use ElevenLabs `eleven_turbo_v2_5` with a single fallback voice ID (`CwhRBWXzGAHq8TQ4Fs17` = Roger). The spec mandates Inworld TTS-1.5-Max (§5.3) or Cartesia (P3 recommendation) for seiyū-quality Japanese voice acting.
+
+A `tts-migration.ts` file exists with Inworld and Kokoro configurations, but it is **only imported by its own test file** — never by the pipeline orchestrator.
+
+```typescript
+// server/pipelineOrchestrator.ts L758-762 (actual production path)
+let voiceId: string;
+try {
+  const voices = await listVoices();  // ← ElevenLabs API
+  voiceId = voices[0]?.voice_id || "CwhRBWXzGAHq8TQ4Fs17";
+} catch {
+  voiceId = "CwhRBWXzGAHq8TQ4Fs17"; // Roger - always this voice
+}
+```
+
+### Impact
+
+All dialogue is rendered in the same English male voice regardless of character gender, age, or language. No Japanese voice acting capability exists in the production path.
+
+### Fix
+
+Replace the `listVoices()[0]` pattern with a character-aware voice resolver that:
+1. Reads `character.voiceId` from the DB (set via the existing `castVoice` procedure)
+2. Falls back to the production bible's `voiceAssignments` map
+3. Uses Cartesia/Inworld for JP voices when `episode.language === 'ja'`
+
+### Verification
+
+Run pipeline with 2+ characters that have different `voiceId` values set. Assert: each panel's voice clip uses the correct character's voice ID.
+
+---
+
+## Failure Surface 9: Premium Tier Routing Absent
+
+### Root Cause
+
+The `generateImageToVideo()` function in `server/video-provider.ts` routes ALL requests to Kling V3 via fal.ai:
+
+```typescript
+// server/video-provider.ts (actual endpoints)
+const endpoint = isPro
+  ? "fal-ai/kling-video/v3/pro/image-to-video"
+  : "fal-ai/kling-video/v3/standard/image-to-video";
+```
+
+The `modelName` parameter from the scene classifier is passed through but **never used to select a different provider**. A `provider-router/` directory exists with a PixVerse V4.5 adapter, but it is only imported by `routers-local-infra.ts` (admin UI benchmarking) — never by the pipeline orchestrator.
+
+The scene classifier correctly bumps sakuga-tagged shots to Tier 2 (pro mode), but this only selects between Kling V3 Standard and Kling V3 Pro — never routes to PixVerse.
+
+### Impact
+
+Sakuga-tagged shots (high-motion action sequences) receive the same Kling V3 treatment as static dialogue panels. The spec-mandated PixVerse V4.5 routing for premium motion quality is completely absent from the production path.
+
+### Fix
+
+Modify `generateImageToVideo()` to check `modelName` and route to the appropriate provider:
+```typescript
+if (modelName === 'pixverse_v4.5' || modelName === 'pixverse') {
+  return generatePixVerseVideo(imageUrl, prompt, options);
+}
+// ... existing Kling path
+```
+
+### Verification
+
+Tag 3 panels as sakuga in the scene classifier. Assert: those panels route to PixVerse V4.5 endpoint, not Kling.
+
+---
+
+## Failure Surface 10: X-Sheet Timing Not Wired
+
+### Root Cause
+
+All `generateImageToVideo()` calls in the pipeline orchestrator use a hardcoded duration of `"10"` (10 seconds):
+
+```typescript
+// server/pipelineOrchestrator.ts L458, L465
+duration: "10",  // ← Hardcoded for all panels
+```
+
+The `x_sheets` table exists in the schema with per-slice timing data (start_frame, end_frame, duration_ms), but:
+1. The table is never populated by the pipeline
+2. The table is never queried by `videoGenAgent`
+3. The `timing-director` benchmark exists but is never imported into production
+
+The spec mandates per-slice X-Sheet durations derived from dialogue timing, action pacing, and transition requirements.
+
+### Impact
+
+All video clips are a flat 5-10 seconds regardless of content. Quick cuts (0.5-2s) and long holds (15-30s) are impossible. The resulting video has monotonous pacing with no rhythm variation.
+
+### Fix
+
+Before video generation, compute per-panel duration from:
+1. Dialogue length (voice clip duration + 0.5s padding)
+2. Action complexity (from scene classifier tags)
+3. Transition requirements (from panel.transition field)
+
+Store computed durations in `x_sheets` table, then read them in `videoGenAgent`.
+
+### Verification
+
+Run pipeline with panels of varying dialogue length. Assert: short-dialogue panels get 3-5s clips, long-dialogue panels get 8-12s clips.
+
+---
+
+## Failure Surface 11: Character-Voice Mapping Ignored
+
+### Root Cause
+
+The `voiceGenAgent` (L735-798) loads characters via `getCharactersByProject(projectId)` but **never uses them**. The dialogue JSON has `{character, text, emotion}` structure per panel, but the character field is never used for voice routing:
+
+```typescript
+// What SHOULD happen:
+const dialogueLines = panel.dialogue; // [{character: "Mira", text: "...", emotion: "determined"}]
+for (const line of dialogueLines) {
+  const character = characters.find(c => c.name === line.character);
+  const voiceId = character?.voiceId || defaultVoiceId;
+  // Generate with character-specific voice
+}
+
+// What ACTUALLY happens:
+const dialogueText = dialogue.map(d => d.text).join(". ");  // Flattens all lines
+const voiceId = voices[0]?.voice_id;  // Same voice for everything
+```
+
+Additionally, the production bible's `voiceAssignments` field is hardcoded to `{}` (empty object) at both initialization points (L1142, L1772), meaning even if the voice resolver checked it, there would be nothing to find.
+
+### Impact
+
+All characters speak with the same voice (Roger, ElevenLabs default). Multi-character dialogue scenes are unintelligible — the viewer cannot distinguish who is speaking.
+
+### Fix
+
+1. Parse `panel.dialogue` as array of `{character, text, emotion}` objects
+2. For each dialogue line, look up `character.voiceId` from the characters table
+3. Generate separate voice clips per character per panel
+4. Populate `voiceAssignments` in the production bible from the characters table during initialization
+
+### Verification
+
+Run pipeline with 2 characters (Mira, Master Gen) with different `voiceId` values. Assert: panels with Mira's dialogue use Mira's voice, panels with Master Gen's dialogue use his voice.
+
+---
+
+## HITL Gate System: Contradiction Resolution
+
+### What Actually Happened
+
+The smoke test runner inserted `gate_configs` with `scopeRef = 'studio'` for all 17 stages (advisory, threshold=1). However:
+
+1. `getUserTierForRun()` resolved the test user's tier from `subscriptions.planId` — since the user had no subscription, it returned `"free_trial"`
+2. `resolveGateConfig()` searched for `tier_default` + `scopeRef = 'free_trial'` — **no match** (configs stored with `scopeRef = 'studio'`)
+3. The system fell through to hardcoded `DEFAULT_GATE_ASSIGNMENTS` where stages 1-7 are **blocking** (threshold=85)
+4. `initializeHitlForRun()` likely threw during `initializePipelineStages()` (no `pipeline_stages` records exist in the DB for run 120003)
+5. The error was caught at L1180: `pipelineLog.warn("HITL initialization failed, running without gates")`
+6. Pipeline ran with `hitlEnabled = false` — **no gates were evaluated at all**
+
+### Key Finding
+
+The HITL gate system was **completely bypassed** during the smoke test. Gates did not "auto-advance through failures" — they were never invoked. The pipeline ran in ungated mode because HITL initialization failed silently.
+
+### Evidence
+
+- `pipeline_stages` table: 0 rows for run 120003
+- `gates` table: 0 rows joined to run 120003
+- Pipeline completed with `hitlEnabled = false` (the catch at L1180 set this)
+
+### Implication for Scoring
+
+The confidence scorer (which uses CLIP embeddings for character consistency) was never called during the pipeline run. The mock CLIP service (random vectors) was never exercised. The entire quality evaluation layer is dormant.
+
+### Fix
+
+1. Fix `initializePipelineStages()` to handle the schema correctly (likely missing columns or wrong table name)
+2. Ensure smoke test inserts gate_configs with the correct `scopeRef` matching the resolved tier
+3. Add integration test: pipeline with `hitlEnabled = true` must create pipeline_stages and gates records
+
+---
+
+## Updated Priority Matrix
+
+| Priority | Surface | Effort | Rationale |
+|----------|---------|--------|-----------|
+| P0 | #1 Assembly error swallowed | 10 min | False "completed" status masks all downstream failures |
+| P0 | #2 Video gen silent failure | 10 min | Zero-asset validation prevents phantom completions |
+| P0 | #3 Coherence scoring invalid | 30 min | Replace LLM self-assessment with CLIP; deploy CLIP service |
+| P1 | #11 Character-voice mapping | 45 min | Parse dialogue per-character, use character.voiceId |
+| P1 | #8 TTS provider | 60 min | Wire Cartesia/Inworld; requires API key setup |
+| P1 | #4 Music file corrupted | 15 min | Content-length + duration validation |
+| P2 | #9 Premium tier routing | 90 min | Wire PixVerse adapter into video-provider dispatch |
+| P2 | #10 X-Sheet timing | 120 min | Compute per-panel duration from dialogue + pacing |
+| P2 | #7 Adapter pipeline | 4-8 hrs | Wire StoryMaker/Mitsua into orchestrator for character consistency |
+| P3 | #5 Upload verification | 15 min | Verify S3 accessibility after upload |
+| P3 | #6 Kling clips orphaned | N/A | Accept loss; fix is in #2 (validation prevents future orphans) |
+| P3 | HITL initialization | 60 min | Fix pipeline_stages schema; ensure gates are created |
+
+---
+
+## Artifacts Collected
+
+| Artifact | Path | Description |
+|----------|------|-------------|
+| 21 keyframe images | `wave8-artifacts/keyframes/panel_01..21.png` | 1024×1024 PNG, ~1.3MB each |
+| 8 voice clips | `wave8-artifacts/voice-clips/*.mp3` | ElevenLabs output, 2-8s each |
+| Fixture JSON | `wave8-artifacts/smoke-test-fixture.json` | Full pipeline run results |
+| CLIP scores | `wave8-artifacts/clip-consistency-scores.json` | 21×2 similarity matrix |
+| Per-stage log | `wave8-artifacts/per-stage-invocation-log.json` | Model calls per pipeline node |
+| Kling recovery note | `wave8-artifacts/kling-clip-recovery-status.md` | Why clips are unrecoverable |
+| Ken Burns video | CDN URL (see below) | Fallback assembly with voice |
+
+**Fallback video (Ken Burns + voice, no AI video clips):**  
+`https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/first-light-final-moxwvn84_5e465c43.mp4`
+
+---
+
 ## Next Steps
 
-1. Apply P0 fixes (#1, #2) immediately — these are 20 minutes of work total
-2. Apply P1 fixes (#4, #6) — another 20 minutes
-3. Re-run smoke test after P0+P1 fixes to verify video_gen either succeeds or fails cleanly
-4. If Kling API is the blocker, investigate fal.ai fallback path and verify image URL accessibility
-5. Wire adapter pipeline (#7) as a separate work item — this is the path to character consistency
-6. Establish CLIP scoring as the gate metric for all future smoke tests (threshold: mean max-sim ≥ 0.75)
+1. Apply P0 fixes (#1, #2, #3) immediately — these are 50 minutes of work total and unblock all further testing
+2. Apply P1 fixes (#11, #8, #4) — character-voice mapping is the highest-impact UX fix
+3. Re-run smoke test after P0+P1 fixes to verify:
+   - Video gen either succeeds or fails cleanly with clear error message
+   - Assembly throws and marks pipeline as "failed" when no clips exist
+   - Different characters get different voices
+   - CLIP scoring runs and produces real confidence scores
+4. Wire premium tier routing (#9) and X-Sheet timing (#10) as separate work items
+5. Wire adapter pipeline (#7) as the path to character-consistent image generation
+6. Fix HITL initialization so gates are actually created and evaluated
+7. Establish CLIP scoring as the gate metric for all future smoke tests (threshold: mean max-sim ≥ 0.75)

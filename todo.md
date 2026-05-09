@@ -6711,3 +6711,34 @@ For each new module/export, the following MUST be demonstrated before declaring 
 ### Deliverables
 - [x] Diagnostic report: docs/wave-8-diagnostic-report.md (7 surfaces, root cause + fix + verification each)
 - [ ] Wave 8 re-scope after diagnostic (pending user direction)
+
+## Wave 8 — Extended Diagnostic (Surfaces #8-#11 + HITL)
+
+### Failure Surface #8: TTS Provider Non-Compliance
+- [x] Investigate: Is Inworld TTS-1.5-Max ever wired in production code? → NO, tts-migration.ts exists but never imported by orchestrator
+- [x] Investigate: Did Wave 6 TTS migration sub-item land? → Code exists but is orphaned (only imported by its own test)
+- [x] Root cause: ElevenLabs hardcoded, voices[0] = Roger for all panels
+
+### Failure Surface #9: Premium Tier Routing Not Wired
+- [x] Investigate: Does sakuga tag from Stage 9 translate into Stage 10 provider selection? → Only bumps Kling tier (standard→pro), never routes to PixVerse
+- [x] Investigate: Is PixVerse V4.5 integrated at all? → Adapter exists in provider-router/ but only imported by admin UI, never by orchestrator
+- [x] Root cause: generateImageToVideo() always routes to fal-ai/kling-video/v3
+
+### Failure Surface #10: Per-Slice Duration Ignored
+- [x] Investigate: Where does Stage 12 X-Sheet timing flow into Stage 10 request params? → NOWHERE, x_sheets table unused
+- [x] Investigate: Why flat 5-10s instead of locked fixture 3-6s per slice? → Duration hardcoded to "10" at L458/L465
+- [x] Root cause: timing-director benchmark exists but never imported into production
+
+### Failure Surface #11: Bilingual + Character-Voice Mapping
+- [x] Investigate: Is JP romaji alongside EN wired for dialogue delivery? → NO, only in benchmark manga-finishing module
+- [x] Investigate: Why all 8 clips use same voiceId (Roger) for both characters? → voiceGenAgent ignores character data, uses voices[0]
+- [x] Investigate: Is D12 Seiyū casting + multilingual delivery active? → castVoice writes to DB but pipeline never reads it
+- [x] Root cause: voiceAssignments hardcoded to {} at L1142/L1772; character.voiceId never queried
+
+### HITL Gate Contradiction Resolution
+- [x] Resolve: "auto-advanced at advisory thresholds" vs "no gate_configs exist, returns immediately" → HITL initialization FAILED (0 pipeline_stages rows), pipeline ran ungated
+- [x] Determine: Is HITL actually evaluating anything? → NO, hitlEnabled=false after init failure; confidence scorer never called
+
+### Deliverables
+- [x] Updated diagnostic report: docs/wave-8-diagnostic-report.md (expanded to 11 surfaces + HITL resolution)
+- [x] Re-scoped Wave 8 work plan: docs/wave-8-rescoped-plan.md (5 tiers, A→E, with effort estimates)
