@@ -1,0 +1,13 @@
+{
+  "query": "SELECT url FROM pipeline_assets WHERE pipelineRunId = 120003 AND assetType = 'music_segment';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT url FROM pipeline_assets WHERE pipelineRunId = 120003 AND assetType = 'music_segment';",
+  "rows": [
+    {
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/bgm-RTh2Ns_53694ea1.mp3"
+    }
+  ],
+  "messages": [],
+  "stdout": "url\nhttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/bgm-RTh2Ns_53694ea1.mp3\n",
+  "stderr": "",
+  "execution_time_ms": 343
+}

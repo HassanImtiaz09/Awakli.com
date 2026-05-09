@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, panelNumber, LEFT(imageUrl, 120) as imageUrl, LEFT(visualDescription, 80) as visualDesc FROM panels WHERE episodeId = 870004 AND imageUrl IS NOT NULL ORDER BY panelNumber LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, panelNumber, LEFT(imageUrl, 120) as imageUrl, LEFT(visualDescription, 80) as visualDesc FROM panels WHERE episodeId = 870004 AND imageUrl IS NOT NULL ORDER BY panelNumber LIMIT 5;",
+  "rows": [
+    {
+      "id": "120052",
+      "panelNumber": "1",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p1_jmfbmec2.png",
+      "visualDesc": "Dawn-lit traditional dojo interior. Mira mid-stance in foreground, athletic girl"
+    },
+    {
+      "id": "120053",
+      "panelNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p2_3091kbg9.png",
+      "visualDesc": "Medium shot of Mira attempting the Drift Wind stance, full body visible. Athleti"
+    },
+    {
+      "id": "120054",
+      "panelNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p3_93i1tkmp.png",
+      "visualDesc": "Close-up on Mira's foot slipping mid-motion on wooden dojo floor, then her face "
+    },
+    {
+      "id": "120055",
+      "panelNumber": "4",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p4_vy6sqj6t.png",
+      "visualDesc": "Repetition montage: three quick failed attempts of the Drift Wind stance from va"
+    },
+    {
+      "id": "120056",
+      "panelNumber": "5",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p5_nyxqkcs7.png",
+      "visualDesc": "Tight close-up on Mira's face, jaw set, sweat on brow, eyes locked forward with "
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpanelNumber\timageUrl\tvisualDesc\n120052\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p1_jmfbmec2.png\tDawn-lit traditional dojo interior. Mira mid-stance in foreground, athletic girl\n120053\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p2_3091kbg9.png\tMedium shot of Mira attempting the Drift Wind stance, full body visible. Athleti\n120054\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p3_93i1tkmp.png\tClose-up on Mira's foot slipping mid-motion on wooden dojo floor, then her face \n120055\t4\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p4_vy6sqj6t.png\tRepetition montage: three quick failed attempts of the Drift Wind stance from va\n120056\t5\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p5_nyxqkcs7.png\tTight close-up on Mira's face, jaw set, sweat on brow, eyes locked forward with \n",
+  "stderr": "",
+  "execution_time_ms": 271
+}

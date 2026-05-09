@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, assetType, url, nodeSource, metadata FROM pipeline_assets WHERE pipelineRunId = 120003 AND assetType IN ('final_video', 'video_clip', 'stream_video') ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, assetType, url, nodeSource, metadata FROM pipeline_assets WHERE pipelineRunId = 120003 AND assetType IN ('final_video', 'video_clip', 'stream_video') ORDER BY id DESC LIMIT 10;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 278
+}

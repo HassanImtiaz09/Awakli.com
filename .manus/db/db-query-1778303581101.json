@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, title, videoUrl FROM episodes WHERE id IN (SELECT episodeId FROM pipeline_runs WHERE id = 120003);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, title, videoUrl FROM episodes WHERE id IN (SELECT episodeId FROM pipeline_runs WHERE id = 120003);",
+  "rows": [
+    {
+      "id": "870004",
+      "title": "Tournament Prep Arc - Episode 1",
+      "videoUrl": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tvideoUrl\n870004\tTournament Prep Arc - Episode 1\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 279
+}

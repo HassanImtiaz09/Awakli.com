@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, assetType, url, nodeSource FROM pipeline_assets WHERE pipelineRunId = 120003 ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, assetType, url, nodeSource FROM pipeline_assets WHERE pipelineRunId = 120003 ORDER BY id;",
+  "rows": [
+    {
+      "id": "120016",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120054-W0I9s8_b8b84908.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120017",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120056-DWW_6-_843b1acf.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120018",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120059-j-aKGC_22e0a280.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120019",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120060-3GCiEh_cfb3087b.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120020",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120062-fHXptz_97fbcb26.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120021",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120065-GlEekG_f8433c55.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120022",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120071-ydukuT_e7dc2f83.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120023",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120072-Xhg4C6_bab5a5a9.mp3",
+      "nodeSource": "voice_gen"
+    },
+    {
+      "id": "120024",
+      "assetType": "music_segment",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/bgm-RTh2Ns_53694ea1.mp3",
+      "nodeSource": "music_gen"
+    },
+    {
+      "id": "120025",
+      "assetType": "thumbnail",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/generated/1778302008287_c5555bee.png",
+      "nodeSource": "assembly"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tassetType\turl\tnodeSource\n120016\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120054-W0I9s8_b8b84908.mp3\tvoice_gen\n120017\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120056-DWW_6-_843b1acf.mp3\tvoice_gen\n120018\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120059-j-aKGC_22e0a280.mp3\tvoice_gen\n120019\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120060-3GCiEh_cfb3087b.mp3\tvoice_gen\n120020\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120062-fHXptz_97fbcb26.mp3\tvoice_gen\n120021\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120065-GlEekG_f8433c55.mp3\tvoice_gen\n120022\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120071-ydukuT_e7dc2f83.mp3\tvoice_gen\n120023\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120072-Xhg4C6_bab5a5a9.mp3\tvoice_gen\n120024\tmusic_segment\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/bgm-RTh2Ns_53694ea1.mp3\tmusic_gen\n120025\tthumbnail\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/generated/1778302008287_c5555bee.png\tassembly\n",
+  "stderr": "",
+  "execution_time_ms": 266
+}

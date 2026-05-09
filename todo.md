@@ -6682,3 +6682,9 @@ For each new module/export, the following MUST be demonstrated before declaring 
 
 ### Item 3: Polish (gated on Item 1 gap list)
 - [x] Item 3: No blocking gaps identified in Item 1e — 0 action items required
+
+## Wave 8 — Video Compilation & Report
+- [x] Generate video clips from 21 panel keyframes via fal.ai image-to-video (21 generated, 18 uploaded, 3 lost to S3 rate limit)
+- [x] Assemble final MP4 with voice clips via ffmpeg (Ken Burns fallback, 95s, 1080p)
+- [x] Upload final video and provide viewable link (CDN)
+- [x] Write detailed smoke test summary report (docs/wave-8-smoke-test-summary.md)
