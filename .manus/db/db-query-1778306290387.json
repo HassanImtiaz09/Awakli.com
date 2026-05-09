@@ -1,0 +1,157 @@
+{
+  "query": "SELECT id, panelNumber, sceneNumber, imageUrl, visualDescription FROM panels WHERE episodeId = 870004 ORDER BY sceneNumber, panelNumber;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, panelNumber, sceneNumber, imageUrl, visualDescription FROM panels WHERE episodeId = 870004 ORDER BY sceneNumber, panelNumber;",
+  "rows": [
+    {
+      "id": "120052",
+      "panelNumber": "1",
+      "sceneNumber": "1",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p1_jmfbmec2.png",
+      "visualDescription": "Dawn-lit traditional dojo interior. Mira mid-stance in foreground, athletic girl with black hair and magenta-pink tips in high ponytail, white training gi with red sash. Master Gen seated cross-legged on raised platform in background, silver hair, navy robe, eyes closed. Sun-streaks across wooden floor. Wide static shot, slight low angle."
+    },
+    {
+      "id": "120053",
+      "panelNumber": "2",
+      "sceneNumber": "1",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p2_3091kbg9.png",
+      "visualDescription": "Medium shot of Mira attempting the Drift Wind stance, full body visible. Athletic girl with magenta-tipped black ponytail in white gi with red sash, focused expression, executing a flowing martial arts technique. Eye level camera. Traditional dojo interior."
+    },
+    {
+      "id": "120054",
+      "panelNumber": "3",
+      "sceneNumber": "1",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p3_93i1tkmp.png",
+      "visualDescription": "Close-up on Mira's foot slipping mid-motion on wooden dojo floor, then her face showing frustration breaking through. Quick cut composition. Magenta hair highlights visible. Gabure impact effect on the slip moment."
+    },
+    {
+      "id": "120055",
+      "panelNumber": "4",
+      "sceneNumber": "1",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p4_vy6sqj6t.png",
+      "visualDescription": "Repetition montage: three quick failed attempts of the Drift Wind stance from varying angles. Same girl (Mira, black hair with magenta tips, white gi) in different positions, body moving but flow not arriving. Mixed angles composition."
+    },
+    {
+      "id": "120056",
+      "panelNumber": "5",
+      "sceneNumber": "1",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p5_nyxqkcs7.png",
+      "visualDescription": "Tight close-up on Mira's face, jaw set, sweat on brow, eyes locked forward with determination. Heart-shaped face, dark brown eyes, small scar across left eyebrow. Magenta-tipped ponytail partially visible. Eye level camera."
+    },
+    {
+      "id": "120057",
+      "panelNumber": "6",
+      "sceneNumber": "1",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p6_zt55l334.png",
+      "visualDescription": "Wide pull-back shot: Mira small in foreground of traditional dojo, Master Gen still seated on raised platform in background, face unreadable, watching. Silver hair, navy robe, wooden quarterstaff beside him. Slight high angle. Quiet observation moment."
+    },
+    {
+      "id": "120058",
+      "panelNumber": "7",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p7_ir4n3i1y.png",
+      "visualDescription": "Medium two-shot in seiza position. Both characters seated formally on wooden dojo floor, 6 feet apart. Mira (white gi, red sash, tense posture) and Master Gen (navy robe, silver sash, textbook still posture). Harsh midday light, shorter shadows. Slight low angle."
+    },
+    {
+      "id": "120059",
+      "panelNumber": "8",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p8_m8y21tlb.png",
+      "visualDescription": "Close-up on Mira seated in seiza, eyes downcast, frustrated but contained expression. Heart-shaped face, dark brown eyes, scar on left eyebrow. Magenta-tipped black ponytail. Warm gold and neutral brown palette, midday light."
+    },
+    {
+      "id": "120060",
+      "panelNumber": "9",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p9_3h9ias81.png",
+      "visualDescription": "Close-up on Master Gen seated in seiza, calm expression, slight pause before speaking. Lined face, scar along right jaw, calm dark eyes, silver hair in low ponytail. Dark navy robe. Warm midday light."
+    },
+    {
+      "id": "120061",
+      "panelNumber": "10",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p10_u3a1we4d.png",
+      "visualDescription": "Sustained close-up on Mira's face showing confusion shifting to curiosity. Multiple micro-expressions. Heart-shaped face, dark brown eyes, scar on left eyebrow. No cut, sustained shot. Warm palette."
+    },
+    {
+      "id": "120062",
+      "panelNumber": "11",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p11_5kpp15ws.png",
+      "visualDescription": "Close-up on Master Gen's face, gentle expression. Lined face, jaw scar, calm dark eyes, silver hair. Dark navy robe collar visible. Warm midday light."
+    },
+    {
+      "id": "120063",
+      "panelNumber": "12",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p12_1dgjskp4.png",
+      "visualDescription": "Wide shot: Master Gen rises from seiza in a single fluid motion, performs the Drift Wind technique. Lean weathered man in navy robe with silver sash, silver hair flowing. Effortless movement. Wooden quarterstaff set aside. Koukaku divine backlighting from midday sun. Subtle wave-glass overlay shimmer. Slight tracking camera."
+    },
+    {
+      "id": "120064",
+      "panelNumber": "13",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p13_oh1451oc.png",
+      "visualDescription": "Close-up reaction shot of Mira watching the demonstration. Her eyes track off-camera motion, breath held, realization crystallizing. Heart-shaped face, dark brown eyes, scar on left eyebrow, magenta-tipped ponytail. Warm midday palette."
+    },
+    {
+      "id": "120065",
+      "panelNumber": "14",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p14_592e94ei.png",
+      "visualDescription": "Tight close-up on Mira, quieter expression than before, whispering. Heart-shaped face, dark brown eyes, scar on left eyebrow. Warm palette, soft focus background."
+    },
+    {
+      "id": "120066",
+      "panelNumber": "15",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p15_pf33dd53.png",
+      "visualDescription": "Medium shot of Mira standing in dojo, eyes closed, breathing deeply. Golden hour sunset light streaming in. Athletic girl in white gi with red sash, magenta-tipped black ponytail. Stillness after the day's effort. Static camera, eye level."
+    },
+    {
+      "id": "120067",
+      "panelNumber": "16",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p16_kfaca7xm.png",
+      "visualDescription": "Mira's eyes open. She begins the Drift Wind stance slowly, no force. Golden sunset palette, saturated gold and deep magenta-orange light. White gi, red sash, magenta hair highlights singing against golden palette. Slow tracking camera following her body. Gentle wave-glass overlay sense of altered perception."
+    },
+    {
+      "id": "120068",
+      "panelNumber": "17",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p17_s71s7opk.png",
+      "visualDescription": "SAKUGA SEQUENCE WIND-UP. Mira mid-stance, weight shifting low, eyes half-lidded in concentration. Single ribbon of dust spiraling up from her feet, loose hair strands beginning to lift. Time slows. Tight on lower body and feet, slow push-in. Golden sunset light. Wave-glass overlay intensity building. Koukaku warm golden hint from setting sun. Premium quality anime keyframe."
+    },
+    {
+      "id": "120069",
+      "panelNumber": "18",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p18_0ccqm9ud.png",
+      "visualDescription": "SAKUGA SEQUENCE APEX. Full-body flowing motion, Mira's arms tracing arcs through air, ponytail and gi swept by responding wind, magenta hair-tip highlights catching golden light. The Drift Wind technique manifests fully. Visual peak of the episode. Wide tracking shot, camera circles at half-speed. Koukaku golden god rays from above. Gabure on technique apex. Wave-glass overlay sustained. Gamen-dou subtle whole-frame movement. Premium quality anime keyframe."
+    },
+    {
+      "id": "120070",
+      "panelNumber": "19",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p19_6aa2ttv6.png",
+      "visualDescription": "SAKUGA SEQUENCE COMPLETION. Mira in closing posture of Drift Wind, arms at rest, eyes opening as wind subsides. Visible breath escaping into cooling evening air. Technique complete. Slow pull-back from medium to wide. Koukaku fading. Wave-glass overlay decaying. Gentle bokeh-pull. Premium quality anime keyframe."
+    },
+    {
+      "id": "120071",
+      "panelNumber": "20",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p20_22v8s4r6.png",
+      "visualDescription": "Close-up on Master Gen. The rare smile, a single nod. Lined face, jaw scar, calm dark eyes softened. Silver hair in low ponytail. Slight low angle. Golden evening light. Voice softer than before."
+    },
+    {
+      "id": "120072",
+      "panelNumber": "21",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p21_ibso42xh.png",
+      "visualDescription": "Close-up on Mira, eyes shining, breath calm. Quiet certainty replacing morning's frustration. Heart-shaped face, dark brown eyes, scar on left eyebrow, magenta-tipped ponytail. Golden evening light. Hold for fade. Gentle bokeh-pull from face to background."
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpanelNumber\tsceneNumber\timageUrl\tvisualDescription\n120052\t1\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p1_jmfbmec2.png\tDawn-lit traditional dojo interior. Mira mid-stance in foreground, athletic girl with black hair and magenta-pink tips in high ponytail, white training gi with red sash. Master Gen seated cross-legged on raised platform in background, silver hair, navy robe, eyes closed. Sun-streaks across wooden floor. Wide static shot, slight low angle.\n120053\t2\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p2_3091kbg9.png\tMedium shot of Mira attempting the Drift Wind stance, full body visible. Athletic girl with magenta-tipped black ponytail in white gi with red sash, focused expression, executing a flowing martial arts technique. Eye level camera. Traditional dojo interior.\n120054\t3\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p3_93i1tkmp.png\tClose-up on Mira's foot slipping mid-motion on wooden dojo floor, then her face showing frustration breaking through. Quick cut composition. Magenta hair highlights visible. Gabure impact effect on the slip moment.\n120055\t4\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p4_vy6sqj6t.png\tRepetition montage: three quick failed attempts of the Drift Wind stance from varying angles. Same girl (Mira, black hair with magenta tips, white gi) in different positions, body moving but flow not arriving. Mixed angles composition.\n120056\t5\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p5_nyxqkcs7.png\tTight close-up on Mira's face, jaw set, sweat on brow, eyes locked forward with determination. Heart-shaped face, dark brown eyes, small scar across left eyebrow. Magenta-tipped ponytail partially visible. Eye level camera.\n120057\t6\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p6_zt55l334.png\tWide pull-back shot: Mira small in foreground of traditional dojo, Master Gen still seated on raised platform in background, face unreadable, watching. Silver hair, navy robe, wooden quarterstaff beside him. Slight high angle. Quiet observation moment.\n120058\t7\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p7_ir4n3i1y.png\tMedium two-shot in seiza position. Both characters seated formally on wooden dojo floor, 6 feet apart. Mira (white gi, red sash, tense posture) and Master Gen (navy robe, silver sash, textbook still posture). Harsh midday light, shorter shadows. Slight low angle.\n120059\t8\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p8_m8y21tlb.png\tClose-up on Mira seated in seiza, eyes downcast, frustrated but contained expression. Heart-shaped face, dark brown eyes, scar on left eyebrow. Magenta-tipped black ponytail. Warm gold and neutral brown palette, midday light.\n120060\t9\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p9_3h9ias81.png\tClose-up on Master Gen seated in seiza, calm expression, slight pause before speaking. Lined face, scar along right jaw, calm dark eyes, silver hair in low ponytail. Dark navy robe. Warm midday light.\n120061\t10\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p10_u3a1we4d.png\tSustained close-up on Mira's face showing confusion shifting to curiosity. Multiple micro-expressions. Heart-shaped face, dark brown eyes, scar on left eyebrow. No cut, sustained shot. Warm palette.\n120062\t11\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p11_5kpp15ws.png\tClose-up on Master Gen's face, gentle expression. Lined face, jaw scar, calm dark eyes, silver hair. Dark navy robe collar visible. Warm midday light.\n120063\t12\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p12_1dgjskp4.png\tWide shot: Master Gen rises from seiza in a single fluid motion, performs the Drift Wind technique. Lean weathered man in navy robe with silver sash, silver hair flowing. Effortless movement. Wooden quarterstaff set aside. Koukaku divine backlighting from midday sun. Subtle wave-glass overlay shimmer. Slight tracking camera.\n120064\t13\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p13_oh1451oc.png\tClose-up reaction shot of Mira watching the demonstration. Her eyes track off-camera motion, breath held, realization crystallizing. Heart-shaped face, dark brown eyes, scar on left eyebrow, magenta-tipped ponytail. Warm midday palette.\n120065\t14\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p14_592e94ei.png\tTight close-up on Mira, quieter expression than before, whispering. Heart-shaped face, dark brown eyes, scar on left eyebrow. Warm palette, soft focus background.\n120066\t15\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p15_pf33dd53.png\tMedium shot of Mira standing in dojo, eyes closed, breathing deeply. Golden hour sunset light streaming in. Athletic girl in white gi with red sash, magenta-tipped black ponytail. Stillness after the day's effort. Static camera, eye level.\n120067\t16\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p16_kfaca7xm.png\tMira's eyes open. She begins the Drift Wind stance slowly, no force. Golden sunset palette, saturated gold and deep magenta-orange light. White gi, red sash, magenta hair highlights singing against golden palette. Slow tracking camera following her body. Gentle wave-glass overlay sense of altered perception.\n120068\t17\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p17_s71s7opk.png\tSAKUGA SEQUENCE WIND-UP. Mira mid-stance, weight shifting low, eyes half-lidded in concentration. Single ribbon of dust spiraling up from her feet, loose hair strands beginning to lift. Time slows. Tight on lower body and feet, slow push-in. Golden sunset light. Wave-glass overlay intensity building. Koukaku warm golden hint from setting sun. Premium quality anime keyframe.\n120069\t18\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p18_0ccqm9ud.png\tSAKUGA SEQUENCE APEX. Full-body flowing motion, Mira's arms tracing arcs through air, ponytail and gi swept by responding wind, magenta hair-tip highlights catching golden light. The Drift Wind technique manifests fully. Visual peak of the episode. Wide tracking shot, camera circles at half-speed. Koukaku golden god rays from above. Gabure on technique apex. Wave-glass overlay sustained. Gamen-dou subtle whole-frame movement. Premium quality anime keyframe.\n120070\t19\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p19_6aa2ttv6.png\tSAKUGA SEQUENCE COMPLETION. Mira in closing posture of Drift Wind, arms at rest, eyes opening as wind subsides. Visible breath escaping into cooling evening air. Technique complete. Slow pull-back from medium to wide. Koukaku fading. Wave-glass overlay decaying. Gentle bokeh-pull. Premium quality anime keyframe.\n120071\t20\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p20_22v8s4r6.png\tClose-up on Master Gen. The rare smile, a single nod. Lined face, jaw scar, calm dark eyes softened. Silver hair in low ponytail. Slight low angle. Golden evening light. Voice softer than before.\n120072\t21\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p21_ibso42xh.png\tClose-up on Mira, eyes shining, breath calm. Quiet certainty replacing morning's frustration. Heart-shaped face, dark brown eyes, scar on left eyebrow, magenta-tipped ponytail. Golden evening light. Hold for fade. Gentle bokeh-pull from face to background.\n",
+  "stderr": "",
+  "execution_time_ms": 311
+}

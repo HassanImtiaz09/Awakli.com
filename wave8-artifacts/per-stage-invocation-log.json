@@ -1,0 +1,104 @@
+{
+  "metadata": {
+    "runId": 120003,
+    "timestamp": "2026-05-09T04:39:48Z",
+    "episode": "First Light",
+    "panelCount": 21,
+    "duration": "7m01s"
+  },
+  "stages": {
+    "video_gen": {
+      "status": "complete",
+      "costCents": 200,
+      "model": "Kling V3 Pro via fal.ai (primary), Kling direct (fallback)",
+      "modelName": "kling-v3-pro (Tier 2/3/4) or kling-video-o1 (Tier 1 Omni)",
+      "provider": "fal.ai → kling_direct fallback",
+      "invocationPattern": "generateImageToVideo() for Tier 2-4, generateOmniVideo() for Tier 1 dialogue panels",
+      "inputPerPanel": "panel.imageUrl (S3 keyframe) + augmented prompt + negativePrompt",
+      "outputPerPanel": "video_clip asset (mp4, 5-10s) stored in pipeline_assets",
+      "actualResult": "ZERO video_clip assets in DB — all 21 calls failed silently",
+      "failureMode": "Errors caught in try/catch, logged but pipeline continues. No video clips persisted.",
+      "evidenceQuery": "SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId=120003 AND assetType='video_clip' → 0 rows",
+      "rootCause": "fal.ai Kling calls likely timed out or returned errors; pipeline error handling swallows failures and marks node 'complete' based on progress counter, not actual asset count"
+    },
+    "voice_gen": {
+      "status": "complete",
+      "costCents": 80,
+      "model": "ElevenLabs eleven_multilingual_v2",
+      "voiceId": "CwhRBWXzGAHq8TQ4Fs17 (Roger - Laid-Back, Casual)",
+      "voiceSettings": "VOICE_PRESETS.heroic",
+      "invocationPattern": "textToSpeech({ voiceId, text, modelId: MODELS.MULTILINGUAL_V2, voiceSettings: VOICE_PRESETS.heroic })",
+      "inputPerPanel": "panel.dialogue text (max 5000 chars)",
+      "outputPerPanel": "voice_clip asset (mp3, 44.1kHz mono, 128kbps)",
+      "actualResult": "8 voice clips generated and stored successfully",
+      "clipDurations": [0.84, 1.62, 3.84, 3.79, 0.91, 0.91, 1.38, 1.62],
+      "totalDurationSeconds": 14.91,
+      "issue": "All 8 clips use same voiceId (Roger) regardless of character (Mira vs Master Gen). No character-voice mapping."
+    },
+    "lip_sync": {
+      "status": "skipped",
+      "costCents": 0,
+      "model": "Kling Lip Sync API (api-singapore.klingai.com)",
+      "invocationPattern": "processLipSyncPanel() → klingRequest() to /v1/videos/lip-sync",
+      "skipReason": "enableLipSync defaults to false in assembly settings. Also: no video_clip assets exist to lip-sync against.",
+      "wouldRequire": "video_clip + voice_clip pairs per panel"
+    },
+    "music_gen": {
+      "status": "complete",
+      "costCents": 40,
+      "model": "MiniMax music-2.6-free",
+      "invocationPattern": "generateSceneBGM({ sceneDescription, mood }) → generateMusic({ prompt, instrumental: true })",
+      "input": "anime episode background score for 'First Light', orchestral, cinematic + mood",
+      "output": "1 music_segment asset (mp3)",
+      "actualResult": "File stored but CORRUPTED — only 1KB (should be 500KB-2MB for 30-60s track)",
+      "failureMode": "MiniMax API returned a URL that resolves to a 1KB file. No validation of file size before storage.",
+      "evidenceQuery": "curl -sI bgm-RTh2Ns_53694ea1.mp3 → Content-Length: 1024",
+      "rootCause": "MiniMax free tier likely returned an error page or empty placeholder instead of actual audio. No size/duration validation after download."
+    },
+    "foley_gen": {
+      "status": "skipped",
+      "costCents": 0,
+      "model": "MiniMax music-2.6-free (repurposed for SFX)",
+      "invocationPattern": "foleyGenNode() → LLM cue extraction → generateMusic() per cue",
+      "skipReason": "enableFoley defaults to false in assembly settings"
+    },
+    "ambient_gen": {
+      "status": "skipped",
+      "costCents": 0,
+      "model": "MiniMax music-2.6-free (repurposed for ambient)",
+      "invocationPattern": "ambientGenNode() → LLM scene detection → generateMusic() per scene",
+      "skipReason": "enableAmbient defaults to false in assembly settings"
+    },
+    "assembly": {
+      "status": "complete",
+      "costCents": 20,
+      "model": "ffmpeg (local binary)",
+      "invocationPattern": "assembleVideo() → ffmpeg concat with xfade transitions",
+      "input": "video_clip assets + voice_clip assets + music_segment",
+      "actualResult": "Only thumbnail generated — no video clips available to assemble",
+      "failureMode": "Assembly ran but found 0 video_clip assets. Generated a thumbnail from panel keyframe instead of failing.",
+      "evidenceQuery": "SELECT assetType FROM pipeline_assets WHERE pipelineRunId=120003 → voice_clip(8), music_segment(1), thumbnail(1). No video_clip.",
+      "rootCause": "Assembly node's error path generates a thumbnail fallback when no video clips exist, then marks itself 'complete'. This masks the upstream video_gen failure."
+    }
+  },
+  "orphanedSystems": {
+    "adapterComposerPipeline": {
+      "file": "server/adapter-composer-pipeline.ts",
+      "purpose": "Wires AdapterComposer (StoryMaker, StoryDiffusion, Mitsua) into D0/D1.5/D7 generation stages",
+      "status": "ORPHANED — not imported or called from pipelineOrchestrator.ts",
+      "impact": "Character identity preservation (StoryMaker), style consistency (Mitsua), and multi-view generation are all dead code in the production pipeline"
+    },
+    "d0CharacterDesigner": {
+      "file": "server/benchmarks/d0/character-designer.ts",
+      "purpose": "Two-pass multi-view character sheet generation with StoryMaker identity preservation",
+      "status": "BENCHMARK ONLY — never called from production pipeline",
+      "impact": "Character reference sheets generated by smoke test used generic Forge ImageService, not the D0 designer"
+    },
+    "hitlGateSystem": {
+      "file": "server/hitl/",
+      "purpose": "Human-in-the-loop quality gates at 10 pipeline stages",
+      "status": "PARTIALLY WIRED — initializeHitlForRun is called but gates are never checked during pipeline execution because processPreFlightStages returns immediately when no gate_configs exist",
+      "impact": "Quality gates exist in code but are effectively no-ops in the smoke test"
+    }
+  }
+}

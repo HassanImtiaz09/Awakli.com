@@ -1,0 +1,64 @@
+{
+  "query": "SELECT id, assetType, url, panelId FROM pipeline_assets WHERE pipelineRunId = 120003 AND assetType IN ('voice_clip', 'music_segment') ORDER BY assetType, panelId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, assetType, url, panelId FROM pipeline_assets WHERE pipelineRunId = 120003 AND assetType IN ('voice_clip', 'music_segment') ORDER BY assetType, panelId;",
+  "rows": [
+    {
+      "id": "120016",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120054-W0I9s8_b8b84908.mp3",
+      "panelId": "120054"
+    },
+    {
+      "id": "120017",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120056-DWW_6-_843b1acf.mp3",
+      "panelId": "120056"
+    },
+    {
+      "id": "120018",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120059-j-aKGC_22e0a280.mp3",
+      "panelId": "120059"
+    },
+    {
+      "id": "120019",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120060-3GCiEh_cfb3087b.mp3",
+      "panelId": "120060"
+    },
+    {
+      "id": "120020",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120062-fHXptz_97fbcb26.mp3",
+      "panelId": "120062"
+    },
+    {
+      "id": "120021",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120065-GlEekG_f8433c55.mp3",
+      "panelId": "120065"
+    },
+    {
+      "id": "120022",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120071-ydukuT_e7dc2f83.mp3",
+      "panelId": "120071"
+    },
+    {
+      "id": "120023",
+      "assetType": "voice_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120072-Xhg4C6_bab5a5a9.mp3",
+      "panelId": "120072"
+    },
+    {
+      "id": "120024",
+      "assetType": "music_segment",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/bgm-RTh2Ns_53694ea1.mp3",
+      "panelId": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tassetType\turl\tpanelId\n120016\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120054-W0I9s8_b8b84908.mp3\t120054\n120017\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120056-DWW_6-_843b1acf.mp3\t120056\n120018\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120059-j-aKGC_22e0a280.mp3\t120059\n120019\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120060-3GCiEh_cfb3087b.mp3\t120060\n120020\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120062-fHXptz_97fbcb26.mp3\t120062\n120021\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120065-GlEekG_f8433c55.mp3\t120065\n120022\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120071-ydukuT_e7dc2f83.mp3\t120071\n120023\tvoice_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/voice-120072-Xhg4C6_bab5a5a9.mp3\t120072\n120024\tmusic_segment\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/120003/bgm-RTh2Ns_53694ea1.mp3\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 270
+}

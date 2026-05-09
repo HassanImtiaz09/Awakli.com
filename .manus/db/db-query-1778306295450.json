@@ -1,0 +1,88 @@
+{
+  "query": "SELECT id, panelNumber, sceneNumber, imageUrl FROM panels WHERE episodeId = 870004 AND CAST(panelNumber AS UNSIGNED) >= 9 ORDER BY sceneNumber, panelNumber;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, panelNumber, sceneNumber, imageUrl FROM panels WHERE episodeId = 870004 AND CAST(panelNumber AS UNSIGNED) >= 9 ORDER BY sceneNumber, panelNumber;",
+  "rows": [
+    {
+      "id": "120060",
+      "panelNumber": "9",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p9_3h9ias81.png"
+    },
+    {
+      "id": "120061",
+      "panelNumber": "10",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p10_u3a1we4d.png"
+    },
+    {
+      "id": "120062",
+      "panelNumber": "11",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p11_5kpp15ws.png"
+    },
+    {
+      "id": "120063",
+      "panelNumber": "12",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p12_1dgjskp4.png"
+    },
+    {
+      "id": "120064",
+      "panelNumber": "13",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p13_oh1451oc.png"
+    },
+    {
+      "id": "120065",
+      "panelNumber": "14",
+      "sceneNumber": "2",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p14_592e94ei.png"
+    },
+    {
+      "id": "120066",
+      "panelNumber": "15",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p15_pf33dd53.png"
+    },
+    {
+      "id": "120067",
+      "panelNumber": "16",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p16_kfaca7xm.png"
+    },
+    {
+      "id": "120068",
+      "panelNumber": "17",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p17_s71s7opk.png"
+    },
+    {
+      "id": "120069",
+      "panelNumber": "18",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p18_0ccqm9ud.png"
+    },
+    {
+      "id": "120070",
+      "panelNumber": "19",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p19_6aa2ttv6.png"
+    },
+    {
+      "id": "120071",
+      "panelNumber": "20",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p20_22v8s4r6.png"
+    },
+    {
+      "id": "120072",
+      "panelNumber": "21",
+      "sceneNumber": "3",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p21_ibso42xh.png"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpanelNumber\tsceneNumber\timageUrl\n120060\t9\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p9_3h9ias81.png\n120061\t10\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p10_u3a1we4d.png\n120062\t11\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p11_5kpp15ws.png\n120063\t12\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p12_1dgjskp4.png\n120064\t13\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p13_oh1451oc.png\n120065\t14\t2\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p14_592e94ei.png\n120066\t15\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p15_pf33dd53.png\n120067\t16\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p16_kfaca7xm.png\n120068\t17\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p17_s71s7opk.png\n120069\t18\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p18_0ccqm9ud.png\n120070\t19\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p19_6aa2ttv6.png\n120071\t20\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p20_22v8s4r6.png\n120072\t21\t3\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p21_ibso42xh.png\n",
+  "stderr": "",
+  "execution_time_ms": 264
+}

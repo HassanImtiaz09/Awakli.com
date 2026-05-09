@@ -1,0 +1,214 @@
+{
+  "metadata": {
+    "model": "openai/clip-vit-base-patch32",
+    "method": "cosine similarity of CLIP image embeddings",
+    "referenceType": "pseudo (panel_01 as Mira, panel_09 as Master Gen)",
+    "panelCount": 21,
+    "timestamp": "2026-05-09"
+  },
+  "aggregateStats": {
+    "meanMaxSimilarity": 0.7089,
+    "stdMaxSimilarity": 0.1696,
+    "meanMiraSimilarity": 0.6779,
+    "meanGenSimilarity": 0.6451,
+    "minSimilarity": 0.3981,
+    "maxSimilarity": 1.0
+  },
+  "perPanelScores": [
+    {
+      "panel": 1,
+      "similarities": {
+        "mira_pseudo": 1.0,
+        "gen_pseudo": 0.8163
+      },
+      "max_similarity": 1.0,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 2,
+      "similarities": {
+        "mira_pseudo": 0.8216,
+        "gen_pseudo": 0.6391
+      },
+      "max_similarity": 0.8216,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 3,
+      "similarities": {
+        "mira_pseudo": 0.5537,
+        "gen_pseudo": 0.4938
+      },
+      "max_similarity": 0.5537,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 4,
+      "similarities": {
+        "mira_pseudo": 0.7567,
+        "gen_pseudo": 0.6299
+      },
+      "max_similarity": 0.7567,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 5,
+      "similarities": {
+        "mira_pseudo": 0.3981,
+        "gen_pseudo": 0.3929
+      },
+      "max_similarity": 0.3981,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 6,
+      "similarities": {
+        "mira_pseudo": 0.8752,
+        "gen_pseudo": 0.7875
+      },
+      "max_similarity": 0.8752,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 7,
+      "similarities": {
+        "mira_pseudo": 0.8204,
+        "gen_pseudo": 0.7201
+      },
+      "max_similarity": 0.8204,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 8,
+      "similarities": {
+        "mira_pseudo": 0.7932,
+        "gen_pseudo": 0.7829
+      },
+      "max_similarity": 0.7932,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 9,
+      "similarities": {
+        "mira_pseudo": 0.8163,
+        "gen_pseudo": 1.0
+      },
+      "max_similarity": 1.0,
+      "best_match": "gen_pseudo"
+    },
+    {
+      "panel": 10,
+      "similarities": {
+        "mira_pseudo": 0.4146,
+        "gen_pseudo": 0.4747
+      },
+      "max_similarity": 0.4747,
+      "best_match": "gen_pseudo"
+    },
+    {
+      "panel": 11,
+      "similarities": {
+        "mira_pseudo": 0.6374,
+        "gen_pseudo": 0.8038
+      },
+      "max_similarity": 0.8038,
+      "best_match": "gen_pseudo"
+    },
+    {
+      "panel": 12,
+      "similarities": {
+        "mira_pseudo": 0.8294,
+        "gen_pseudo": 0.7441
+      },
+      "max_similarity": 0.8294,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 13,
+      "similarities": {
+        "mira_pseudo": 0.4832,
+        "gen_pseudo": 0.5073
+      },
+      "max_similarity": 0.5073,
+      "best_match": "gen_pseudo"
+    },
+    {
+      "panel": 14,
+      "similarities": {
+        "mira_pseudo": 0.441,
+        "gen_pseudo": 0.4867
+      },
+      "max_similarity": 0.4867,
+      "best_match": "gen_pseudo"
+    },
+    {
+      "panel": 15,
+      "similarities": {
+        "mira_pseudo": 0.8425,
+        "gen_pseudo": 0.7274
+      },
+      "max_similarity": 0.8425,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 16,
+      "similarities": {
+        "mira_pseudo": 0.7473,
+        "gen_pseudo": 0.5828
+      },
+      "max_similarity": 0.7473,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 17,
+      "similarities": {
+        "mira_pseudo": 0.6494,
+        "gen_pseudo": 0.5651
+      },
+      "max_similarity": 0.6494,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 18,
+      "similarities": {
+        "mira_pseudo": 0.5603,
+        "gen_pseudo": 0.4963
+      },
+      "max_similarity": 0.5603,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 19,
+      "similarities": {
+        "mira_pseudo": 0.6623,
+        "gen_pseudo": 0.5997
+      },
+      "max_similarity": 0.6623,
+      "best_match": "mira_pseudo"
+    },
+    {
+      "panel": 20,
+      "similarities": {
+        "mira_pseudo": 0.6038,
+        "gen_pseudo": 0.7749
+      },
+      "max_similarity": 0.7749,
+      "best_match": "gen_pseudo"
+    },
+    {
+      "panel": 21,
+      "similarities": {
+        "mira_pseudo": 0.53,
+        "gen_pseudo": 0.5216
+      },
+      "max_similarity": 0.53,
+      "best_match": "mira_pseudo"
+    }
+  ],
+  "interpretation": {
+    "note": "CLIP cosine similarity ranges from -1 to 1. For same-character consistency, scores >0.85 indicate strong visual identity preservation. Scores <0.70 suggest significant style/identity drift.",
+    "threshold_strong": 0.85,
+    "threshold_acceptable": 0.75,
+    "threshold_poor": 0.7
+  }
+}

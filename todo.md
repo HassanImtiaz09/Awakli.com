@@ -6688,3 +6688,26 @@ For each new module/export, the following MUST be demonstrated before declaring 
 - [x] Assemble final MP4 with voice clips via ffmpeg (Ken Burns fallback, 95s, 1080p)
 - [x] Upload final video and provide viewable link (CDN)
 - [x] Write detailed smoke test summary report (docs/wave-8-smoke-test-summary.md)
+
+## Wave 8 — Smoke Test Rejection & Diagnostic (2026-05-09)
+
+### Artifact Collection (for direct inspection)
+- [x] Export all 21 keyframe images to workspace folder (wave8-artifacts/keyframes/)
+- [x] Export all 8 voice clips as separate files (wave8-artifacts/voice-clips/)
+- [x] Recover 18 orphaned Kling V3 video clips from S3 — UNRECOVERABLE (no list API, random key suffixes)
+- [x] Export exact smoke test fixture JSON (wave8-artifacts/smoke-test-fixture.json)
+- [x] Extract per-stage logs: actual model invoked at each call site (wave8-artifacts/per-stage-invocation-log.json)
+- [x] Run full 21×2 CLIP character consistency scores (wave8-artifacts/clip-consistency-scores.json) — Mean max-sim: 0.709
+
+### Root-Cause Investigation (7 failure surfaces)
+- [x] RC1 → Failure Surface #7: Adapter pipeline (StoryMaker/Mitsua/D0-D7) exists but is NOT wired into orchestrator
+- [x] RC2 → Failure Surface #7: Same as above — adapter-composer-pipeline.ts never imported by pipelineOrchestrator.ts
+- [x] RC3 → Failure Surface #2: Kling API calls failed silently; no video clips stored; no PixVerse fallback triggered
+- [x] RC4 → Confirmed: ElevenLabs eleven_turbo_v2_5 is the only TTS provider wired; Inworld not integrated
+- [x] RC5 → Confirmed: Duration is flat 5-10s per clip from Kling API response, no X-Sheet timing system exists
+- [x] RC6 → Failure Surface #1+#2: Gates auto-passed because video_gen reported 'complete' (error swallowed)
+- [x] RC7 → Failure Surface #3: LLM self-assessment invalid; replaced with CLIP ViT-B/32 cosine similarity
+
+### Deliverables
+- [x] Diagnostic report: docs/wave-8-diagnostic-report.md (7 surfaces, root cause + fix + verification each)
+- [ ] Wave 8 re-scope after diagnostic (pending user direction)
