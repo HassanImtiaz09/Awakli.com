@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "testName": "Tier A Re-Run — 5-Panel Honest Failure Reporting",
+    "runDate": "2026-05-09T12:12:30.323Z",
+    "durationMs": 33718,
+    "panels": [
+      1,
+      9,
+      12,
+      17,
+      19
+    ],
+    "pipelineRunId": 150001,
+    "episodeId": 900001
+  },
+  "panelGeneration": {
+    "total": 5,
+    "succeeded": 0,
+    "results": [
+      {
+        "panel": 1,
+        "success": false,
+        "error": "S3 upload failed (400)"
+      },
+      {
+        "panel": 9,
+        "success": false,
+        "error": "S3 upload failed (400)"
+      },
+      {
+        "panel": 12,
+        "success": false,
+        "error": "S3 upload failed (400)"
+      },
+      {
+        "panel": 17,
+        "success": false,
+        "error": "S3 upload failed (400)"
+      },
+      {
+        "panel": 19,
+        "success": false,
+        "error": "S3 upload failed (400)"
+      }
+    ]
+  },
+  "pipeline": {
+    "status": "pending",
+    "error": "Unknown file extension \".ts\" for /home/ubuntu/awakli/server/pipelineOrchestrator.ts",
+    "errors": []
+  },
+  "validations": {
+    "assemblyRethrow": false,
+    "videoGenValidation": false,
+    "honestStatus": false
+  },
+  "verdict": {
+    "honestReporting": false,
+    "allFixesWorking": false,
+    "summary": "PARTIAL — assemblyRethrow, videoGenValidation, honestStatus not validated"
+  }
+}

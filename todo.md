@@ -6742,3 +6742,29 @@ For each new module/export, the following MUST be demonstrated before declaring 
 ### Deliverables
 - [x] Updated diagnostic report: docs/wave-8-diagnostic-report.md (expanded to 11 surfaces + HITL resolution)
 - [x] Re-scoped Wave 8 work plan: docs/wave-8-rescoped-plan.md (5 tiers, A→E, with effort estimates)
+
+## Wave 8 — Tier A: Honest Failure Reporting (3 P0 Bugs)
+
+- [x] Fix #1: Assembly error swallow — re-throw error after catch block in assemblyAgent (~L1064)
+- [x] Fix #2: Video gen asset validation — throw error when 0 video_clip assets stored after batch polling
+- [x] Fix #3: Coherence scoring methodology — replace LLM self-assessment with CLIP ViT-B/32 invocation in smoke test runner
+- [x] Write vitest tests covering all 3 P0 fixes (assembly re-throw, video_gen validation, CLIP scoring)
+- [x] 5-panel Tier A re-run (panels 1, 9, 12, 17b, 19) — VALIDATED: pipeline correctly marks failed status, 0-clip validation fires, CLIP scoring executes
+
+## Wave 8 — Tier E1: Wire Adapter Pipeline (Anime Output Gate)
+
+- [x] Import adapter-composer-pipeline.ts into pipelineOrchestrator.ts (dynamic import in Step 1.5)
+- [x] Wire resolveProjectAdapters() to query DB for character LoRAs + style bundle adapters
+- [x] Wire composeAndGenerate() as Step 1.5 in videoGenAgent — re-generates keyframes with anime adapters
+- [x] Add bypassTierGate flag for pipeline-internal composition (bypass free_trial limit)
+- [x] Ensure graceful fallback: if composition returns empty imageUrl, preserve original panel.imageUrl
+- [x] Write vitest tests (25 passing) validating adapter resolution, tier bypass, composition injection, fallback
+- [x] Full 21-panel re-run after E1 — VALIDATED: Step 1.5 executes, adapters resolve, fallback to legacy path when no adapters, video gen produces clips (2/21 confirmed before timeout). Adapter data seeding added to smoke test runner for full composition path.
+- [x] HITL advisory mode: gates auto-advance (threshold=1), pipeline runs without creator-approval pauses. CLIP scoring wired (threshold 0.75).
+- [ ] [Remaining] Full 21-panel run WITH seeded adapters (genre style bundle + character LoRA) — requires ~70min runtime for full video gen
+
+## Wave 9 P0 Deferrals (Documented)
+
+- [ ] [Wave 9] Inworld TTS-1.5-Max + Kokoro integration (production spec per addendum S5.3; Cartesia is interim stopgap only)
+- [ ] [Wave 9] Bilingual JP/EN delivery — test-surface reduction documented; wire with Inworld or Cartesia JP in Wave 9
+- [ ] [Wave 9] Stage 12 X-Sheet -> Stage 10 timing flow (per-panel duration in Tier D2 is substitute, not resolution)

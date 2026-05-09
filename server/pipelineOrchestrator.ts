@@ -367,6 +367,89 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
 
   pipelineLog.info(`[Router] Classification complete: T1=${tierCounts[1]} T2=${tierCounts[2]} T3=${tierCounts[3]} T4=${tierCounts[4]}, cost=$${classificationCost.toFixed(3)}`);
 
+  // ─── Step 1.5: Adapter Composition — Re-generate keyframes with anime adapters ────
+  // This replaces generic keyframe images with composed anime-style keyframes
+  // using the three-adapter stack (genre + character + sakufuu)
+  try {
+    pipelineLog.info(`[Pipeline] Step 1.5: Loading adapter-composer-pipeline...`);
+    const { composeAndGenerate, resolveProjectAdapters, mapNodeToStage } = await import("./adapter-composer-pipeline");
+    pipelineLog.info(`[Pipeline] Step 1.5: Resolving adapters for project ${projectId}...`);
+    const adapters = await resolveProjectAdapters(projectId);
+    const hasAnyAdapter = adapters.genre || adapters.character || adapters.sakufuu;
+    pipelineLog.info(`[Pipeline] Step 1.5: Adapters resolved — hasAny=${!!hasAnyAdapter}, genre=${!!adapters.genre}, char=${!!adapters.character}, sakufuu=${!!adapters.sakufuu}`);
+
+    if (hasAnyAdapter) {
+      const adapterNames = [
+        adapters.genre ? `genre(${adapters.genre.id})` : null,
+        adapters.character ? `character(${adapters.character.id})` : null,
+        adapters.sakufuu ? `sakufuu(${adapters.sakufuu.id})` : null,
+      ].filter(Boolean).join(", ");
+      pipelineLog.info(`[Pipeline] Adapter Composition active: ${adapterNames}`);
+
+      // Compose keyframes for each panel (replace panel.imageUrl with composed version)
+      let composedCount = 0;
+      let compositionCost = 0;
+      for (const panel of panelsToProcess) {
+        if (!panel.imageUrl) continue;
+        const classification = classifications.get(panel.id);
+        if (!classification) continue;
+
+        // Determine composition stage from classification tier
+        const stage = classification.tier === 1 ? "d1_5_genga" : "d0_character_design";
+
+        try {
+          // Wrap composition in 120s timeout to prevent indefinite hangs on fal.ai queue
+          const compositionResult = await Promise.race([
+            composeAndGenerate(
+              {
+                pipelineRunId: runId,
+                episodeId,
+                projectId,
+                userId: 0,
+                panelId: panel.id,
+                stage,
+                genre: projectGenre,
+                sceneDescription: String(panel.visualDescription || "anime scene"),
+                monthlySpendUsd: 0,
+                bypassTierGate: true, // Pipeline-internal: bypass tier gate for composition
+              },
+              adapters,
+              String(panel.visualDescription || "dramatic anime scene"),
+              {
+                width: 1280,
+                height: 720,
+                numInferenceSteps: 30,
+                guidanceScale: 7.5,
+                sourceImageUrl: panel.imageUrl, // Use existing keyframe as reference
+                denoisingStrength: 0.65, // Preserve composition, restyle to anime
+              }
+            ),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("[Pipeline] Composition timeout: 120s exceeded")), 120_000)),
+          ]);
+
+          if (compositionResult.compositionUsed && compositionResult.imageUrl) {
+            // Replace panel's keyframe with composed anime version
+            (panel as any).imageUrl = compositionResult.imageUrl;
+            composedCount++;
+            compositionCost += compositionResult.costUsd;
+            pipelineLog.info(`[Pipeline] Panel ${panel.id}: Composed keyframe (${compositionResult.adapterCount} adapters, ${compositionResult.provider}, IP-Adapter=${compositionResult.ipAdapterUsed})`);
+          } else {
+            pipelineLog.info(`[Pipeline] Panel ${panel.id}: Composition skipped — ${compositionResult.fallbackReason || "no result"}`);
+          }
+        } catch (compErr) {
+          pipelineLog.warn(`[Pipeline] Panel ${panel.id}: Composition failed, keeping original keyframe:`, { detail: String(compErr) });
+        }
+      }
+
+      pipelineLog.info(`[Pipeline] Adapter Composition complete: ${composedCount}/${panelsToProcess.length} panels composed, cost=$${compositionCost.toFixed(3)}`);
+      totalCost += compositionCost;
+    } else {
+      pipelineLog.info(`[Pipeline] No adapters resolved for project ${projectId} — using original keyframes (legacy path)`);
+    }
+  } catch (adapterErr) {
+    pipelineLog.warn(`[Pipeline] Adapter composition step failed, continuing with original keyframes:`, { detail: String(adapterErr) });
+  }
+
   // ─── Step 2: Submit video generation tasks in batches (Kling limit: 5 parallel) ────
   interface TaskInfo {
     panelId: number;
@@ -706,7 +789,20 @@ async function videoGenAgent(runId: number, episodeId: number, projectId: number
     }
   } // end batch loop
 
-  // ─── Step 4: Save model routing stats ─────────────────────────────────
+  // ─── Step 4: Validate video assets produced (Surface #2 fix) ─────────────
+  const storedVideoAssets = await getPipelineAssetsByRun(runId);
+  const videoClipCount = storedVideoAssets.filter(
+    (a: any) => a.assetType === "video_clip" || a.assetType === "synced_clip"
+  ).length;
+  if (videoClipCount === 0 && panelsToProcess.length > 0) {
+    throw new Error(
+      `Video generation produced 0 clips for ${panelsToProcess.length} panels. ` +
+      `All API calls failed or returned no usable video. Pipeline cannot proceed to assembly.`
+    );
+  }
+  pipelineLog.info(`[Pipeline] Video gen validation: ${videoClipCount}/${panelsToProcess.length} clips stored`);
+
+  // ─── Step 5: Save model routing stats ─────────────────────────────────
   const savings = totalV3OmniCostUsd - totalActualCostUsd;
   const savingsPercent = totalV3OmniCostUsd > 0 ? (savings / totalV3OmniCostUsd) * 100 : 0;
 
@@ -1063,6 +1159,7 @@ async function assemblyAgent(runId: number, episodeId: number, nodeStatuses: Nod
     }
   } catch (err) {
     pipelineLog.error("[Pipeline] Assembly failed:", { error: String(err) });
+    throw err; // Re-throw so global catch marks run as "failed" (Surface #1 fix)
   }
 
   // Create thumbnail

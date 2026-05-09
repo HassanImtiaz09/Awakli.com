@@ -422,7 +422,11 @@ export class DefaultPromptStyleAdapter implements PromptStyleAdapter {
     }
 
     if (traits.distinguishingFeatures && traits.distinguishingFeatures.length > 0) {
-      parts.push(traits.distinguishingFeatures.join(", "));
+      // Handle both string and array formats (smoke test seeds strings, app UI seeds arrays)
+      const features = Array.isArray(traits.distinguishingFeatures)
+        ? traits.distinguishingFeatures.join(", ")
+        : String(traits.distinguishingFeatures);
+      parts.push(features);
     }
 
     // Emotion

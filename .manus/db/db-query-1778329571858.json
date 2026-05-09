@@ -1,0 +1,9 @@
+{
+  "query": "SELECT stageNumber, stageName, status FROM pipeline_stages WHERE pipelineRunId = 150004 ORDER BY stageNumber",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT stageNumber, stageName, status FROM pipeline_stages WHERE pipelineRunId = 150004 ORDER BY stageNumber",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 386
+}

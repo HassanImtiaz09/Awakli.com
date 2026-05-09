@@ -77,6 +77,8 @@ export interface PipelineCompositionContext {
   monthlySpendUsd?: number;
   /** Preferred provider override */
   preferredProvider?: ComposerProvider;
+  /** Bypass tier gate for pipeline-internal composition (benchmark/smoke test) */
+  bypassTierGate?: boolean;
 }
 
 /**
@@ -172,6 +174,8 @@ export async function composeAndGenerate(
   }
 
   // ─── TIER GATE: Composition mode access ───
+  // Pipeline-internal calls bypass tier gate (adapters already resolved from project data)
+  if (!ctx.bypassTierGate) {
   const userTier = await getUserSubscriptionTier(ctx.userId);
   const compositionCheck = isCompositionAllowed(userTier, activeAdapters.length);
   if (!compositionCheck.allowed) {
@@ -193,6 +197,7 @@ export async function composeAndGenerate(
       activeAdapters.pop(); // Remove sakufuu first, then genre
     }
   }
+  } // end tier gate check
 
   // Validate adapter composition
   const validation = validateAdapterComposition(activeAdapters);
@@ -330,18 +335,150 @@ export async function resolveProjectAdapters(
   projectId: number,
   characterId?: string
 ): Promise<ProjectAdapters> {
-  // This is the integration point with the database.
-  // In production, this queries:
-  // 1. loraTrainingJobs for character + sakufuu adapters (status = 'completed')
-  // 2. styleBundles for genre adapter (genreKey → trained DoRA)
-  //
-  // For now, return the interface contract. Actual DB queries will be wired
-  // when the schema migration adds adapterType/initialization columns.
-  return {
+  const result: ProjectAdapters = {
     genre: undefined,
     character: undefined,
     sakufuu: undefined,
   };
+
+  try {
+    const { getDb } = await import("./db");
+    const db = await getDb();
+    if (!db) return result;
+
+    const { projects, characters: charactersTable, characterLibrary, characterLoras, styleBundles } = await import("../drizzle/schema");
+    const { eq, and, desc } = await import("drizzle-orm");
+
+    // 1. Resolve genre adapter from project's animeStyle → style_bundles
+    const [project] = await db.select({ animeStyle: projects.animeStyle, genre: projects.genre })
+      .from(projects).where(eq(projects.id, projectId)).limit(1);
+
+    if (project) {
+      const genreKey = (project.genre as string) || project.animeStyle || "default";
+      const [bundle] = await db.select()
+        .from(styleBundles)
+        .where(and(eq(styleBundles.genreKey, genreKey), eq(styleBundles.isActive, 1)))
+        .limit(1);
+
+      if (bundle) {
+        const loraConfig = bundle.loraConfig as { model_id?: string | null; trigger_word?: string; weight_range?: [number, number]; compatible_bases?: string[] } | null;
+        if (loraConfig?.model_id) {
+          // Genre adapter has trained weights
+          result.genre = {
+            id: `genre_${bundle.genreKey}_v1`,
+            role: "genre",
+            type: "dora",
+            weightsUrl: loraConfig.model_id,
+            triggerWord: loraConfig.trigger_word || `awakli_${bundle.genreKey}`,
+            defaultWeight: loraConfig.weight_range ? loraConfig.weight_range[0] : 0.5,
+            rank: 16,
+            initialization: "pissa",
+            baseModel: loraConfig.compatible_bases?.[0] || "Flux.1-dev",
+          };
+        } else if (bundle.referenceImageUrls && (bundle.referenceImageUrls as string[]).length > 0) {
+          // No trained weights but has reference images — create a lightweight genre adapter
+          // that will be used for IP-Adapter conditioning only
+          result.genre = {
+            id: `genre_${bundle.genreKey}_ref`,
+            role: "genre",
+            type: "lora",
+            weightsUrl: "", // No weights — will rely on IP-Adapter from RAG
+            triggerWord: `${bundle.genreKey} anime style`,
+            defaultWeight: 0.4,
+            rank: 16,
+            initialization: "random",
+            baseModel: "Flux.1-dev",
+          };
+        }
+      }
+    }
+
+    // 2. Resolve character adapter from character_library + character_loras
+    // Find the primary character for this project (or specific characterId)
+    let targetCharacterId: number | undefined;
+    if (characterId) {
+      targetCharacterId = parseInt(characterId, 10);
+    } else {
+      // Find first character with a ready LoRA in this project's characters
+      const projectChars = await db.select({ id: charactersTable.id, loraModelUrl: charactersTable.loraModelUrl, loraStatus: charactersTable.loraStatus, loraTriggerWord: charactersTable.loraTriggerWord })
+        .from(charactersTable)
+        .where(eq(charactersTable.projectId, projectId));
+
+      // First try characters with ready LoRA
+      const readyChar = projectChars.find(c => c.loraStatus === "ready" && c.loraModelUrl);
+      if (readyChar) {
+        result.character = {
+          id: `char_project_${readyChar.id}`,
+          role: "character",
+          type: "lora",
+          weightsUrl: readyChar.loraModelUrl!,
+          triggerWord: readyChar.loraTriggerWord || `awakli_char_${readyChar.id}`,
+          defaultWeight: 0.8,
+          rank: 32,
+          initialization: "random",
+          baseModel: "Flux.1-dev",
+        };
+      }
+    }
+
+    // If no project-level character found, check character_library
+    if (!result.character && targetCharacterId) {
+      const [libEntry] = await db.select()
+        .from(characterLibrary)
+        .where(eq(characterLibrary.id, targetCharacterId))
+        .limit(1);
+
+      if (libEntry?.activeLoraId) {
+        const [lora] = await db.select()
+          .from(characterLoras)
+          .where(and(
+            eq(characterLoras.id, libEntry.activeLoraId),
+            eq(characterLoras.status, "active")
+          ))
+          .limit(1);
+
+        if (lora) {
+          result.character = {
+            id: `char_lib_${libEntry.id}_v${lora.version}`,
+            role: "character",
+            type: lora.trainingParams && (lora.trainingParams as any).adapterType === "dora" ? "dora" : "lora",
+            weightsUrl: lora.artifactPath,
+            triggerWord: lora.triggerWord,
+            defaultWeight: 0.8,
+            rank: (lora.trainingParams as any)?.rank || 32,
+            initialization: (lora.trainingParams as any)?.initialization || "random",
+            baseModel: (lora.trainingParams as any)?.baseModel || "Flux.1-dev",
+          };
+        }
+      }
+    }
+
+    // 3. Sakufuu adapter — look for a completed sakufuu training job for the project owner
+    // Sakufuu adapters are per-creator, not per-project
+    if (project) {
+      const [proj] = await db.select({ userId: projects.userId })
+        .from(projects).where(eq(projects.id, projectId)).limit(1);
+      if (proj?.userId) {
+        // Check for a sakufuu-type character in the library with active LoRA
+        const [sakufuuEntry] = await db.select()
+          .from(characterLibrary)
+          .where(and(
+            eq(characterLibrary.userId, proj.userId),
+            eq(characterLibrary.loraStatus, "active")
+          ))
+          .orderBy(desc(characterLibrary.updatedAt))
+          .limit(1);
+
+        // For now, sakufuu requires explicit training — leave undefined if not found
+        // This will be populated when the sakufuu training pipeline is complete
+      }
+    }
+  } catch (err) {
+    // Adapter resolution is best-effort — log and return partial results
+    console.warn(`[AdapterPipeline] resolveProjectAdapters failed for project ${projectId}:`, err);
+  }
+
+  return result;
 }
 
 // ─── Stage-Specific Helpers ─────────────────────────────────────────────────

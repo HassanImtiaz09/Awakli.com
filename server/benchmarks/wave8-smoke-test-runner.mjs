@@ -13,7 +13,7 @@
  * 5. Creates pipeline_run and invokes runPipeline(runId) via tsx import
  * 6. Polls pipeline_run status until completed/failed
  * 7. Collects per-stage results, costs, errors
- * 8. Scores output coherence via LLM vision (threshold ≥0.70)
+ * 8. Scores character consistency via CLIP ViT-B/32 (threshold ≥0.75 mean max-sim)
  * 9. Persists findings to test-results/wave8-smoke-test-2026-05-09.json
  *
  * Usage: npx tsx server/benchmarks/wave8-smoke-test-runner.mjs
@@ -27,10 +27,11 @@
  * @see Wave 8 scope proposal
  */
 
-import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { Buffer } from "node:buffer";
+import { execSync } from "child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, "../..");
@@ -89,7 +90,7 @@ async function uploadToS3(b64Data, contentType, relKey) {
 // ─── Timing & Cost Tracking ─────────────────────────────────────────────────
 
 const timings = {};
-const costs = { imageGeneration: 0, llmScoring: 0, pipeline: 0 };
+const costs = { imageGeneration: 0, clipScoring: 0, pipeline: 0 };
 const errors = [];
 let totalImagesGenerated = 0;
 
@@ -143,80 +144,115 @@ async function generateImage(prompt, originalImages = []) {
   };
 }
 
-// ─── LLM Scoring ────────────────────────────────────────────────────────────
+// ─── CLIP ViT-B/32 Scoring (Surface #3 fix: replaces invalid LLM self-assessment) ──
+// Invokes the Python CLIP scorer which computes cosine similarity between panel
+// keyframes and character reference images. This is the correct methodology for
+// character consistency measurement.
 
-async function scorePanelCoherence(panelB64, panelDescription, characterName) {
-  const llmUrl = `${FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`;
+/**
+ * Run CLIP ViT-B/32 character consistency scoring.
+ * Downloads panel images to keyframes dir, then invokes clip-scoring.py.
+ * Returns { meanMaxSimilarity, pass, perPanelScores } or null on failure.
+ *
+ * Threshold: 0.75 mean max-sim (acceptable character consistency)
+ */
+async function runClipConsistencyScoring(episodeId) {
+  const KEYFRAMES_DIR = resolve(PROJECT_ROOT, "wave8-artifacts/keyframes");
+  const REFS_DIR = resolve(PROJECT_ROOT, "wave8-artifacts/character-refs");
+  const CLIP_SCRIPT = resolve(PROJECT_ROOT, "wave8-artifacts/clip-scoring.py");
+  const CLIP_OUTPUT = resolve(PROJECT_ROOT, "wave8-artifacts/clip-consistency-scores.json");
 
-  const systemPrompt = `You are an expert anime production quality evaluator. Score the following generated anime panel on these dimensions (0.0-1.0 each):
+  // Ensure directories exist
+  if (!existsSync(KEYFRAMES_DIR)) mkdirSync(KEYFRAMES_DIR, { recursive: true });
+  if (!existsSync(REFS_DIR)) mkdirSync(REFS_DIR, { recursive: true });
 
-1. visual_quality: Technical quality of the anime art (line work, coloring, composition). 1.0 = professional anime production quality.
-2. prompt_adherence: How well the image matches the visual description provided. 1.0 = perfect match.
-3. character_consistency: If a character is present, how consistent are they with their description. 1.0 = perfect match.
-4. mood_atmosphere: Does the image convey the intended mood/atmosphere. 1.0 = perfectly captures the mood.
-5. anime_style: Is this recognizably anime-style art (not photorealistic, not Western cartoon). 1.0 = unmistakably anime.
+  // Download panel images from DB into keyframes dir
+  const { sql } = await import("drizzle-orm");
+  const database = await getDb();
+  const [panelsWithImages] = await database.execute(sql`
+    SELECT id, sceneNumber, panelNumber, imageUrl
+    FROM panels
+    WHERE episodeId = ${episodeId} AND imageUrl IS NOT NULL
+    ORDER BY sceneNumber, panelNumber
+  `);
 
-Respond with ONLY a JSON object:
-{"visual_quality": 0.XX, "prompt_adherence": 0.XX, "character_consistency": 0.XX, "mood_atmosphere": 0.XX, "anime_style": 0.XX, "notes": "brief observation"}`;
+  if (!panelsWithImages || panelsWithImages.length === 0) {
+    console.log("  ✗ No panels with images found for CLIP scoring");
+    return null;
+  }
 
-  const dataUrl = `data:image/png;base64,${panelB64}`;
-
-  try {
-    const response = await fetch(llmUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${FORGE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gemini-2.5-flash",
-        max_tokens: 32768,
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: `Score this anime panel.\n\nVisual description: "${panelDescription}"\nCharacter (if present): ${characterName || "N/A"}\n\nScore the panel:` },
-              { type: "image_url", image_url: { url: dataUrl, detail: "high" } },
-            ],
-          },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "panel_coherence_score",
-            strict: true,
-            schema: {
-              type: "object",
-              properties: {
-                visual_quality: { type: "number" },
-                prompt_adherence: { type: "number" },
-                character_consistency: { type: "number" },
-                mood_atmosphere: { type: "number" },
-                anime_style: { type: "number" },
-                notes: { type: "string" },
-              },
-              required: ["visual_quality", "prompt_adherence", "character_consistency", "mood_atmosphere", "anime_style", "notes"],
-              additionalProperties: false,
-            },
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => "");
-      console.warn(`  LLM scoring failed (${response.status}): ${text.slice(0, 200)}`);
-      return null;
+  console.log(`  Downloading ${panelsWithImages.length} panel images for CLIP scoring...`);
+  let downloaded = 0;
+  for (let i = 0; i < panelsWithImages.length; i++) {
+    const panel = panelsWithImages[i];
+    const panelFile = resolve(KEYFRAMES_DIR, `panel_${String(i + 1).padStart(2, "0")}.png`);
+    try {
+      const resp = await fetch(panel.imageUrl);
+      if (resp.ok) {
+        const buf = Buffer.from(await resp.arrayBuffer());
+        writeFileSync(panelFile, buf);
+        downloaded++;
+      }
+    } catch (e) {
+      console.warn(`    Panel ${i + 1} download failed: ${e.message}`);
     }
+  }
+  console.log(`  Downloaded ${downloaded}/${panelsWithImages.length} panel images`);
 
-    const result = await response.json();
-    costs.llmScoring += 0.01; // ~$0.01 per LLM scoring call
-    const content = result.choices?.[0]?.message?.content;
-    if (!content) return null;
-    return JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
-  } catch (err) {
-    console.warn(`  LLM scoring error: ${err.message}`);
+  if (downloaded === 0) {
+    return null;
+  }
+
+  // Download character reference images
+  const [characters] = await database.execute(sql`
+    SELECT id, name, referenceImages
+    FROM characters
+    WHERE projectId = (SELECT projectId FROM episodes WHERE id = ${episodeId} LIMIT 1)
+  `);
+  if (characters && characters.length > 0) {
+    for (const char of characters) {
+      const refs = typeof char.referenceImages === "string" ? JSON.parse(char.referenceImages) : char.referenceImages;
+      if (refs && refs.length > 0) {
+        const refUrl = refs[0];
+        const safeName = char.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        const refFile = resolve(REFS_DIR, `${safeName}.png`);
+        try {
+          const resp = await fetch(refUrl);
+          if (resp.ok) {
+            const buf = Buffer.from(await resp.arrayBuffer());
+            writeFileSync(refFile, buf);
+            console.log(`  Downloaded character ref: ${char.name}`);
+          }
+        } catch (e) {
+          console.warn(`  Character ref download failed for ${char.name}: ${e.message}`);
+        }
+      }
+    }
+  }
+
+  // Invoke CLIP scoring Python script
+  try {
+    console.log("  Running CLIP ViT-B/32 scoring...");
+    const output = execSync(`python3 "${CLIP_SCRIPT}"`, {
+      cwd: PROJECT_ROOT,
+      timeout: 120_000, // 2 min timeout for model loading + inference
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    console.log(output);
+  } catch (clipErr) {
+    console.error(`  CLIP scoring failed: ${clipErr.message}`);
+    if (clipErr.stderr) console.error(`  stderr: ${clipErr.stderr.slice(0, 500)}`);
+    return null;
+  }
+
+  // Read CLIP results
+  try {
+    const clipResults = JSON.parse(readFileSync(CLIP_OUTPUT, "utf-8"));
+    costs.clipScoring += 0.001; // Negligible compute cost for local CLIP inference
+    return clipResults;
+  } catch (readErr) {
+    console.error(`  Failed to read CLIP results: ${readErr.message}`);
     return null;
   }
 }
@@ -397,6 +433,40 @@ async function seedTestData() {
   const masterGenId = genResult.insertId;
   console.log(`    → Characters created: Mira (id=${miraId}), Master Gen (id=${masterGenId})`);
 
+  // 7. Seed adapter data for Tier E1 composition testing
+  console.log("  [7/7] Seeding adapter data (style bundle + character LoRA)...");
+
+  // 7a. Create a 'shonen' style bundle with reference images for IP-Adapter conditioning
+  // Use the generated character reference images as style references (they'll be anime-style)
+  await database.execute(sql`
+    INSERT IGNORE INTO style_bundles (genre_key, name, description, prompt_template, negative_prompt, color_palette, frame_rate_default, reference_image_urls, lora_config, is_active, sort_order)
+    VALUES (
+      'shonen',
+      'Shōnen Action',
+      'High-energy shōnen anime style with dynamic poses and expressive faces',
+      'shonen anime style, dynamic action, expressive characters, vibrant colors, cel-shaded',
+      'photorealistic, 3d render, western cartoon, chibi, sketch, low quality',
+      ${JSON.stringify({primary: "#FF4500", secondary: "#1E90FF", accent: "#FFD700", background: "#1a1a2e", highlight: "#FF6B6B", shadow: "#0d0d1a"})},
+      24,
+      ${JSON.stringify(["https://huggingface.co/datasets/multimodalart/flux-aesthetic-anime/resolve/main/images/0.png"])},
+      ${JSON.stringify({model_id: null, trigger_word: "shonen_anime_style", weight_range: [0.4, 0.8], compatible_bases: ["Flux.1-dev"]})},
+      1,
+      1
+    )
+  `);
+  console.log("    → Style bundle 'shonen' seeded (IP-Adapter conditioning via reference images)");
+
+  // 7b. Update Mira character with a mock LoRA URL and ready status
+  // Using a publicly available anime LoRA from HuggingFace as test adapter
+  await database.execute(sql`
+    UPDATE characters
+    SET loraModelUrl = 'https://huggingface.co/alvdansen/midsommardream/resolve/main/midsommardream-lora.safetensors',
+        loraStatus = 'ready',
+        loraTriggerWord = 'awakli_mira_v1'
+    WHERE id = ${miraId}
+  `);
+  console.log("    → Mira character LoRA seeded (midsommardream test adapter, status=ready)");
+
   endTimer("seed");
   return { userId, projectId, episodeId, miraId, masterGenId };
 }
@@ -548,13 +618,46 @@ async function runPipelineTraversal(userId, projectId, episodeId) {
 
   let pipelineError = null;
   try {
-    const { runPipeline } = await import("../pipelineOrchestrator.ts");
-    await runPipeline(runId);
-    console.log("    → runPipeline() returned successfully");
+    // Use tsx subprocess to handle TypeScript imports properly
+    const pipelineScript = resolve(PROJECT_ROOT, "_smoke-run-pipeline.ts");
+    writeFileSync(pipelineScript, `
+import { runPipeline } from "./server/pipelineOrchestrator";
+
+async function main() {
+  try {
+    await runPipeline(${runId});
+    console.log("PIPELINE_RESULT:completed");
+  } catch (err: any) {
+    console.error("PIPELINE_ERROR:" + (err?.message || String(err)));
+    process.exit(1);
+  }
+}
+main();
+`);
+    console.log("    Executing pipeline via tsx subprocess...");
+    const pipelineOutput = execSync(`npx tsx "${pipelineScript}"`, {
+      cwd: PROJECT_ROOT,
+      timeout: 600_000, // 10 min timeout for full pipeline
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env },
+    });
+    if (pipelineOutput.includes("PIPELINE_RESULT:completed")) {
+      console.log("    → runPipeline() returned successfully");
+    } else {
+      console.log("    → Pipeline output:", pipelineOutput.slice(-500));
+    }
   } catch (err) {
     pipelineError = err;
-    console.error(`    ✗ runPipeline() threw: ${err.message}`);
-    errors.push({ phase: "pipeline", error: err.message, stack: err.stack?.slice(0, 500) });
+    const stderr = err.stderr ? err.stderr.slice(-500) : "";
+    const stdout = err.stdout ? err.stdout.slice(-500) : "";
+    const errorMsg = stderr.includes("PIPELINE_ERROR:") 
+      ? stderr.split("PIPELINE_ERROR:")[1]?.trim()
+      : stdout.includes("PIPELINE_ERROR:") 
+        ? stdout.split("PIPELINE_ERROR:")[1]?.trim()
+        : err.message;
+    console.error(`    ✗ runPipeline() threw: ${errorMsg}`);
+    errors.push({ phase: "pipeline", error: errorMsg, stack: err.stack?.slice(0, 500) });
   }
 
   // 3. Read final pipeline state
@@ -629,106 +732,60 @@ async function runPipelineTraversal(userId, projectId, episodeId) {
   return pipelineResult;
 }
 
-// ─── Coherence Scoring ──────────────────────────────────────────────────────
+// ─── Coherence Scoring (CLIP ViT-B/32 — Surface #3 fix) ─────────────────────
+// Uses CLIP cosine similarity for character consistency measurement.
+// Threshold: 0.75 mean max-sim (acceptable character consistency).
+// This replaces the invalid LLM self-assessment methodology.
 
 async function scoreOutputCoherence(episodeId) {
-  console.log("\n═══ Phase 5: Output Coherence Scoring ═══\n");
+  console.log("\n═══ Phase 5: Output Coherence Scoring (CLIP ViT-B/32) ═══\n");
   startTimer("coherence");
 
-  const { sql } = await import("drizzle-orm");
-  const database = await getDb();
+  const clipResult = await runClipConsistencyScoring(episodeId);
 
-  // Get panels with images for scoring
-  const [panelsWithImages] = await database.execute(sql`
-    SELECT id, sceneNumber, panelNumber, visualDescription, imageUrl
-    FROM panels
-    WHERE episodeId = ${episodeId} AND imageUrl IS NOT NULL
-    ORDER BY sceneNumber, panelNumber
-    LIMIT 6
-  `);
-
-  if (!panelsWithImages || panelsWithImages.length === 0) {
-    console.log("  ✗ No panels with images found for scoring");
+  if (!clipResult) {
+    console.log("  ✗ CLIP scoring failed or no images available");
     endTimer("coherence");
-    return { composite: 0, scores: [], error: "No panels with images" };
+    return {
+      composite: 0,
+      methodology: "CLIP ViT-B/32 cosine similarity",
+      threshold: 0.75,
+      pass: false,
+      error: "CLIP scoring failed",
+    };
   }
 
-  // Score a sample of panels (first 2 from each scene, max 6 total)
-  const scores = [];
-  const samplePanels = panelsWithImages.slice(0, 6);
-
-  console.log(`  Scoring ${samplePanels.length} sample panels...\n`);
-
-  for (const panel of samplePanels) {
-    const label = `S${panel.sceneNumber}P${panel.panelNumber}`;
-    console.log(`  [${label}] Scoring...`);
-
-    // Download image from S3 URL and convert to base64 for LLM scoring
-    const imageUrl = panel.imageUrl;
-    if (!imageUrl || imageUrl.startsWith("data:")) {
-      console.log(`    → Skipped (no valid URL)`);
-      continue;
-    }
-    let b64;
-    try {
-      const imgResp = await fetch(imageUrl);
-      if (!imgResp.ok) { console.log(`    → Skipped (fetch failed)`); continue; }
-      const imgBuffer = await imgResp.arrayBuffer();
-      b64 = Buffer.from(imgBuffer).toString("base64");
-    } catch (fetchErr) {
-      console.log(`    → Skipped (fetch error: ${fetchErr.message})`);
-      continue;
-    }
-
-    const charName = PANELS.find(p => p.scene === panel.sceneNumber && p.panel === panel.panelNumber)?.character || null;
-    const score = await scorePanelCoherence(b64, panel.visualDescription, charName);
-
-    if (score) {
-      const composite = (
-        score.visual_quality +
-        score.prompt_adherence +
-        score.character_consistency +
-        score.mood_atmosphere +
-        score.anime_style
-      ) / 5;
-
-      scores.push({
-        panel: label,
-        ...score,
-        composite,
-      });
-      console.log(`    → Composite: ${composite.toFixed(3)} (quality=${score.visual_quality}, adherence=${score.prompt_adherence}, character=${score.character_consistency}, mood=${score.mood_atmosphere}, anime=${score.anime_style})`);
-    } else {
-      console.log(`    → Scoring failed (LLM error)`);
-      scores.push({ panel: label, composite: 0, error: "LLM scoring failed" });
-    }
-
-    // Small delay between scoring calls
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  const validScores = scores.filter(s => s.composite > 0);
-  const overallComposite = validScores.length > 0
-    ? validScores.reduce((sum, s) => sum + s.composite, 0) / validScores.length
-    : 0;
-
-  const threshold = 0.70;
-  const pass = overallComposite >= threshold;
+  const meanMaxSim = clipResult.aggregateStats?.meanMaxSimilarity || 0;
+  const threshold = 0.75; // Acceptable character consistency threshold
+  const pass = meanMaxSim >= threshold;
 
   endTimer("coherence");
-  console.log(`\n  Overall coherence: ${overallComposite.toFixed(3)} (threshold: ${threshold})`);
+  console.log(`\n  CLIP Mean Max Similarity: ${meanMaxSim.toFixed(4)} (threshold: ${threshold})`);
+  console.log(`  Min similarity: ${clipResult.aggregateStats?.minSimilarity?.toFixed(4) || "N/A"}`);
+  console.log(`  Max similarity: ${clipResult.aggregateStats?.maxSimilarity?.toFixed(4) || "N/A"}`);
   console.log(`  Result: ${pass ? "PASS ✓" : "FAIL ✗"}`);
-  console.log(`  Panels scored: ${validScores.length}/${samplePanels.length}`);
+  if (!pass) {
+    console.error(`  ⚠️  HARD TEST FAILURE: CLIP score ${meanMaxSim.toFixed(4)} < ${threshold} threshold`);
+  }
 
   return {
-    composite: overallComposite,
+    composite: meanMaxSim,
+    methodology: "CLIP ViT-B/32 cosine similarity (character consistency)",
+    model: "openai/clip-vit-base-patch32",
     threshold,
     pass,
-    scores,
-    panelsScored: validScores.length,
-    panelsTotal: samplePanels.length,
+    aggregateStats: clipResult.aggregateStats,
+    perPanelScores: clipResult.perPanelScores,
+    panelsScored: clipResult.perPanelScores?.filter(p => p.similarities)?.length || 0,
+    panelsTotal: clipResult.perPanelScores?.length || 0,
   };
 }
+
+// ─── LEGACY scoreOutputCoherence removed ─────────────────────────────────────
+// The old LLM-based scoring (scorePanelCoherence) has been replaced above.
+// See docs/wave-8-diagnostic-report.md Surface #3 for rationale.
+
+// (Old LLM-based scoreOutputCoherence removed — see Surface #3 in diagnostic report)
 
 // ─── Results Persistence ────────────────────────────────────────────────────
 
@@ -743,9 +800,9 @@ function persistResults(seedData, charRefs, panelResults, pipelineResult, cohere
       testContent: "First Light (Shōnen training arc, 21 slices, 2 characters)",
       runDate: new Date().toISOString(),
       environment: "sandbox",
-      methodology: "End-to-end pipeline traversal: seed DB → generate images → run 17-stage pipeline → score coherence",
+      methodology: "End-to-end pipeline traversal: seed DB → generate images → run 17-stage pipeline → CLIP character consistency scoring",
       thresholds: {
-        coherence: "≥0.70 (sanity check for creator iteration, not production quality)",
+        coherence: "≥0.75 mean max-sim (CLIP ViT-B/32 character consistency)",
       },
     },
     timings: Object.fromEntries(
@@ -753,9 +810,9 @@ function persistResults(seedData, charRefs, panelResults, pipelineResult, cohere
     ),
     costs: {
       imageGeneration: { usd: costs.imageGeneration.toFixed(2), imagesGenerated: totalImagesGenerated },
-      llmScoring: { usd: costs.llmScoring.toFixed(2) },
+      clipScoring: { usd: costs.clipScoring.toFixed(4), note: "Local CLIP inference, negligible cost" },
       pipeline: { cents: pipelineResult?.totalCost || 0 },
-      totalEstimatedUsd: (costs.imageGeneration + costs.llmScoring + (pipelineResult?.totalCost || 0) / 100).toFixed(2),
+      totalEstimatedUsd: (costs.imageGeneration + costs.clipScoring + (pipelineResult?.totalCost || 0) / 100).toFixed(2),
     },
     phases: {
       seed: {
@@ -817,8 +874,8 @@ function persistResults(seedData, charRefs, panelResults, pipelineResult, cohere
     fixture.verdict.gapList.push({
       id: "G2",
       severity: "medium",
-      description: `Coherence below threshold (${coherenceResult?.composite?.toFixed(3) || 0} < 0.70)`,
-      details: coherenceResult?.scores?.filter(s => s.composite < 0.70).map(s => s.panel),
+      description: `CLIP character consistency below threshold (${coherenceResult?.composite?.toFixed(4) || 0} < 0.75)`,
+      details: coherenceResult?.perPanelScores?.filter(p => (p.max_similarity || 0) < 0.75).map(p => `panel_${p.panel}`) || [],
     });
   }
   if (errors.length > 0) {
@@ -886,7 +943,7 @@ async function main() {
   console.log(`\n  Total duration: ${(timings.total?.durationMs / 1000).toFixed(1)}s`);
   console.log(`  Images generated: ${totalImagesGenerated}`);
   console.log(`  Pipeline status: ${pipelineResult?.status || "unknown"}`);
-  console.log(`  Coherence: ${coherenceResult?.composite?.toFixed(3) || "N/A"} (threshold: 0.70)`);
+  console.log(`  CLIP Consistency: ${coherenceResult?.composite?.toFixed(4) || "N/A"} (threshold: 0.75)`);
   console.log(`  Verdict: ${fixture.verdict.overallPass ? "PASS ✓" : "PARTIAL (see gap list)"}`);
   console.log(`  Gaps identified: ${fixture.verdict.gapList.length}`);
   if (fixture.verdict.gapList.length > 0) {

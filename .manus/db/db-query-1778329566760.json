@@ -1,0 +1,9 @@
+{
+  "query": "SELECT COUNT(*) as total, assetType FROM pipeline_assets WHERE pipelineRunId IN (150003, 150004) GROUP BY assetType",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT COUNT(*) as total, assetType FROM pipeline_assets WHERE pipelineRunId IN (150003, 150004) GROUP BY assetType",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 273
+}

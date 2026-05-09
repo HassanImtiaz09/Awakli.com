@@ -1,357 +1,45 @@
 {
   "metadata": {
-    "testName": "Wave 8 Item 1b — Pipeline Traversal Smoke Test",
-    "testContent": "First Light (Shōnen training arc, 21 slices, 2 characters)",
-    "runDate": "2026-05-09T04:47:07.594Z",
-    "environment": "sandbox",
-    "methodology": "End-to-end pipeline traversal: seed DB → generate images → run 17-stage pipeline → score coherence",
-    "thresholds": {
-      "coherence": "≥0.70 (sanity check for creator iteration, not production quality)"
-    }
+    "testName": "Wave 8 Item 1b — FATAL ERROR",
+    "runDate": "2026-05-09T13:17:21.845Z"
+  },
+  "fatalError": {
+    "message": "Failed query: \n    SELECT * FROM pipeline_runs WHERE id = ? LIMIT 1\n  \nparams: 150007",
+    "stack": "Error: Failed query: \n    SELECT * FROM pipeline_runs WHERE id = ? LIMIT 1\n  \nparams: 150007\n    at MySql2PreparedQuery.queryWithCache (file:///home/ubuntu/awakli/node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/session.js:25:15)\n    at async MySql2PreparedQuery.execute (file:///home/ubuntu/awakli/node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql2/session.js:52:19)\n    at async runPipelineTraversal (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:631:24)\n    at async main (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:896:26)"
   },
   "timings": {
     "total": {
-      "durationMs": 599044
+      "start": 1778331972281
     },
     "seed": {
-      "durationMs": 973
+      "start": 1778331972282,
+      "end": 1778331973109,
+      "durationMs": 827
     },
     "characterRefs": {
-      "durationMs": 11808
+      "start": 1778331973110,
+      "end": 1778331984529,
+      "durationMs": 11419
     },
     "panelImages": {
-      "durationMs": 146337
+      "start": 1778331984529,
+      "end": 1778332136727,
+      "durationMs": 152198
     },
     "pipeline": {
-      "durationMs": 421650
-    },
-    "coherence": {
-      "durationMs": 18274
+      "start": 1778332136727
     }
   },
   "costs": {
-    "imageGeneration": {
-      "usd": "0.92",
-      "imagesGenerated": 23
-    },
-    "llmScoring": {
-      "usd": "0.06"
-    },
-    "pipeline": {
-      "cents": 340
-    },
-    "totalEstimatedUsd": "4.38"
+    "imageGeneration": 0.9200000000000003,
+    "clipScoring": 0,
+    "pipeline": 0
   },
-  "phases": {
-    "seed": {
-      "userId": 1,
-      "projectId": 870004,
-      "episodeId": 870004,
-      "characters": {
-        "miraId": 30007,
-        "masterGenId": 30008
-      }
-    },
-    "characterReferences": {
-      "mira": {
-        "b64Length": 1171688,
-        "inferenceTimeMs": 5645,
-        "success": true
-      },
-      "masterGen": {
-        "b64Length": 1118136,
-        "inferenceTimeMs": 5720,
-        "success": true
-      }
-    },
-    "panelGeneration": {
-      "total": 21,
-      "succeeded": 21,
-      "failed": 0,
-      "sakugaPanels": 3,
-      "avgInferenceMs": 6260,
-      "panels": [
-        {
-          "scene": 1,
-          "panel": 1,
-          "success": true,
-          "inferenceTimeMs": 6881,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p1_jmfbmec2.png"
-        },
-        {
-          "scene": 1,
-          "panel": 2,
-          "success": true,
-          "inferenceTimeMs": 6854,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p2_3091kbg9.png"
-        },
-        {
-          "scene": 1,
-          "panel": 3,
-          "success": true,
-          "inferenceTimeMs": 6582,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p3_93i1tkmp.png"
-        },
-        {
-          "scene": 1,
-          "panel": 4,
-          "success": true,
-          "inferenceTimeMs": 6594,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p4_vy6sqj6t.png"
-        },
-        {
-          "scene": 1,
-          "panel": 5,
-          "success": true,
-          "inferenceTimeMs": 5878,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p5_nyxqkcs7.png"
-        },
-        {
-          "scene": 1,
-          "panel": 6,
-          "success": true,
-          "inferenceTimeMs": 6394,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s1p6_zt55l334.png"
-        },
-        {
-          "scene": 2,
-          "panel": 7,
-          "success": true,
-          "inferenceTimeMs": 5872,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p7_ir4n3i1y.png"
-        },
-        {
-          "scene": 2,
-          "panel": 8,
-          "success": true,
-          "inferenceTimeMs": 5975,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p8_m8y21tlb.png"
-        },
-        {
-          "scene": 2,
-          "panel": 9,
-          "success": true,
-          "inferenceTimeMs": 6040,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p9_3h9ias81.png"
-        },
-        {
-          "scene": 2,
-          "panel": 10,
-          "success": true,
-          "inferenceTimeMs": 6499,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p10_u3a1we4d.png"
-        },
-        {
-          "scene": 2,
-          "panel": 11,
-          "success": true,
-          "inferenceTimeMs": 5980,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p11_5kpp15ws.png"
-        },
-        {
-          "scene": 2,
-          "panel": 12,
-          "success": true,
-          "inferenceTimeMs": 6426,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p12_1dgjskp4.png"
-        },
-        {
-          "scene": 2,
-          "panel": 13,
-          "success": true,
-          "inferenceTimeMs": 6409,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p13_oh1451oc.png"
-        },
-        {
-          "scene": 2,
-          "panel": 14,
-          "success": true,
-          "inferenceTimeMs": 6025,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s2p14_592e94ei.png"
-        },
-        {
-          "scene": 3,
-          "panel": 15,
-          "success": true,
-          "inferenceTimeMs": 6023,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p15_pf33dd53.png"
-        },
-        {
-          "scene": 3,
-          "panel": 16,
-          "success": true,
-          "inferenceTimeMs": 6255,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p16_kfaca7xm.png"
-        },
-        {
-          "scene": 3,
-          "panel": 17,
-          "success": true,
-          "inferenceTimeMs": 6205,
-          "sakuga": true,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p17_s71s7opk.png"
-        },
-        {
-          "scene": 3,
-          "panel": 18,
-          "success": true,
-          "inferenceTimeMs": 6827,
-          "sakuga": true,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p18_0ccqm9ud.png"
-        },
-        {
-          "scene": 3,
-          "panel": 19,
-          "success": true,
-          "inferenceTimeMs": 6325,
-          "sakuga": true,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p19_6aa2ttv6.png"
-        },
-        {
-          "scene": 3,
-          "panel": 20,
-          "success": true,
-          "inferenceTimeMs": 5558,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p20_22v8s4r6.png"
-        },
-        {
-          "scene": 3,
-          "panel": 21,
-          "success": true,
-          "inferenceTimeMs": 5860,
-          "sakuga": false,
-          "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/smoke-test/panels/s3p21_ibso42xh.png"
-        }
-      ]
-    },
-    "pipeline": {
-      "runId": 120003,
-      "status": "completed",
-      "progress": 100,
-      "totalCost": 340,
-      "nodeStatuses": {
-        "ambient_gen": "skipped",
-        "assembly": "complete",
-        "foley_gen": "skipped",
-        "lip_sync": "skipped",
-        "music_gen": "complete",
-        "video_gen": "complete",
-        "voice_gen": "complete"
-      },
-      "nodeCosts": {
-        "assembly": 20,
-        "music_gen": 40,
-        "video_gen": 200,
-        "voice_gen": 80
-      },
-      "errors": null,
-      "currentNode": "qa_review",
-      "currentStageNumber": null,
-      "startedAt": "2026-05-09 04:39:48",
-      "completedAt": "2026-05-09 04:46:49",
-      "pipelineError": null,
-      "assetCount": 10,
-      "assetTypes": {
-        "voice_clip": 8,
-        "music_segment": 1,
-        "thumbnail": 1
-      },
-      "gates": [],
-      "stagesSummary": []
-    },
-    "coherence": {
-      "composite": 0.7533333333333333,
-      "threshold": 0.7,
-      "pass": true,
-      "scores": [
-        {
-          "panel": "S1P1",
-          "visual_quality": 0.9,
-          "prompt_adherence": 0.9,
-          "character_consistency": 0.9,
-          "mood_atmosphere": 0.9,
-          "anime_style": 1,
-          "notes": "The image beautifully captures the scene described, with excellent visual quality and a strong anime aesthetic. Mira's appearance is consistent, and the dojo atmosphere is well-conveyed. The sun-streaks are present, though perhaps not as prominent as 'across the wooden floor' might imply. Master Gen's eyes are closed as requested.",
-          "composite": 0.9199999999999999
-        },
-        {
-          "panel": "S1P2",
-          "visual_quality": 0.8,
-          "prompt_adherence": 0.8,
-          "character_consistency": 0.9,
-          "mood_atmosphere": 0.9,
-          "anime_style": 0.1,
-          "notes": "The image is high quality and matches most of the prompt, including the character description. However, the art style is photorealistic and not anime.",
-          "composite": 0.7
-        },
-        {
-          "panel": "S1P3",
-          "visual_quality": 0.8,
-          "prompt_adherence": 0.9,
-          "character_consistency": 0.5,
-          "mood_atmosphere": 0.9,
-          "anime_style": 0.1,
-          "notes": "The image has good visual quality and adheres well to the prompt's elements, including the quick cut, magenta hair, and impact effect. The mood of frustration is clearly conveyed. However, the art style is photorealistic, not anime, and there's no prior character description for 'Mira' to assess consistency fully, so a neutral score is given.",
-          "composite": 0.64
-        },
-        {
-          "panel": "S1P4",
-          "visual_quality": 0.8,
-          "prompt_adherence": 0.9,
-          "character_consistency": 0.9,
-          "mood_atmosphere": 0.9,
-          "anime_style": 0.6,
-          "notes": "The montage effectively shows the progression of failed attempts. The character design is consistent. The art style leans more towards realistic 3D rendering than traditional anime, which slightly lowers the anime_style score. The prompt mentions 'Drift Wind stance' but this specific stance isn't visually identifiable, though the general idea of martial arts practice is clear.",
-          "composite": 0.82
-        },
-        {
-          "panel": "S1P5",
-          "visual_quality": 0.9,
-          "prompt_adherence": 0.9,
-          "character_consistency": 0.8,
-          "mood_atmosphere": 0.9,
-          "anime_style": 0,
-          "notes": "The image is a high-quality photograph, not an anime panel. It adheres well to the visual description for a realistic image, but completely fails on the anime style requirement. The character details like the scar and magenta-tipped ponytail are present, and the mood of determination is conveyed effectively.",
-          "composite": 0.7
-        },
-        {
-          "panel": "S1P6",
-          "visual_quality": 0.8,
-          "prompt_adherence": 0.9,
-          "character_consistency": 0.9,
-          "mood_atmosphere": 0.9,
-          "anime_style": 0.2,
-          "notes": "The image captures the scene well, with Mira in the foreground and Master Gen in the background. The character details for Master Gen are mostly consistent. The mood is quiet and observational. However, the art style is not anime; it's more photorealistic.",
-          "composite": 0.74
-        }
-      ],
-      "panelsScored": 6,
-      "panelsTotal": 6
+  "errors": [
+    {
+      "phase": "pipeline",
+      "error": "Command failed: npx tsx \"/home/ubuntu/awakli/_smoke-run-pipeline.ts\"\n{\"timestamp\":\"2026-05-09T13:08:58.572Z\",\"level\":\"warn\",\"msg\":\"[Pipeline] HITL initialization failed, running without gates:\",\"module\":\"pipeline\",\"detail\":\"Error: Failed query: \\n    SELECT s.planId\\n    FROM pipeline_runs pr\\n    JOIN users u ON pr.userId = u.id\\n    LEFT JOIN subscriptions s ON s.userId = u.id AND s.status = 'active'\\n    WHERE pr.id = ?\\n    LIMIT 1\\n  \\nparams: 150007\"}\n",
+      "stack": "Error: Command failed: npx tsx \"/home/ubuntu/awakli/_smoke-run-pipeline.ts\"\n{\"timestamp\":\"2026-05-09T13:08:58.572Z\",\"level\":\"warn\",\"msg\":\"[Pipeline] HITL initialization failed, running without gates:\",\"module\":\"pipeline\",\"detail\":\"Error: Failed query: \\n    SELECT s.planId\\n    FROM pipeline_runs pr\\n    JOIN users u ON pr.userId = u.id\\n    LEFT JOIN subscriptions s ON s.userId = u.id AND s.status = 'active'\\n    WHERE pr.id = ?\\n    LIMIT 1\\n  \\nparams: 150007\"}\n\n    at genericNodeError (node:"
     }
-  },
-  "errors": [],
-  "verdict": {
-    "pipelineTraversal": "PASS",
-    "coherenceScore": "0.753",
-    "coherencePass": true,
-    "overallPass": true,
-    "gapList": []
-  }
+  ]
 }

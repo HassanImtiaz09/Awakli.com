@@ -1,0 +1,19 @@
+{
+  "query": "SELECT pr.status, pr.currentNode, pr.progress, pr.totalCost, pr.errors, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150007) as assetCount, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150007 AND assetType = 'video_clip') as videoClips FROM pipeline_runs pr WHERE pr.id = 150007",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT pr.status, pr.currentNode, pr.progress, pr.totalCost, pr.errors, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150007) as assetCount, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150007 AND assetType = 'video_clip') as videoClips FROM pipeline_runs pr WHERE pr.id = 150007",
+  "rows": [
+    {
+      "status": "running",
+      "currentNode": "video_gen",
+      "progress": "5",
+      "totalCost": "0",
+      "errors": "NULL",
+      "assetCount": "0",
+      "videoClips": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "status\tcurrentNode\tprogress\ttotalCost\terrors\tassetCount\tvideoClips\nrunning\tvideo_gen\t5\t0\tNULL\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 364
+}

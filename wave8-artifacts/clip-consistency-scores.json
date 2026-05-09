@@ -2,207 +2,207 @@
   "metadata": {
     "model": "openai/clip-vit-base-patch32",
     "method": "cosine similarity of CLIP image embeddings",
-    "referenceType": "pseudo (panel_01 as Mira, panel_09 as Master Gen)",
+    "referenceType": "character sheets",
     "panelCount": 21,
     "timestamp": "2026-05-09"
   },
   "aggregateStats": {
-    "meanMaxSimilarity": 0.7089,
-    "stdMaxSimilarity": 0.1696,
-    "meanMiraSimilarity": 0.6779,
-    "meanGenSimilarity": 0.6451,
-    "minSimilarity": 0.3981,
-    "maxSimilarity": 1.0
+    "meanMaxSimilarity": 0.5683,
+    "stdMaxSimilarity": 0.0996,
+    "meanMiraSimilarity": 0.0,
+    "meanGenSimilarity": 0.0,
+    "minSimilarity": 0.3653,
+    "maxSimilarity": 0.7074
   },
   "perPanelScores": [
     {
       "panel": 1,
       "similarities": {
-        "mira_pseudo": 1.0,
-        "gen_pseudo": 0.8163
+        "master_gen": 0.7074,
+        "mira": 0.6369
       },
-      "max_similarity": 1.0,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.7074,
+      "best_match": "master_gen"
     },
     {
       "panel": 2,
       "similarities": {
-        "mira_pseudo": 0.8216,
-        "gen_pseudo": 0.6391
+        "master_gen": 0.5168,
+        "mira": 0.517
       },
-      "max_similarity": 0.8216,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.517,
+      "best_match": "mira"
     },
     {
       "panel": 3,
       "similarities": {
-        "mira_pseudo": 0.5537,
-        "gen_pseudo": 0.4938
+        "master_gen": 0.5743,
+        "mira": 0.5352
       },
-      "max_similarity": 0.5537,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.5743,
+      "best_match": "master_gen"
     },
     {
       "panel": 4,
       "similarities": {
-        "mira_pseudo": 0.7567,
-        "gen_pseudo": 0.6299
+        "master_gen": 0.6054,
+        "mira": 0.5455
       },
-      "max_similarity": 0.7567,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.6054,
+      "best_match": "master_gen"
     },
     {
       "panel": 5,
       "similarities": {
-        "mira_pseudo": 0.3981,
-        "gen_pseudo": 0.3929
+        "master_gen": 0.3289,
+        "mira": 0.3653
       },
-      "max_similarity": 0.3981,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.3653,
+      "best_match": "mira"
     },
     {
       "panel": 6,
       "similarities": {
-        "mira_pseudo": 0.8752,
-        "gen_pseudo": 0.7875
+        "master_gen": 0.6752,
+        "mira": 0.5203
       },
-      "max_similarity": 0.8752,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.6752,
+      "best_match": "master_gen"
     },
     {
       "panel": 7,
       "similarities": {
-        "mira_pseudo": 0.8204,
-        "gen_pseudo": 0.7201
+        "master_gen": 0.4781,
+        "mira": 0.4486
       },
-      "max_similarity": 0.8204,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.4781,
+      "best_match": "master_gen"
     },
     {
       "panel": 8,
       "similarities": {
-        "mira_pseudo": 0.7932,
-        "gen_pseudo": 0.7829
+        "master_gen": 0.6321,
+        "mira": 0.5559
       },
-      "max_similarity": 0.7932,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.6321,
+      "best_match": "master_gen"
     },
     {
       "panel": 9,
       "similarities": {
-        "mira_pseudo": 0.8163,
-        "gen_pseudo": 1.0
+        "master_gen": 0.6499,
+        "mira": 0.4542
       },
-      "max_similarity": 1.0,
-      "best_match": "gen_pseudo"
+      "max_similarity": 0.6499,
+      "best_match": "master_gen"
     },
     {
       "panel": 10,
       "similarities": {
-        "mira_pseudo": 0.4146,
-        "gen_pseudo": 0.4747
+        "master_gen": 0.4482,
+        "mira": 0.39
       },
-      "max_similarity": 0.4747,
-      "best_match": "gen_pseudo"
+      "max_similarity": 0.4482,
+      "best_match": "master_gen"
     },
     {
       "panel": 11,
       "similarities": {
-        "mira_pseudo": 0.6374,
-        "gen_pseudo": 0.8038
+        "master_gen": 0.6418,
+        "mira": 0.4254
       },
-      "max_similarity": 0.8038,
-      "best_match": "gen_pseudo"
+      "max_similarity": 0.6418,
+      "best_match": "master_gen"
     },
     {
       "panel": 12,
       "similarities": {
-        "mira_pseudo": 0.8294,
-        "gen_pseudo": 0.7441
+        "master_gen": 0.6812,
+        "mira": 0.5088
       },
-      "max_similarity": 0.8294,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.6812,
+      "best_match": "master_gen"
     },
     {
       "panel": 13,
       "similarities": {
-        "mira_pseudo": 0.4832,
-        "gen_pseudo": 0.5073
+        "master_gen": 0.4924,
+        "mira": 0.4704
       },
-      "max_similarity": 0.5073,
-      "best_match": "gen_pseudo"
+      "max_similarity": 0.4924,
+      "best_match": "master_gen"
     },
     {
       "panel": 14,
       "similarities": {
-        "mira_pseudo": 0.441,
-        "gen_pseudo": 0.4867
+        "master_gen": 0.4018,
+        "mira": 0.3484
       },
-      "max_similarity": 0.4867,
-      "best_match": "gen_pseudo"
+      "max_similarity": 0.4018,
+      "best_match": "master_gen"
     },
     {
       "panel": 15,
       "similarities": {
-        "mira_pseudo": 0.8425,
-        "gen_pseudo": 0.7274
+        "master_gen": 0.6664,
+        "mira": 0.6245
       },
-      "max_similarity": 0.8425,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.6664,
+      "best_match": "master_gen"
     },
     {
       "panel": 16,
       "similarities": {
-        "mira_pseudo": 0.7473,
-        "gen_pseudo": 0.5828
+        "master_gen": 0.4683,
+        "mira": 0.4434
       },
-      "max_similarity": 0.7473,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.4683,
+      "best_match": "master_gen"
     },
     {
       "panel": 17,
       "similarities": {
-        "mira_pseudo": 0.6494,
-        "gen_pseudo": 0.5651
+        "master_gen": 0.5641,
+        "mira": 0.5747
       },
-      "max_similarity": 0.6494,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.5747,
+      "best_match": "mira"
     },
     {
       "panel": 18,
       "similarities": {
-        "mira_pseudo": 0.5603,
-        "gen_pseudo": 0.4963
+        "master_gen": 0.6761,
+        "mira": 0.6276
       },
-      "max_similarity": 0.5603,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.6761,
+      "best_match": "master_gen"
     },
     {
       "panel": 19,
       "similarities": {
-        "mira_pseudo": 0.6623,
-        "gen_pseudo": 0.5997
+        "master_gen": 0.6404,
+        "mira": 0.5601
       },
-      "max_similarity": 0.6623,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.6404,
+      "best_match": "master_gen"
     },
     {
       "panel": 20,
       "similarities": {
-        "mira_pseudo": 0.6038,
-        "gen_pseudo": 0.7749
+        "master_gen": 0.5746,
+        "mira": 0.3663
       },
-      "max_similarity": 0.7749,
-      "best_match": "gen_pseudo"
+      "max_similarity": 0.5746,
+      "best_match": "master_gen"
     },
     {
       "panel": 21,
       "similarities": {
-        "mira_pseudo": 0.53,
-        "gen_pseudo": 0.5216
+        "master_gen": 0.4633,
+        "mira": 0.4437
       },
-      "max_similarity": 0.53,
-      "best_match": "mira_pseudo"
+      "max_similarity": 0.4633,
+      "best_match": "master_gen"
     }
   ],
   "interpretation": {

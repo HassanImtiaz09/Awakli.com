@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, status, progress, currentNode FROM pipeline_runs WHERE id IN (150003, 150004) ORDER BY id DESC",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, status, progress, currentNode FROM pipeline_runs WHERE id IN (150003, 150004) ORDER BY id DESC",
+  "rows": [
+    {
+      "id": "150004",
+      "status": "running",
+      "progress": "5",
+      "currentNode": "video_gen"
+    },
+    {
+      "id": "150003",
+      "status": "running",
+      "progress": "5",
+      "currentNode": "video_gen"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\tprogress\tcurrentNode\n150004\trunning\t5\tvideo_gen\n150003\trunning\t5\tvideo_gen\n",
+  "stderr": "",
+  "execution_time_ms": 256
+}
