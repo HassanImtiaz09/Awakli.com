@@ -6658,3 +6658,26 @@ For each new module/export, the following MUST be demonstrated before declaring 
 - [x] Verify zero accessibility paths from frontend to PuLID feature (grep confirms: 0 results in client/)
 - [x] Verify zero production router references to PuLID adapter (grep confirms: 0 imports/instantiations)
 - [x] Confirm archived code has deprecation rationale documented inline (server/deprecated/pulid-adapter.ts L1-22)
+
+## Wave 8 — Smoke Test + Dashboards + Polish
+
+### Item 1: Pipeline Traversal Smoke Test (Gate for Items 2 & 3)
+- [x] Item 1a: First Light test content locked (Hassan-authored)
+- [x] Item 1b: Pipeline traversal runner script (wave8-smoke-test-runner.mjs)
+  - [x] Seed test data: user → project → episode → 21 panels → 2 characters
+  - [x] Generate character reference images (D0 path)
+  - [x] Generate panel keyframe images (D1.5 path or Forge direct)
+  - [x] Create pipeline_run and invoke runPipeline(runId)
+  - [x] Collect per-stage results, costs, errors
+  - [x] Handle HITL gates with auto-approve (pre-approved decisions)
+- [x] Item 1c: Output coherence scoring (LLM vision, threshold ≥0.70) — Score: 0.753 PASS
+- [x] Item 1d: Persist findings fixture to test-results/wave8-smoke-test-2026-05-09.json
+- [x] Item 1e: Document gap list in docs/wave-8-smoke-test-findings.md (0 blocking gaps)
+
+### Item 2: Dashboards (gated on Item 1)
+- [ ] Item 2a: Creator pipeline status dashboard
+- [ ] Item 2b: Admin observability dashboard
+- [ ] Item 2c: Cost dashboard (spot-check against §6, ±15-20% variance)
+
+### Item 3: Polish (gated on Item 1 gap list)
+- [ ] Item 3: Address gaps identified in Item 1e findings
