@@ -785,6 +785,153 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err.message || "Failed to delete video" });
       }
     }),
+
+  // ─── Pipeline Observability (Wave 8 Item 2b) ────────────────────────────
+  getPipelineObservability: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    const { pipelineRuns, harnessResults, pipelineStages } = await import("../drizzle/schema");
+    const now = new Date();
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Recent pipeline runs (last 7 days)
+    const recentRuns = await db.select({
+      id: pipelineRuns.id,
+      status: pipelineRuns.status,
+      progress: pipelineRuns.progress,
+      totalCost: pipelineRuns.totalCost,
+      currentNode: pipelineRuns.currentNode,
+      nodeStatuses: pipelineRuns.nodeStatuses,
+      nodeCosts: pipelineRuns.nodeCosts,
+      errors: pipelineRuns.errors,
+      startedAt: pipelineRuns.startedAt,
+      completedAt: pipelineRuns.completedAt,
+      createdAt: pipelineRuns.createdAt,
+    }).from(pipelineRuns)
+      .where(gte(pipelineRuns.createdAt, weekAgo))
+      .orderBy(desc(pipelineRuns.createdAt))
+      .limit(50);
+
+    // Aggregate stats
+    const [stats] = await db.select({
+      totalRuns: count(),
+      completedRuns: sql<number>`SUM(CASE WHEN ${pipelineRuns.status} = 'completed' THEN 1 ELSE 0 END)`.as("completedRuns"),
+      failedRuns: sql<number>`SUM(CASE WHEN ${pipelineRuns.status} = 'failed' THEN 1 ELSE 0 END)`.as("failedRuns"),
+      runningRuns: sql<number>`SUM(CASE WHEN ${pipelineRuns.status} = 'running' THEN 1 ELSE 0 END)`.as("runningRuns"),
+      avgCostCents: sql<number>`AVG(${pipelineRuns.totalCost})`.as("avgCostCents"),
+      totalCostCents: sql<number>`SUM(${pipelineRuns.totalCost})`.as("totalCostCents"),
+    }).from(pipelineRuns)
+      .where(gte(pipelineRuns.createdAt, weekAgo));
+
+    // Harness layer scores (last 7 days)
+    const layerScores = await db.select({
+      layer: harnessResults.layer,
+      result: harnessResults.result,
+      avgScore: sql<number>`AVG(${harnessResults.score})`.as("avgScore"),
+      checkCount: count(),
+    }).from(harnessResults)
+      .where(gte(harnessResults.createdAt, weekAgo))
+      .groupBy(harnessResults.layer, harnessResults.result);
+
+    // Error breakdown by node
+    const nodeErrors = await db.select({
+      currentNode: pipelineRuns.currentNode,
+      errorCount: count(),
+    }).from(pipelineRuns)
+      .where(and(
+        eq(pipelineRuns.status, "failed"),
+        gte(pipelineRuns.createdAt, weekAgo)
+      ))
+      .groupBy(pipelineRuns.currentNode);
+
+    // Avg duration for completed runs
+    const [durationStats] = await db.select({
+      avgDurationMs: sql<number>`AVG(TIMESTAMPDIFF(SECOND, ${pipelineRuns.startedAt}, ${pipelineRuns.completedAt}) * 1000)`.as("avgDurationMs"),
+      minDurationMs: sql<number>`MIN(TIMESTAMPDIFF(SECOND, ${pipelineRuns.startedAt}, ${pipelineRuns.completedAt}) * 1000)`.as("minDurationMs"),
+      maxDurationMs: sql<number>`MAX(TIMESTAMPDIFF(SECOND, ${pipelineRuns.startedAt}, ${pipelineRuns.completedAt}) * 1000)`.as("maxDurationMs"),
+    }).from(pipelineRuns)
+      .where(and(
+        eq(pipelineRuns.status, "completed"),
+        gte(pipelineRuns.createdAt, weekAgo)
+      ));
+
+    return {
+      recentRuns,
+      stats: {
+        totalRuns: Number(stats?.totalRuns || 0),
+        completedRuns: Number(stats?.completedRuns || 0),
+        failedRuns: Number(stats?.failedRuns || 0),
+        runningRuns: Number(stats?.runningRuns || 0),
+        avgCostCents: Number(stats?.avgCostCents || 0),
+        totalCostCents: Number(stats?.totalCostCents || 0),
+        successRate: stats?.totalRuns ? (Number(stats.completedRuns || 0) / Number(stats.totalRuns) * 100) : 0,
+      },
+      layerScores,
+      nodeErrors,
+      duration: {
+        avgMs: Number(durationStats?.avgDurationMs || 0),
+        minMs: Number(durationStats?.minDurationMs || 0),
+        maxMs: Number(durationStats?.maxDurationMs || 0),
+      },
+    };
+  }),
+
+  // Cost spot-check: compare actual pipeline costs against reference
+  getCostSpotCheck: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+    const { pipelineRuns } = await import("../drizzle/schema");
+
+    // Get all completed runs with cost data
+    const runs = await db.select({
+      id: pipelineRuns.id,
+      totalCost: pipelineRuns.totalCost,
+      nodeCosts: pipelineRuns.nodeCosts,
+      completedAt: pipelineRuns.completedAt,
+    }).from(pipelineRuns)
+      .where(eq(pipelineRuns.status, "completed"))
+      .orderBy(desc(pipelineRuns.completedAt))
+      .limit(20);
+
+    // Reference costs from §6 spec (cents)
+    const referenceCosts = {
+      video_gen: 200,
+      voice_gen: 80,
+      music_gen: 40,
+      assembly: 20,
+      total: 340,
+    };
+
+    // Compare each run against reference
+    const comparisons = runs.map(run => {
+      const nodeCosts = (run.nodeCosts as Record<string, number>) || {};
+      const actualTotal = run.totalCost || 0;
+      const variance = referenceCosts.total > 0
+        ? ((actualTotal - referenceCosts.total) / referenceCosts.total * 100)
+        : 0;
+      return {
+        runId: run.id,
+        actualCostCents: actualTotal,
+        referenceCostCents: referenceCosts.total,
+        variancePct: Math.round(variance * 10) / 10,
+        withinTolerance: Math.abs(variance) <= 20,
+        nodeCosts,
+        completedAt: run.completedAt,
+      };
+    });
+
+    const avgVariance = comparisons.length > 0
+      ? comparisons.reduce((sum, c) => sum + c.variancePct, 0) / comparisons.length
+      : 0;
+
+    return {
+      referenceCosts,
+      comparisons,
+      avgVariancePct: Math.round(avgVariance * 10) / 10,
+      allWithinTolerance: comparisons.every(c => c.withinTolerance),
+    };
+  }),
 });
 
 // ─── Report Content ────────────────────────────────────────────────────

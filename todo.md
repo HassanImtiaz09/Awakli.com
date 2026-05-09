@@ -6675,9 +6675,10 @@ For each new module/export, the following MUST be demonstrated before declaring 
 - [x] Item 1e: Document gap list in docs/wave-8-smoke-test-findings.md (0 blocking gaps)
 
 ### Item 2: Dashboards (gated on Item 1)
-- [ ] Item 2a: Creator pipeline status dashboard
-- [ ] Item 2b: Admin observability dashboard
-- [ ] Item 2c: Cost dashboard (spot-check against §6, ±15-20% variance)
+- [x] Item 2a: Creator pipeline status dashboard (existing PipelineDashboard.tsx, 1692 lines)
+- [x] Item 2b: Admin observability dashboard (new AdminPipelineObservability.tsx at /admin/pipeline)
+- [x] Item 2c: Cost dashboard (existing CostDashboard.tsx + cost spot-check in observability)
+- [x] Vitest: admin-observability.test.ts (4 tests passing)
 
 ### Item 3: Polish (gated on Item 1 gap list)
-- [ ] Item 3: Address gaps identified in Item 1e findings
+- [x] Item 3: No blocking gaps identified in Item 1e — 0 action items required

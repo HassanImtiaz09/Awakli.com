@@ -81,6 +81,7 @@ import Refund from "./pages/Refund";
 import Founders from "./pages/Founders";
 import CraftLibrary from "./pages/CraftLibrary";
 import AdminFoundersDashboard from "./pages/AdminFoundersDashboard";
+import AdminPipelineObservability from "./pages/AdminPipelineObservability";
 import { StudioLayout } from "./components/awakli/Layouts";
 
 function Router() {
@@ -162,6 +163,7 @@ function Router() {
         <Route path="/admin/gates" component={AdminGateAnalytics} />
         <Route path="/admin/print-payouts" component={AdminPrintPayouts} />
         <Route path="/admin/founders" component={AdminFoundersDashboard} />
+        <Route path="/admin/pipeline" component={AdminPipelineObservability} />
         <Route path="/studio/resolution-flow" component={ResolutionFlow} />
         <Route path="/studio/quality-insights" component={QualityInsights} />
         <Route path="/demo-recording" component={DemoRecording} />

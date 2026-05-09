@@ -563,6 +563,24 @@ export default function AdminDashboard() {
             <CreditAnalytics />
           </div>
 
+          {/* Pipeline Observability */}
+          <div className="mb-8">
+            <a href="/admin/pipeline" className="block p-6 rounded-2xl border border-white/5 bg-[#0D0D1A] hover:border-purple-500/30 transition-colors group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-lg flex items-center justify-center bg-purple-500/10">
+                    <Film className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-heading font-semibold text-white">Pipeline Observability</h3>
+                    <p className="text-sm text-gray-500">Pipeline runs, quality harness scores, error breakdown, and cost spot-checks</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-colors" />
+              </div>
+            </a>
+          </div>
+
           {/* Provider Router Admin */}
           <div className="mb-8">
             <a href="/admin/providers" className="block p-6 rounded-2xl border border-white/5 bg-[#0D0D1A] hover:border-token-cyan/30 transition-colors group">
