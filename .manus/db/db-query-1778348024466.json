@@ -1,0 +1,26 @@
+{
+  "query": "SELECT assetType, COUNT(*) as cnt FROM pipeline_assets WHERE pipelineRunId = 150009 GROUP BY assetType",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT assetType, COUNT(*) as cnt FROM pipeline_assets WHERE pipelineRunId = 150009 GROUP BY assetType",
+  "rows": [
+    {
+      "assetType": "voice_clip",
+      "cnt": "8"
+    },
+    {
+      "assetType": "video_clip",
+      "cnt": "16"
+    },
+    {
+      "assetType": "music_segment",
+      "cnt": "1"
+    },
+    {
+      "assetType": "synced_clip",
+      "cnt": "12"
+    }
+  ],
+  "messages": [],
+  "stdout": "assetType\tcnt\nvoice_clip\t8\nvideo_clip\t16\nmusic_segment\t1\nsynced_clip\t12\n",
+  "stderr": "",
+  "execution_time_ms": 265
+}

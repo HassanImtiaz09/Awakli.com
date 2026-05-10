@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, status, currentNode, progress, totalCost, currentStageNumber FROM pipeline_runs WHERE id = 150009",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT id, status, currentNode, progress, totalCost, currentStageNumber FROM pipeline_runs WHERE id = 150009",
+  "rows": [
+    {
+      "id": "150009",
+      "status": "running",
+      "currentNode": "voice_gen",
+      "progress": "31",
+      "totalCost": "220",
+      "currentStageNumber": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\tcurrentNode\tprogress\ttotalCost\tcurrentStageNumber\n150009\trunning\tvoice_gen\t31\t220\t0\n",
+  "stderr": "",
+  "execution_time_ms": 266
+}

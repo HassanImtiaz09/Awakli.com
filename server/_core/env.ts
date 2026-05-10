@@ -3,7 +3,7 @@
  *
  * Audit fixes: C-1 (removed ownerOpenId), C-2 (JWT_SECRET required), C-3 (KEK required)
  */
-import crypto from "crypto";
+import * as crypto from "crypto";
 import { serverLog } from "../observability/logger";
 
 // ─── Validation Helpers ─────────────────────────────────────────────────
@@ -85,6 +85,8 @@ export const ENV = {
   falApiKey: optionalEnv("FAL_API_KEY"),
   fishAudioApiKey: optionalEnv("FISH_AUDIO_API_KEY"),
   runwayApiKey: optionalEnv("RUNWAY_API_KEY"),
+  cartesiaApiKey: optionalEnv("CARTESIA_API_KEY"),
+  pixverseApiKey: optionalEnv("PIXVERSE_API_KEY"),
 };
 
 /** Provider-router encryption key (32 bytes, derived from JWT_SECRET) */

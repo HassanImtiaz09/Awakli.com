@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM characters WHERE id IN (30001, 30003, 30005, 30007, 60001, 60003, 60005, 60007, 60009) AND name = 'Mira';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute DELETE FROM characters WHERE id IN (30001, 30003, 30005, 30007, 60001, 60003, 60005, 60007, 60009) AND name = 'Mira';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 473
+}

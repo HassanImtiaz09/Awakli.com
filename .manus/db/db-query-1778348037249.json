@@ -1,0 +1,110 @@
+{
+  "query": "SELECT panelId, assetType, url FROM pipeline_assets WHERE pipelineRunId = 150009 AND assetType IN ('video_clip', 'synced_clip') ORDER BY panelId LIMIT 20",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT panelId, assetType, url FROM pipeline_assets WHERE pipelineRunId = 150009 AND assetType IN ('video_clip', 'synced_clip') ORDER BY panelId LIMIT 20",
+  "rows": [
+    {
+      "panelId": "150095",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150095-Q6KzAg_8d67d9c2.mp4"
+    },
+    {
+      "panelId": "150095",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150095-KOf0eV_a08cca84.mp4"
+    },
+    {
+      "panelId": "150097",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150097-nhxO4-_e008fb15.mp4"
+    },
+    {
+      "panelId": "150097",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150097-8bVq0Z_5a8e8a14.mp4"
+    },
+    {
+      "panelId": "150098",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t2-clip-panel150098-klaU8l_8b834610.mp4"
+    },
+    {
+      "panelId": "150098",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t2-clip-panel150098-_WsFK0_c3e9d96d.mp4"
+    },
+    {
+      "panelId": "150099",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150099-9DLlum_cda44cb5.mp4"
+    },
+    {
+      "panelId": "150099",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150099-CQHlr1_fd9625c7.mp4"
+    },
+    {
+      "panelId": "150100",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150100-5FhZ4J_4f74c148.mp4"
+    },
+    {
+      "panelId": "150100",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150100-EgLroU_506ac97f.mp4"
+    },
+    {
+      "panelId": "150101",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150101-0yVuQa_9b128671.mp4"
+    },
+    {
+      "panelId": "150101",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150101-vBIIq5_52258098.mp4"
+    },
+    {
+      "panelId": "150102",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150102-uzrhhh_b65d2b8a.mp4"
+    },
+    {
+      "panelId": "150102",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150102-oOIem5_16971400.mp4"
+    },
+    {
+      "panelId": "150103",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150103-XGiJVd_435b80ba.mp4"
+    },
+    {
+      "panelId": "150103",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150103-VMki9c_fa70a751.mp4"
+    },
+    {
+      "panelId": "150104",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150104-5SDa44_ef001f24.mp4"
+    },
+    {
+      "panelId": "150105",
+      "assetType": "synced_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150105-eXzzyU_cf10c617.mp4"
+    },
+    {
+      "panelId": "150106",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150106-34gjBd_cb61d710.mp4"
+    },
+    {
+      "panelId": "150107",
+      "assetType": "video_clip",
+      "url": "https://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150107-OmFslx_94acdd9e.mp4"
+    }
+  ],
+  "messages": [],
+  "stdout": "panelId\tassetType\turl\n150095\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150095-Q6KzAg_8d67d9c2.mp4\n150095\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150095-KOf0eV_a08cca84.mp4\n150097\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150097-nhxO4-_e008fb15.mp4\n150097\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150097-8bVq0Z_5a8e8a14.mp4\n150098\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t2-clip-panel150098-klaU8l_8b834610.mp4\n150098\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t2-clip-panel150098-_WsFK0_c3e9d96d.mp4\n150099\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150099-9DLlum_cda44cb5.mp4\n150099\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150099-CQHlr1_fd9625c7.mp4\n150100\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150100-5FhZ4J_4f74c148.mp4\n150100\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150100-EgLroU_506ac97f.mp4\n150101\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150101-0yVuQa_9b128671.mp4\n150101\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150101-vBIIq5_52258098.mp4\n150102\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150102-uzrhhh_b65d2b8a.mp4\n150102\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150102-oOIem5_16971400.mp4\n150103\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150103-XGiJVd_435b80ba.mp4\n150103\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150103-VMki9c_fa70a751.mp4\n150104\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150104-5SDa44_ef001f24.mp4\n150105\tsynced_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/omni-lipsync-panel150105-eXzzyU_cf10c617.mp4\n150106\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150106-34gjBd_cb61d710.mp4\n150107\tvideo_clip\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663430072618/4V9sAd2k2m2djZEsU8bXCJ/pipeline/150009/t3-clip-panel150107-OmFslx_94acdd9e.mp4\n",
+  "stderr": "",
+  "execution_time_ms": 265
+}

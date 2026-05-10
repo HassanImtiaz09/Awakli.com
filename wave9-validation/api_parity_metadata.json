@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-05-09T23:31:04.305Z",
+  "model": "fal-ai/pixverse/c1/reference-to-video",
+  "elapsed_seconds": 187.9,
+  "video_url": "https://v3b.fal.media/files/b/0a999390/uLP58RLHXXVtwvPOwDlAm_output.mp4",
+  "file_size_bytes": 5799663,
+  "parameters": {
+    "duration": 15,
+    "resolution": "720p",
+    "generate_audio_switch": false,
+    "references": [
+      "mira",
+      "kazuo",
+      "renji"
+    ]
+  },
+  "cost_estimate_usd": 0.6,
+  "request_id": "019e0f11-747c-7210-9a88-d6c13109cb3f"
+}

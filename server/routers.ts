@@ -65,6 +65,7 @@ import { modelRoutingRouter } from "./routers-model-routing";
 import { transitionsRouter } from "./routers-transitions";
 import { publicContentRouter, publishRouter, creatorAnalyticsRouter } from "./routers-public-content";
 import { uploadRouter } from "./routers-upload";
+import { simplePathRouter } from "./simple-path/router";
 import { providerAdminRouter } from "./routers-provider-admin";
 import { localInfraRouter } from "./routers-local-infra";
 import { sceneTypeRouter } from "./routers-scene-type";
@@ -2491,6 +2492,8 @@ export const appRouter = router({
   foundersIntegrations: foundersIntegrationsRouter,
   // Wave 5C: Founders' Studio Outbound
   foundersOutbound: foundersOutboundRouter,
+  // Wave 9: Simple Path Pipeline
+  simplePath: simplePathRouter,
 });
 
 export type AppRouter = typeof appRouter;

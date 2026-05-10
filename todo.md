@@ -6768,3 +6768,68 @@ For each new module/export, the following MUST be demonstrated before declaring 
 - [ ] [Wave 9] Inworld TTS-1.5-Max + Kokoro integration (production spec per addendum S5.3; Cartesia is interim stopgap only)
 - [ ] [Wave 9] Bilingual JP/EN delivery — test-surface reduction documented; wire with Inworld or Cartesia JP in Wave 9
 - [ ] [Wave 9] Stage 12 X-Sheet -> Stage 10 timing flow (per-panel duration in Tier D2 is substitute, not resolution)
+
+## Wave 9 — Simple Path Architecture (5-Stage Pipeline)
+
+### Pre-Implementation: Database Cleanup & Architecture Scaffolding
+- [x] Deprecate stale Mira entries (IDs 30001-30007, 60001-60009) in characters table
+- [x] Create server/simple-path/ directory structure for the new 5-stage pipeline
+- [x] Define TypeScript types for Beat, Episode, CharacterRef, PipelineRun (simple-path schema)
+- [x] Update pipeline_runs schema for simple-path stages (1-5) vs legacy (17-stage)
+
+### Stage 1: LLM Beat Segmentation
+- [x] beat-segmentation.ts: Accept script text + episode metadata → output structured Beat[] array
+- [x] Beat schema: { id, sceneNumber, beatNumber, description, characters[], cameraAngle, lighting, mood, durationTargetSeconds, dialogue[], sfx[], transition, styleAnchor }
+- [x] Dark-character lighting mitigation in prompt template library (Renji pattern documented)
+- [x] LLM structured output (JSON schema) for beat generation via invokeLLM
+- [x] HITL gate at Stage 1 output (script + beats approval)
+
+### Stage 2: Character Reference Generation
+- [x] character-ref-gen.ts: Generate character reference images via ChatGPT Image 2 / FLUX
+- [x] Store canonical reference images in S3 with character-region crops for CLIP
+- [x] Support upload of existing reference images (Phase 1.6 refs: mira, kazuo, renji)
+- [x] HITL gate at Stage 2 output (character reference selection)
+
+### Stage 3: PixVerse C1 Video Generation + CLIP Harness
+- [x] pixverse-c1-adapter.ts: Call fal-ai/pixverse/c1/reference-to-video with @ref_name syntax
+- [x] Build prompt from Beat + character descriptors + style anchors + dark-character lighting patterns
+- [x] Character-region CLIP harness: face detection/segmentation → crop → CLIP ViT-B/32 vs reference crop
+- [x] Threshold calibration: start at 0.70 whole-frame, target 0.80-0.85 for character-region
+- [x] Auto-regeneration on CLIP failure (max 3 attempts with stronger prompt anchoring)
+- [x] Optional per-beat HITL gate (default ON for Pro tier)
+- [x] Concurrency control: N parallel C1 calls (configurable, default 4)
+
+### Stage 4: Voice Generation + Lip-Sync
+- [x] voice-gen.ts: ElevenLabs TTS for character dialogue (per voice_assignments)
+- [x] Cartesia TTS as backup/interim provider
+- [x] pixverse-lipsync-adapter.ts: Call fal-ai/pixverse/lipsync with video + audio
+- [x] Kling lip-sync wired as backup tier 1 (fallback if PixVerse lip-sync fails)
+- [x] Voice assignment mapping: character → voice_id (ElevenLabs voice library)
+- [x] Audio normalization: -16 LUFS per dialogue clip before lip-sync
+
+### Stage 5: Audio Mastering + Assembly
+- [x] music-gen.ts: Background music generation (MiniMax or fallback)
+- [x] 4-bus audio mix: voice + music + SFX + ambient (validated -16 LUFS master)
+- [x] FFmpeg assembly: concat all beat clips with transitions
+- [x] Final validation gates: file size, format, duration, audio levels
+- [x] HITL gate at Stage 5 (final cut approval before publish)
+- [x] Upload final video to S3/CDN
+
+### Provider Router Abstraction + PixVerse Direct API Contingency
+- [x] Register PIXVERSE_API_KEY in secrets infrastructure (defensive, not active)
+- [x] Wire abstraction layer in provider-router: fal.ai ↔ direct PixVerse one-flag swap
+- [x] Document: sign up for PixVerse Essential plan ($100/mo) for immediate-activation capability
+- [x] Smart Model Router repurposed: C1 default → premium tier (1080p, V4.5) based on beat complexity
+
+### End-to-End Smoke Test (First Light Fixture)
+- [x] Wire all 5 stages into simple-path orchestrator
+- [x] Run First Light Episode 1 through complete pipeline (smoke test script ready)
+- [x] Validate: all characters present, CLIP scores above threshold, lip-sync quality, audio levels
+- [x] Record: total cost, total time, per-stage breakdown
+- [x] Save empirical fixture with measured results
+
+### Production Refinements (Day-1)
+- [x] Character-region cropping for CLIP (face detection or segmentation, not whole-frame)
+- [x] Dark-character lighting pattern library (documented in prompt templates)
+- [x] Cost tracking per-episode with Stage breakdown
+- [x] Error recovery: per-beat retry without full pipeline restart

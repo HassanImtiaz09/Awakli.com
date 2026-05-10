@@ -1,33 +1,33 @@
 {
   "metadata": {
     "testName": "Wave 8 Item 1b — FATAL ERROR",
-    "runDate": "2026-05-09T13:17:21.845Z"
+    "runDate": "2026-05-09T14:37:48.511Z"
   },
   "fatalError": {
-    "message": "Failed query: \n    SELECT * FROM pipeline_runs WHERE id = ? LIMIT 1\n  \nparams: 150007",
-    "stack": "Error: Failed query: \n    SELECT * FROM pipeline_runs WHERE id = ? LIMIT 1\n  \nparams: 150007\n    at MySql2PreparedQuery.queryWithCache (file:///home/ubuntu/awakli/node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/session.js:25:15)\n    at async MySql2PreparedQuery.execute (file:///home/ubuntu/awakli/node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql2/session.js:52:19)\n    at async runPipelineTraversal (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:631:24)\n    at async main (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:896:26)"
+    "message": "Failed query: \n    SELECT * FROM pipeline_runs WHERE id = ? LIMIT 1\n  \nparams: 150009",
+    "stack": "Error: Failed query: \n    SELECT * FROM pipeline_runs WHERE id = ? LIMIT 1\n  \nparams: 150009\n    at MySql2PreparedQuery.queryWithCache (file:///home/ubuntu/awakli/node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql-core/session.js:25:15)\n    at async MySql2PreparedQuery.execute (file:///home/ubuntu/awakli/node_modules/.pnpm/drizzle-orm@0.44.6_mysql2@3.15.1/node_modules/drizzle-orm/mysql2/session.js:52:19)\n    at async runPipelineTraversal (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:665:24)\n    at async main (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:930:26)"
   },
   "timings": {
     "total": {
-      "start": 1778331972281
+      "start": 1778334606685
     },
     "seed": {
-      "start": 1778331972282,
-      "end": 1778331973109,
-      "durationMs": 827
+      "start": 1778334606685,
+      "end": 1778334607566,
+      "durationMs": 881
     },
     "characterRefs": {
-      "start": 1778331973110,
-      "end": 1778331984529,
-      "durationMs": 11419
+      "start": 1778334607566,
+      "end": 1778334619661,
+      "durationMs": 12095
     },
     "panelImages": {
-      "start": 1778331984529,
-      "end": 1778332136727,
-      "durationMs": 152198
+      "start": 1778334619661,
+      "end": 1778334768468,
+      "durationMs": 148807
     },
     "pipeline": {
-      "start": 1778332136727
+      "start": 1778334768469
     }
   },
   "costs": {
@@ -38,8 +38,8 @@
   "errors": [
     {
       "phase": "pipeline",
-      "error": "Command failed: npx tsx \"/home/ubuntu/awakli/_smoke-run-pipeline.ts\"\n{\"timestamp\":\"2026-05-09T13:08:58.572Z\",\"level\":\"warn\",\"msg\":\"[Pipeline] HITL initialization failed, running without gates:\",\"module\":\"pipeline\",\"detail\":\"Error: Failed query: \\n    SELECT s.planId\\n    FROM pipeline_runs pr\\n    JOIN users u ON pr.userId = u.id\\n    LEFT JOIN subscriptions s ON s.userId = u.id AND s.status = 'active'\\n    WHERE pr.id = ?\\n    LIMIT 1\\n  \\nparams: 150007\"}\n",
-      "stack": "Error: Command failed: npx tsx \"/home/ubuntu/awakli/_smoke-run-pipeline.ts\"\n{\"timestamp\":\"2026-05-09T13:08:58.572Z\",\"level\":\"warn\",\"msg\":\"[Pipeline] HITL initialization failed, running without gates:\",\"module\":\"pipeline\",\"detail\":\"Error: Failed query: \\n    SELECT s.planId\\n    FROM pipeline_runs pr\\n    JOIN users u ON pr.userId = u.id\\n    LEFT JOIN subscriptions s ON s.userId = u.id AND s.status = 'active'\\n    WHERE pr.id = ?\\n    LIMIT 1\\n  \\nparams: 150007\"}\n\n    at genericNodeError (node:"
+      "error": "spawnSync /bin/sh ETIMEDOUT",
+      "stack": "Error: spawnSync /bin/sh ETIMEDOUT\n    at Object.spawnSync (node:internal/child_process:1120:20)\n    at spawnSync (node:child_process:868:24)\n    at execSync (node:child_process:949:15)\n    at runPipelineTraversal (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:638:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async main (file:///home/ubuntu/awakli/server/benchmarks/wave8-smoke-test-runner.mjs:930:26)"
     }
   ]
 }

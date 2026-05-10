@@ -1,0 +1,17 @@
+{
+  "query": "SELECT status, currentNode, progress, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150008 AND assetType = 'video_clip') as videoClips, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150008 AND assetType = 'composed_keyframe') as composedKeyframes FROM pipeline_runs WHERE id = 150008",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 24SvJuQr6QY484E.8a2f6c781bb3 --database 4V9sAd2k2m2djZEsU8bXCJ --execute SELECT status, currentNode, progress, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150008 AND assetType = 'video_clip') as videoClips, (SELECT COUNT(*) FROM pipeline_assets WHERE pipelineRunId = 150008 AND assetType = 'composed_keyframe') as composedKeyframes FROM pipeline_runs WHERE id = 150008",
+  "rows": [
+    {
+      "status": "running",
+      "currentNode": "video_gen",
+      "progress": "5",
+      "videoClips": "0",
+      "composedKeyframes": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "status\tcurrentNode\tprogress\tvideoClips\tcomposedKeyframes\nrunning\tvideo_gen\t5\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

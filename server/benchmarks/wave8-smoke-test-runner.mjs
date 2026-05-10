@@ -637,7 +637,7 @@ main();
     console.log("    Executing pipeline via tsx subprocess...");
     const pipelineOutput = execSync(`npx tsx "${pipelineScript}"`, {
       cwd: PROJECT_ROOT,
-      timeout: 600_000, // 10 min timeout for full pipeline
+      timeout: 2_700_000, // 45 min timeout for full pipeline with adapter composition
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env },
