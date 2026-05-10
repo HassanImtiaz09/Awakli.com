@@ -146,6 +146,13 @@ export interface BeatSegmentationInput {
 export async function runBeatSegmentation(
   input: BeatSegmentationInput
 ): Promise<BeatSegmentationOutput> {
+  // Input validation — fail fast, no silent failures (Wave 8 lesson)
+  if (!input.script || input.script.trim().length === 0) {
+    throw new Error("Stage 1: Script is empty — cannot segment beats from nothing");
+  }
+  if (!input.characterNames || input.characterNames.length === 0) {
+    throw new Error("Stage 1: No character names provided — beats require at least one character");
+  }
   const targetDuration = input.targetDurationSeconds || 300;
 
   const userPrompt = `EPISODE: "${input.episodeTitle}"

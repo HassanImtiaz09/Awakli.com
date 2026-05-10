@@ -169,7 +169,11 @@ export async function runSimplePath(config: SimplePathConfig): Promise<SimplePat
     state.stageStatuses[3] = "completed";
 
     const passedCount = videoResults.filter((r) => r.clipPassed).length;
-    config.onStageProgress?.(3, 100, `${passedCount}/${videoResults.length} clips passed CLIP check. Cost: $${state.costs.stage3.toFixed(2)}`);
+    const successfulClips = videoResults.filter((r) => r.videoUrl && r.videoUrl.length > 0);
+    if (successfulClips.length === 0) {
+      throw new Error(`Stage 3 produced zero video assets (${videoResults.length} beats attempted, all failed). Pipeline cannot continue — no slideshow fallback allowed.`);
+    }
+    config.onStageProgress?.(3, 100, `${passedCount}/${videoResults.length} clips passed CLIP check (${successfulClips.length} usable). Cost: $${state.costs.stage3.toFixed(2)}`);
 
     // ─── Stage 4: Voice + Lip-Sync ──────────────────────────────────────
     state.currentStage = 4;

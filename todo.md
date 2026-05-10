@@ -6833,3 +6833,7 @@ For each new module/export, the following MUST be demonstrated before declaring 
 - [x] Dark-character lighting pattern library (documented in prompt templates)
 - [x] Cost tracking per-episode with Stage breakdown
 - [x] Error recovery: per-beat retry without full pipeline restart
+
+## Wave 9.5 / Wave 10 — Deferred Work Items
+- [ ] Bilingual JP+EN validation against locked First Light fixture (deferred from Wave 9 smoke test — must validate before Pro tier launch)
+- [ ] Inworld TTS integration (correctly out-of-scope for Wave 9 — ElevenLabs primary, Inworld backup deferred to Wave 14+)

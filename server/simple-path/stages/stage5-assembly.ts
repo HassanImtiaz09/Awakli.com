@@ -51,13 +51,27 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function normalizeAudio(inputPath: string, outputPath: string, targetLufs: number): void {
-  // Two-pass loudness normalization
+  // Two-pass loudnorm for accurate LUFS targeting (prevents Wave 8 16kbps mono failure)
+  // Pass 1: Measure actual loudness parameters
+  let measuredI = "-24", measuredTP = "-2", measuredLRA = "7", measuredThresh = "-34";
+  try {
+    const pass1Output = execSync(
+      `ffmpeg -i "${inputPath}" -af "loudnorm=I=${targetLufs}:TP=-1.5:LRA=11:print_format=json" -f null /dev/null 2>&1`,
+      { encoding: "utf-8" }
+    );
+    const jsonMatch = pass1Output.match(/\{[^}]*"input_i"[^}]*\}/s);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      measuredI = parsed.input_i || measuredI;
+      measuredTP = parsed.input_tp || measuredTP;
+      measuredLRA = parsed.input_lra || measuredLRA;
+      measuredThresh = parsed.input_thresh || measuredThresh;
+    }
+  } catch { /* Use defaults if pass 1 fails */ }
+  // Pass 2: Apply measured values for precise linear normalization
+  // Force stereo (-ac 2), 44.1kHz (-ar 44100), 192kbps AAC output
   execSync(
-    `ffmpeg -y -i "${inputPath}" -af loudnorm=I=${targetLufs}:TP=-1.5:LRA=11:print_format=json -f null /dev/null 2>&1 | grep -A20 "Parsed_loudnorm" > /dev/null || true`,
-    { stdio: "ignore" }
-  );
-  execSync(
-    `ffmpeg -y -i "${inputPath}" -af "loudnorm=I=${targetLufs}:TP=-1.5:LRA=11" "${outputPath}"`,
+    `ffmpeg -y -i "${inputPath}" -af "loudnorm=I=${targetLufs}:TP=-1.5:LRA=11:measured_I=${measuredI}:measured_TP=${measuredTP}:measured_LRA=${measuredLRA}:measured_thresh=${measuredThresh}:linear=true" -ar 44100 -ac 2 "${outputPath}"`,
     { stdio: "ignore" }
   );
 }
@@ -191,30 +205,76 @@ export interface VideoAssemblyInput {
 export function assembleVideo(input: VideoAssemblyInput, workDir: string): string {
   const outputPath = join(workDir, "final_video.mp4");
   const { beatClips, audioPath } = input;
-
   if (beatClips.length === 0) {
     throw new Error("Stage 5: No beat clips to assemble");
   }
 
-  // For simple cut transitions, use FFmpeg concat demuxer
-  // (crossfade/wipe transitions require xfade filter — implement in production)
-  const concatListPath = join(workDir, "concat_list.txt");
-  const concatLines = beatClips.map((clip) => `file '${clip.videoPath}'`).join("\n");
-  writeFileSync(concatListPath, concatLines);
+  // Check if any clips use non-cut transitions
+  const hasTransitions = beatClips.some((c) => c.transition !== "cut");
 
-  // Concat video clips
-  const videoOnly = join(workDir, "video_concat.mp4");
-  execSync(
-    `ffmpeg -y -f concat -safe 0 -i "${concatListPath}" -c:v libx264 -preset fast -crf 23 -an "${videoOnly}"`,
-    { stdio: "ignore" }
-  );
+  if (!hasTransitions || beatClips.length === 1) {
+    // Simple concat for all-cut transitions
+    const concatListPath = join(workDir, "concat_list.txt");
+    const concatLines = beatClips.map((clip) => `file '${clip.videoPath}'`).join("\n");
+    writeFileSync(concatListPath, concatLines);
+    const videoOnly = join(workDir, "video_concat.mp4");
+    execSync(
+      `ffmpeg -y -f concat -safe 0 -i "${concatListPath}" -c:v libx264 -preset fast -crf 23 -an "${videoOnly}"`,
+      { stdio: "ignore" }
+    );
+    execSync(
+      `ffmpeg -y -i "${videoOnly}" -i "${audioPath}" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`,
+      { stdio: "ignore" }
+    );
+  } else {
+    // Build xfade filter chain for intelligent transitions
+    const TRANSITION_DURATION = 0.5; // seconds
+    const inputs = beatClips.map((c) => `-i "${c.videoPath}"`).join(" ");
+    const filterParts: string[] = [];
+    let prevLabel = "[0:v]";
+    let offsetAccum = 0;
 
-  // Mux with mixed audio
-  execSync(
-    `ffmpeg -y -i "${videoOnly}" -i "${audioPath}" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`,
-    { stdio: "ignore" }
-  );
+    for (let i = 1; i < beatClips.length; i++) {
+      const transition = beatClips[i].transition;
+      const prevDuration = beatClips[i - 1].durationSeconds;
+      offsetAccum += prevDuration - TRANSITION_DURATION;
+      const outLabel = i < beatClips.length - 1 ? `[v${i}]` : "[vout]";
 
+      let xfadeType = "fade"; // default
+      if (transition === "crossfade") xfadeType = "fade";
+      else if (transition === "fade_to_black") xfadeType = "fadeblack";
+      else if (transition === "wipe") xfadeType = "wipeleft";
+      else xfadeType = "fade"; // cut treated as fast fade
+
+      filterParts.push(
+        `${prevLabel}[${i}:v]xfade=transition=${xfadeType}:duration=${TRANSITION_DURATION}:offset=${Math.max(0, offsetAccum).toFixed(2)}${outLabel}`
+      );
+      prevLabel = outLabel;
+    }
+
+    const filterComplex = filterParts.join(";");
+    const videoOnly = join(workDir, "video_xfade.mp4");
+    try {
+      execSync(
+        `ffmpeg -y ${inputs} -filter_complex "${filterComplex}" -map "[vout]" -c:v libx264 -preset fast -crf 23 -an "${videoOnly}"`,
+        { stdio: "ignore" }
+      );
+    } catch {
+      // Fallback to simple concat if xfade fails (resolution mismatch, etc.)
+      console.warn("Stage 5: xfade transitions failed, falling back to concat");
+      const concatListPath = join(workDir, "concat_list.txt");
+      const concatLines = beatClips.map((clip) => `file '${clip.videoPath}'`).join("\n");
+      writeFileSync(concatListPath, concatLines);
+      execSync(
+        `ffmpeg -y -f concat -safe 0 -i "${concatListPath}" -c:v libx264 -preset fast -crf 23 -an "${videoOnly}"`,
+        { stdio: "ignore" }
+      );
+    }
+    execSync(
+      `ffmpeg -y -i "${videoOnly}" -i "${audioPath}" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`,
+      { stdio: "ignore" }
+    );
+  }
   return outputPath;
 }
 
@@ -256,6 +316,25 @@ export function validateFinalVideo(videoPath: string): ValidationResult {
   } catch {
     errors.push("Could not determine video duration");
   }
+
+  // Validate audio codec and bitrate (prevent Wave 8 16kbps mono failure)
+  try {
+    const audioProbe = execSync(
+      `ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,bit_rate,channels,sample_rate -of json "${videoPath}"`,
+      { encoding: "utf-8" }
+    );
+    const audioInfo = JSON.parse(audioProbe);
+    const stream = audioInfo.streams?.[0];
+    if (stream) {
+      const bitrate = parseInt(stream.bit_rate || "0");
+      const channels = parseInt(stream.channels || "0");
+      if (bitrate > 0 && bitrate < 64000) errors.push(`Audio bitrate too low: ${Math.round(bitrate/1000)}kbps (min 64kbps, target 192kbps)`);
+      if (channels < 2) errors.push(`Audio is mono (${channels} channel) — must be stereo`);
+      if (stream.codec_name && stream.codec_name !== "aac") errors.push(`Audio codec is ${stream.codec_name}, expected aac`);
+    } else {
+      errors.push("No audio stream found in final video");
+    }
+  } catch { errors.push("Could not validate audio codec/bitrate"); }
 
   // Get audio loudness
   let masterLufs = -16;
